@@ -1,14 +1,74 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Navigation } from "@/components/ui/navigation";
-import { Building2, User, Shield } from "lucide-react";
+import { Building2, User, Shield, Loader2 } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { toast } from "sonner";
 
 const Auth = () => {
   const [selectedRole, setSelectedRole] = useState<"employee" | "organization" | "admin">("employee");
+  const [signInEmail, setSignInEmail] = useState("");
+  const [signInPassword, setSignInPassword] = useState("");
+  const [signUpEmail, setSignUpEmail] = useState("");
+  const [signUpPassword, setSignUpPassword] = useState("");
+  const [signUpName, setSignUpName] = useState("");
+  const [orgName, setOrgName] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const { signUp, signIn, user } = useAuth();
+  const navigate = useNavigate();
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (user) {
+      navigate("/employee");
+    }
+  }, [user, navigate]);
+
+  const handleSignIn = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!signInEmail || !signInPassword) {
+      toast.error("Please fill in all fields");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      await signIn(signInEmail, signInPassword);
+    } catch (error) {
+      // Error is already handled in useAuth
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSignUp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!signUpEmail || !signUpPassword || !signUpName) {
+      toast.error("Please fill in all fields");
+      return;
+    }
+
+    if (selectedRole === "organization" && !orgName) {
+      toast.error("Please enter organization name");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      await signUp(signUpEmail, signUpPassword, signUpName);
+    } catch (error) {
+      // Error is already handled in useAuth
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const roleIcons = {
     employee: User,
@@ -72,45 +132,105 @@ const Auth = () => {
                 </TabsList>
 
                 <TabsContent value="signin" className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="signin-email">Email</Label>
-                    <Input
-                      id="signin-email"
-                      type="email"
-                      placeholder={selectedRole === "organization" ? "admin@company.com" : "your@email.com"}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="signin-password">Password</Label>
-                    <Input id="signin-password" type="password" />
-                  </div>
-                  <Button className="w-full bg-gradient-primary hover:opacity-90">
-                    Sign In as {selectedRole}
-                  </Button>
+                  <form onSubmit={handleSignIn} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="signin-email">Email</Label>
+                      <Input
+                        id="signin-email"
+                        type="email"
+                        placeholder={selectedRole === "organization" ? "admin@company.com" : "your@email.com"}
+                        value={signInEmail}
+                        onChange={(e) => setSignInEmail(e.target.value)}
+                        disabled={isLoading}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="signin-password">Password</Label>
+                      <Input 
+                        id="signin-password" 
+                        type="password"
+                        value={signInPassword}
+                        onChange={(e) => setSignInPassword(e.target.value)}
+                        disabled={isLoading}
+                      />
+                    </div>
+                    <Button 
+                      type="submit"
+                      className="w-full bg-gradient-primary hover:opacity-90"
+                      disabled={isLoading}
+                    >
+                      {isLoading ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Signing in...
+                        </>
+                      ) : (
+                        `Sign In as ${selectedRole}`
+                      )}
+                    </Button>
+                  </form>
                 </TabsContent>
 
                 <TabsContent value="signup" className="space-y-4">
-                  {selectedRole === "organization" && (
+                  <form onSubmit={handleSignUp} className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="org-name">Organization Name</Label>
-                      <Input id="org-name" placeholder="Company Inc." />
+                      <Label htmlFor="signup-name">Full Name</Label>
+                      <Input 
+                        id="signup-name" 
+                        placeholder="John Doe"
+                        value={signUpName}
+                        onChange={(e) => setSignUpName(e.target.value)}
+                        disabled={isLoading}
+                      />
                     </div>
-                  )}
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-email">Email</Label>
-                    <Input
-                      id="signup-email"
-                      type="email"
-                      placeholder={selectedRole === "organization" ? "admin@company.com" : "your@email.com"}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-password">Password</Label>
-                    <Input id="signup-password" type="password" />
-                  </div>
-                  <Button className="w-full bg-gradient-primary hover:opacity-90">
-                    Create Account
-                  </Button>
+                    {selectedRole === "organization" && (
+                      <div className="space-y-2">
+                        <Label htmlFor="org-name">Organization Name</Label>
+                        <Input 
+                          id="org-name" 
+                          placeholder="Company Inc."
+                          value={orgName}
+                          onChange={(e) => setOrgName(e.target.value)}
+                          disabled={isLoading}
+                        />
+                      </div>
+                    )}
+                    <div className="space-y-2">
+                      <Label htmlFor="signup-email">Email</Label>
+                      <Input
+                        id="signup-email"
+                        type="email"
+                        placeholder={selectedRole === "organization" ? "admin@company.com" : "your@email.com"}
+                        value={signUpEmail}
+                        onChange={(e) => setSignUpEmail(e.target.value)}
+                        disabled={isLoading}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="signup-password">Password</Label>
+                      <Input 
+                        id="signup-password" 
+                        type="password"
+                        value={signUpPassword}
+                        onChange={(e) => setSignUpPassword(e.target.value)}
+                        disabled={isLoading}
+                      />
+                    </div>
+                    <Button 
+                      type="submit"
+                      className="w-full bg-gradient-primary hover:opacity-90"
+                      disabled={isLoading}
+                    >
+                      {isLoading ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Creating account...
+                        </>
+                      ) : (
+                        "Create Account"
+                      )}
+                    </Button>
+                  </form>
                 </TabsContent>
               </Tabs>
             </CardContent>
