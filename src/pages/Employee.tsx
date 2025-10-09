@@ -98,23 +98,19 @@ const Employee = () => {
     toast.info("Extracting information from receipt...");
 
     try {
-      // Upload file temporarily to get a URL
+      // Upload file temporarily to get storage path
       const fileExt = file.name.split('.').pop();
       const tempFileName = `${user?.id}/temp-${Date.now()}.${fileExt}`;
 
-      const { error: uploadError, data } = await supabase.storage
+      const { error: uploadError } = await supabase.storage
         .from('receipts')
         .upload(tempFileName, file);
 
       if (uploadError) throw uploadError;
 
-      const { data: urlData } = supabase.storage
-        .from('receipts')
-        .getPublicUrl(tempFileName);
-
-      // Call OCR function
+      // Call OCR function with bucket and path instead of public URL
       const { data: ocrData, error: ocrError } = await supabase.functions.invoke('extract-receipt-ocr', {
-        body: { imageUrl: urlData.publicUrl }
+        body: { bucket: 'receipts', path: tempFileName }
       });
 
       if (ocrError) throw ocrError;
@@ -126,6 +122,9 @@ const Employee = () => {
       if (ocrData.category) setCategory(ocrData.category);
 
       toast.success("Information extracted! You can edit the fields if needed.");
+      
+      // Clean up temporary file
+      await supabase.storage.from('receipts').remove([tempFileName]);
     } catch (error: any) {
       console.error("OCR Error:", error);
       toast.error(error.message || "Failed to extract information. Please fill manually.");
