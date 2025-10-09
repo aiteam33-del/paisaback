@@ -1,1 +1,7 @@
 project_id = "dwxrdgimwuhlcjsdugzu"
+
+[functions.extract-receipt-ocr]
+verify_jwt = false
+
+[functions.send-expense-email]
+verify_jwt = false

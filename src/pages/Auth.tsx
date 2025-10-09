@@ -5,10 +5,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Navigation } from "@/components/ui/navigation";
 import { Building2, User, Shield, Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 const Auth = () => {
   const [selectedRole, setSelectedRole] = useState<"employee" | "organization" | "admin">("employee");
@@ -18,6 +20,8 @@ const Auth = () => {
   const [signUpPassword, setSignUpPassword] = useState("");
   const [signUpName, setSignUpName] = useState("");
   const [orgName, setOrgName] = useState("");
+  const [superiorEmail, setSuperiorEmail] = useState("");
+  const [emailFrequency, setEmailFrequency] = useState("weekly");
   const [isLoading, setIsLoading] = useState(false);
   const { signUp, signIn, user } = useAuth();
   const navigate = useNavigate();
@@ -60,9 +64,28 @@ const Auth = () => {
       return;
     }
 
+    if (selectedRole === "employee" && superiorEmail && !superiorEmail.includes('@')) {
+      toast.error("Please enter a valid email for your superior");
+      return;
+    }
+
     setIsLoading(true);
     try {
       await signUp(signUpEmail, signUpPassword, signUpName);
+      
+      // Update profile with superior email and frequency if employee
+      if (selectedRole === "employee" && superiorEmail) {
+        const { data: { user: newUser } } = await supabase.auth.getUser();
+        if (newUser) {
+          await supabase
+            .from("profiles")
+            .update({
+              superior_email: superiorEmail,
+              email_frequency: emailFrequency
+            })
+            .eq("id", newUser.id);
+        }
+      }
     } catch (error) {
       // Error is already handled in useAuth
     } finally {
@@ -194,6 +217,39 @@ const Auth = () => {
                           disabled={isLoading}
                         />
                       </div>
+                    )}
+                    {selectedRole === "employee" && (
+                      <>
+                        <div className="space-y-2">
+                          <Label htmlFor="superior-email">Superior's Email (Optional)</Label>
+                          <Input 
+                            id="superior-email" 
+                            type="email"
+                            placeholder="manager@company.com"
+                            value={superiorEmail}
+                            onChange={(e) => setSuperiorEmail(e.target.value)}
+                            disabled={isLoading}
+                          />
+                          <p className="text-xs text-muted-foreground">
+                            For employees without organization accounts. Expense summaries will be emailed to this address.
+                          </p>
+                        </div>
+                        {superiorEmail && (
+                          <div className="space-y-2">
+                            <Label htmlFor="email-frequency">Email Frequency</Label>
+                            <Select value={emailFrequency} onValueChange={setEmailFrequency} disabled={isLoading}>
+                              <SelectTrigger id="email-frequency">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="daily">Daily</SelectItem>
+                                <SelectItem value="weekly">Weekly</SelectItem>
+                                <SelectItem value="monthly">Monthly</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        )}
+                      </>
                     )}
                     <div className="space-y-2">
                       <Label htmlFor="signup-email">Email</Label>

@@ -35,6 +35,7 @@ const Employee = () => {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
   const [uploadedUrls, setUploadedUrls] = useState<string[]>([]);
+  const [isProcessingOCR, setIsProcessingOCR] = useState(false);
   
   // Form fields
   const [vendor, setVendor] = useState("");
@@ -42,6 +43,7 @@ const Employee = () => {
   const [category, setCategory] = useState("");
   const [description, setDescription] = useState("");
   const [modeOfPayment, setModeOfPayment] = useState("");
+  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -72,7 +74,7 @@ const Employee = () => {
     setExpenses(data || []);
   };
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     const validFiles = files.filter(file => {
       const isValid = file.type.startsWith('image/') || file.type === 'application/pdf';
@@ -83,6 +85,53 @@ const Employee = () => {
     });
     
     setUploadedFiles(prev => [...prev, ...validFiles]);
+
+    // Process OCR for the first image file
+    const firstImageFile = validFiles.find(f => f.type.startsWith('image/'));
+    if (firstImageFile && user) {
+      await processOCR(firstImageFile);
+    }
+  };
+
+  const processOCR = async (file: File) => {
+    setIsProcessingOCR(true);
+    toast.info("Extracting information from receipt...");
+
+    try {
+      // Upload file temporarily to get a URL
+      const fileExt = file.name.split('.').pop();
+      const tempFileName = `${user?.id}/temp-${Date.now()}.${fileExt}`;
+
+      const { error: uploadError, data } = await supabase.storage
+        .from('receipts')
+        .upload(tempFileName, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = supabase.storage
+        .from('receipts')
+        .getPublicUrl(tempFileName);
+
+      // Call OCR function
+      const { data: ocrData, error: ocrError } = await supabase.functions.invoke('extract-receipt-ocr', {
+        body: { imageUrl: urlData.publicUrl }
+      });
+
+      if (ocrError) throw ocrError;
+
+      // Populate form fields with extracted data
+      if (ocrData.vendor) setVendor(ocrData.vendor);
+      if (ocrData.amount) setAmount(ocrData.amount.toString());
+      if (ocrData.date) setDate(ocrData.date);
+      if (ocrData.category) setCategory(ocrData.category);
+
+      toast.success("Information extracted! You can edit the fields if needed.");
+    } catch (error: any) {
+      console.error("OCR Error:", error);
+      toast.error(error.message || "Failed to extract information. Please fill manually.");
+    } finally {
+      setIsProcessingOCR(false);
+    }
   };
 
   const removeFile = (index: number) => {
@@ -149,7 +198,7 @@ const Employee = () => {
           category,
           description,
           mode_of_payment: modeOfPayment,
-          date: new Date().toISOString(),
+          date: date ? new Date(date).toISOString() : new Date().toISOString(),
           attachments: attachmentUrls,
           status: 'pending'
         });
@@ -164,6 +213,7 @@ const Employee = () => {
       setCategory("");
       setDescription("");
       setModeOfPayment("");
+      setDate(new Date().toISOString().split('T')[0]);
       setUploadedFiles([]);
       setUploadedUrls([]);
       setUploadProgress(0);
@@ -302,6 +352,24 @@ const Employee = () => {
                       </p>
                     </div>
                   )}
+
+                  {isProcessingOCR && (
+                    <div className="flex items-center gap-2 text-sm text-primary">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Extracting information from receipt...</span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="date">Date</Label>
+                  <Input 
+                    id="date" 
+                    type="date"
+                    value={date}
+                    onChange={(e) => setDate(e.target.value)}
+                    disabled={isLoading}
+                  />
                 </div>
 
                 <div className="space-y-2">
