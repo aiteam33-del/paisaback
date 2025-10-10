@@ -288,54 +288,44 @@ const processOCR = async (file: File) => {
 
   const handleSendEmail = async () => {
     if (!user) {
-      toast.error("Please log in to send email");
+      toast.error("User not authenticated");
       return;
     }
-
-    // Fetch user profile to get superior email and full name
-    const { data: profile, error: profileError } = await supabase
-      .from("profiles")
-      .select("superior_email, full_name, email")
-      .eq("id", user.id)
-      .maybeSingle();
-
-    if (profileError) {
-      toast.error("Failed to load profile information");
-      return;
-    }
-
-    if (!profile) {
-      toast.error("No profile found. Please update your profile in the organization section.");
-      return;
-    }
-
-    // TEMPORARY: For testing with Resend free tier, send to account owner email
-    // Once you verify a domain at resend.com/domains, change this back to:
-    // const recipientEmail = profile.superior_email || profile.email;
-    const recipientEmail = "ai_team33@mesaschool.co";
-    
-    console.log("Sending test email to:", recipientEmail);
 
     if (expenses.length === 0) {
-      toast.error("No expenses to send. Please submit at least one expense.");
+      toast.error("No expenses to send. Please add at least one expense.");
       return;
     }
 
     setIsSendingEmail(true);
-    toast.info("Preparing and sending email...");
-
+    toast.info("Preparing to send email from your Gmail...");
+    
     try {
-      const { data, error } = await supabase.functions.invoke('send-expense-email', {
+      // Get the user's session which contains the provider token
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError || !session) {
+        toast.error("Please sign in with Google to send emails");
+        return;
+      }
+
+      // Check if user signed in with Google and has access token
+      const providerToken = session.provider_token;
+      if (!providerToken) {
+        toast.error("Please sign in with Google to enable email sending from your Gmail account");
+        return;
+      }
+
+      const { data, error } = await supabase.functions.invoke("send-gmail-expense", {
         body: {
           userId: user.id,
-          recipientEmail,
-          employeeName: profile.full_name || "Employee"
-        }
+          accessToken: providerToken
+        },
       });
 
       if (error) throw error;
 
-      toast.success("✅ Reimbursement email sent successfully!");
+      toast.success("✅ Reimbursement email sent successfully from your Gmail!");
     } catch (error: any) {
       console.error("Email send error:", error);
       toast.error(error.message || "Failed to send email. Please try again.");
