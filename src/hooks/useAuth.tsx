@@ -139,13 +139,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signOut = async () => {
     try {
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
-      
+      const { error } = await supabase.auth.signOut({ scope: 'global' });
+      if (error && !`${error.message}`.toLowerCase().includes('session')) {
+        throw error;
+      }
+    } catch (_) {
+      // Ignore "session not found" or similar errors and proceed
+    } finally {
       toast.success("Logged out successfully");
+      setUser(null);
+      setSession(null);
       navigate("/auth");
-    } catch (error: any) {
-      toast.error(error.message || "Failed to sign out");
     }
   };
 

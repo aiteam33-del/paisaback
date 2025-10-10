@@ -288,7 +288,7 @@ const processOCR = async (file: File) => {
 
   const handleSendEmail = async () => {
     if (!user) {
-      toast.error("User not authenticated");
+      toast.error("Please log in");
       return;
     }
 
@@ -298,34 +298,33 @@ const processOCR = async (file: File) => {
     }
 
     setIsSendingEmail(true);
-    toast.info("Preparing to send email from your Gmail...");
-    
     try {
-      // Get the user's session which contains the provider token
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      
-      if (sessionError || !session) {
-        toast.error("Please sign in with Google to send emails");
-        return;
-      }
+      const { data: { session } } = await supabase.auth.getSession();
+      const providerToken = session?.provider_token;
 
-      // Check if user signed in with Google and has access token
-      const providerToken = session.provider_token;
       if (!providerToken) {
-        toast.error("Please sign in with Google to enable email sending from your Gmail account");
-        return;
+        // Request Gmail send scope via Google OAuth
+        toast.info("Redirecting to Google to enable Gmail sending...");
+        sessionStorage.setItem("want_gmail_send", "1");
+        await supabase.auth.signInWithOAuth({
+          provider: "google",
+          options: {
+            scopes: "openid email profile https://www.googleapis.com/auth/gmail.send",
+            redirectTo: `${window.location.origin}/employee`,
+          },
+        });
+        return; // The page will redirect
       }
 
-      const { data, error } = await supabase.functions.invoke("send-gmail-expense", {
+      const { error } = await supabase.functions.invoke("send-gmail-expense", {
         body: {
           userId: user.id,
-          accessToken: providerToken
+          accessToken: providerToken,
         },
       });
 
       if (error) throw error;
-
-      toast.success("✅ Reimbursement email sent successfully from your Gmail!");
+      toast.success("✅ Reimbursement email sent from your Gmail!");
     } catch (error: any) {
       console.error("Email send error:", error);
       toast.error(error.message || "Failed to send email. Please try again.");
