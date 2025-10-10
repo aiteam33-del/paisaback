@@ -158,7 +158,7 @@ const handler = async (req: Request): Promise<Response> => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: 'PAISABACK <send@satvario.com>',
+        from: 'PAISABACK <onboarding@resend.dev>',
         to: [recipientEmail],
         subject: 'Expense Reimbursement Request',
         html: emailHTML,
