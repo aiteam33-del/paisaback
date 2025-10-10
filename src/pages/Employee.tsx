@@ -269,9 +269,12 @@ const Employee = () => {
     return expDate.getMonth() === currentMonth && expDate.getFullYear() === currentYear;
   });
   
-  const totalAmount = monthExpenses.reduce((sum, exp) => sum + exp.amount, 0);
-  const approvedCount = monthExpenses.filter(exp => exp.status === 'approved').length;
-  const pendingCount = monthExpenses.filter(exp => exp.status === 'pending').length;
+  const approvedExpenses = monthExpenses.filter(exp => exp.status === 'approved');
+  const pendingExpenses = monthExpenses.filter(exp => exp.status === 'pending');
+  
+  const approvedAmount = approvedExpenses.reduce((sum, exp) => sum + exp.amount, 0);
+  const pendingAmount = pendingExpenses.reduce((sum, exp) => sum + exp.amount, 0);
+  const totalAmount = approvedAmount + pendingAmount;
 
   return (
     <div className="min-h-screen bg-gradient-subtle">
@@ -529,10 +532,21 @@ const Employee = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <p className="text-4xl font-bold">₹{totalAmount.toLocaleString('en-IN')}</p>
-                <p className="text-sm text-primary-foreground/80 mt-2">
-                  {approvedCount} approved • {pendingCount} pending
-                </p>
+                <p className="text-4xl font-bold mb-3">₹{totalAmount.toLocaleString('en-IN')}</p>
+                <div className="space-y-1 text-sm text-primary-foreground/90">
+                  <div className="flex justify-between">
+                    <span>Approved:</span>
+                    <span className="font-semibold">₹{approvedAmount.toLocaleString('en-IN')}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Pending:</span>
+                    <span className="font-semibold">₹{pendingAmount.toLocaleString('en-IN')}</span>
+                  </div>
+                  <div className="flex justify-between pt-1 border-t border-primary-foreground/20">
+                    <span>Total:</span>
+                    <span className="font-bold">₹{totalAmount.toLocaleString('en-IN')}</span>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </div>
