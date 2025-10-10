@@ -504,17 +504,20 @@ const Employee = () => {
                           {expense.category} • {new Date(expense.date).toLocaleDateString()}
                         </p>
                         {expense.attachments && expense.attachments.length > 0 && (
-                          <div className="mt-2 space-y-1">
+                          <div className="mt-2 flex flex-wrap gap-2">
                             {expense.attachments.map((url, idx) => (
                               <Button
                                 key={idx}
-                                variant="ghost"
+                                variant="outline"
                                 size="sm"
-                                className="h-7 px-2 text-xs"
-                                onClick={() => window.open(url, '_blank')}
+                                className="h-8 px-3 text-xs font-medium"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  window.open(url, '_blank', 'noopener,noreferrer');
+                                }}
                               >
-                                <Receipt className="w-3 h-3 mr-1" />
-                                View Document {expense.attachments!.length > 1 ? `${idx + 1}` : ''}
+                                <Receipt className="w-3 h-3 mr-1.5" />
+                                View Document{expense.attachments!.length > 1 ? ` ${idx + 1}` : ''}
                               </Button>
                             ))}
                           </div>
