@@ -346,18 +346,29 @@ const Employee = () => {
 
       if (error) throw error;
 
-      // Create blob and download
+      // Create blob from the EML content
       const blob = new Blob([data], { type: 'message/rfc822' });
       const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `expense_reimbursement_${Date.now()}.eml`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-
-      toast.success("📧 Email draft downloaded! Open it in your mail app (Outlook, Apple Mail, etc.)");
+      
+      // Try to open in a new window first (may trigger mail app on some systems)
+      const newWindow = window.open(url, '_blank');
+      
+      // Fallback to download if popup blocked or doesn't open mail app
+      setTimeout(() => {
+        if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
+          // Popup was blocked, download the file instead
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `expense_reimbursement_${Date.now()}.eml`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          toast.success("📧 Email draft downloaded! Double-click the .eml file to open in your mail app.");
+        } else {
+          toast.success("📧 Opening email in your mail app...");
+        }
+        window.URL.revokeObjectURL(url);
+      }, 100);
     } catch (error: any) {
       console.error("Email draft generation error:", error);
       toast.error(error.message || "Failed to generate email draft. Please try again.");
