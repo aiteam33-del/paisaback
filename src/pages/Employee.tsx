@@ -293,6 +293,69 @@ const Employee = () => {
     }
   };
 
+  const handleDownloadEmailDraft = async () => {
+    if (!user) {
+      toast.error("Please log in to download email draft");
+      return;
+    }
+
+    // Fetch user profile to get superior email and full name
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .select("superior_email, full_name, email")
+      .eq("id", user.id)
+      .single();
+
+    if (profileError || !profile) {
+      toast.error("Failed to load profile information");
+      return;
+    }
+
+    const recipientEmail = profile.superior_email || profile.email;
+    if (!recipientEmail) {
+      toast.error("No recipient email found. Please update your profile.");
+      return;
+    }
+
+    if (expenses.length === 0) {
+      toast.error("No expenses to download. Please submit at least one expense.");
+      return;
+    }
+
+    setIsSendingEmail(true);
+    toast.info("Generating email draft...");
+
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-email-eml', {
+        body: {
+          userId: user.id,
+          recipientEmail,
+          employeeName: profile.full_name || "Employee"
+        }
+      });
+
+      if (error) throw error;
+
+      // Create blob and download
+      const blob = new Blob([data], { type: 'message/rfc822' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `expense_reimbursement_${Date.now()}.eml`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      toast.success("📧 Email draft downloaded! Open it in your mail app (Outlook, Apple Mail, etc.)");
+    } catch (error: any) {
+      console.error("Email draft generation error:", error);
+      toast.error(error.message || "Failed to generate email draft. Please try again.");
+    } finally {
+      setIsSendingEmail(false);
+    }
+  };
+
   if (authLoading) {
     return (
       <div className="min-h-screen bg-gradient-subtle flex items-center justify-center">
@@ -633,24 +696,36 @@ const Employee = () => {
               </CardContent>
             </Card>
 
-            <Button 
-              onClick={handleSendEmail}
-              disabled={isSendingEmail || expenses.length === 0}
-              className="w-full bg-gradient-primary hover:opacity-90"
-              size="lg"
-            >
-              {isSendingEmail ? (
-                <>
-                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                  Sending Email...
-                </>
-              ) : (
-                <>
-                  <Mail className="w-5 h-5 mr-2" />
-                  Send Mail Now
-                </>
-              )}
-            </Button>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Button 
+                onClick={handleSendEmail}
+                disabled={isSendingEmail || expenses.length === 0}
+                className="flex-1 bg-gradient-primary hover:opacity-90"
+                size="lg"
+              >
+                {isSendingEmail ? (
+                  <>
+                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                    Sending...
+                  </>
+                ) : (
+                  <>
+                    <Mail className="w-5 h-5 mr-2" />
+                    Send Mail Now
+                  </>
+                )}
+              </Button>
+              <Button 
+                onClick={handleDownloadEmailDraft}
+                disabled={isSendingEmail || expenses.length === 0}
+                variant="outline"
+                className="flex-1"
+                size="lg"
+              >
+                <Receipt className="w-5 h-5 mr-2" />
+                Download Draft
+              </Button>
+            </div>
           </div>
         </div>
       </main>
