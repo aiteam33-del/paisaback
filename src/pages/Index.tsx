@@ -2,41 +2,61 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Navigation } from "@/components/ui/navigation";
-import { Receipt, Sparkles, TrendingUp, Shield, Zap, CheckCircle2 } from "lucide-react";
-import heroImage from "@/assets/hero-image.png";
+import { Receipt, Sparkles, TrendingUp, Shield, Zap, CheckCircle2, ArrowRight, Clock, Users, DollarSign } from "lucide-react";
+import heroImage from "@/assets/hero-image-new.png";
 
 const Index = () => {
   const features = [
     {
       icon: Receipt,
-      title: "AI Receipt Scanning",
-      description: "Scan receipts with your phone. AI auto-extracts amount, vendor, and category instantly.",
+      title: "Snap, Scan, Done",
+      subtitle: "AI Receipt Capture",
+      description: "Just snap a photo. Our AI instantly extracts amount, vendor, date, and category—no manual typing.",
     },
     {
       icon: Sparkles,
-      title: "Smart Categorization",
-      description: "Expenses are intelligently categorized using AI, saving you time and effort.",
+      title: "Automatic Smart Categories",
+      subtitle: "No More Manual Coding",
+      description: "AI intelligently categorizes expenses instantly, saving hours of manual work every month.",
     },
     {
       icon: TrendingUp,
-      title: "Real-Time Analytics",
-      description: "Track spending patterns, approval times, and team expenses with beautiful dashboards.",
+      title: "Real-Time Insights",
+      subtitle: "Spending Analytics Dashboard",
+      description: "Track spending patterns, approval times, and team expenses with beautiful, actionable dashboards.",
     },
     {
       icon: Shield,
-      title: "Multi-Level Approval",
-      description: "Customizable approval workflows from manager to finance to ensure compliance.",
+      title: "Multi-Level Approvals",
+      subtitle: "Compliant & Customizable",
+      description: "Set up custom approval workflows from manager to finance—ensuring full compliance every time.",
     },
     {
       icon: Zap,
-      title: "Lightning Fast",
-      description: "Submit expenses in seconds. Get approvals in minutes. Focus on what matters.",
+      title: "Lightning Fast Processing",
+      subtitle: "Submit in Seconds",
+      description: "Submit expenses in under 10 seconds. Get approvals in minutes, not days. Focus on what matters.",
     },
     {
       icon: CheckCircle2,
       title: "Seamless Integration",
-      description: "Works with your existing tools. Email automation for non-registered organizations.",
+      subtitle: "Works With Your Tools",
+      description: "Email automation for non-registered organizations. Integrates smoothly with your existing workflow.",
     },
+  ];
+
+  const stats = [
+    { icon: Clock, value: "10x", label: "Faster Submissions" },
+    { icon: Users, value: "5000+", label: "Active Users" },
+    { icon: DollarSign, value: "₹50M+", label: "Processed Monthly" },
+  ];
+
+  const trustedCompanies = [
+    "Tech Corp",
+    "Innovation Labs",
+    "Global Services",
+    "Finance Plus",
+    "Future Industries",
   ];
 
   return (
@@ -44,67 +64,114 @@ const Index = () => {
       <Navigation />
       
       <main>
-        <section className="container mx-auto px-4 pt-32 pb-20">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <div>
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent/20 text-accent border border-accent/30 mb-6">
+        {/* Hero Section */}
+        <section className="container mx-auto px-4 pt-28 pb-16 md:pt-36 md:pb-24">
+          <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+            <div className="space-y-8">
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary border border-primary/20 shadow-sm">
                 <Sparkles className="w-4 h-4" />
-                <span className="text-sm font-medium">AI-Powered Reimbursement</span>
+                <span className="text-sm font-semibold">AI-Powered Expense Management</span>
               </div>
-              <h1 className="text-5xl lg:text-6xl font-bold text-foreground mb-6 leading-tight">
-                Get Your Money Back,{" "}
-                <span className="bg-gradient-primary bg-clip-text text-transparent">Faster</span>
+              
+              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-foreground leading-tight">
+                Automate Your Expenses.{" "}
+                <span className="bg-gradient-hero bg-clip-text text-transparent">
+                  Get Reimbursed with AI
+                </span>
               </h1>
-              <p className="text-xl text-muted-foreground mb-8 leading-relaxed">
-                PAISABACK streamlines expense claims with AI-powered receipt scanning, smart categorization, 
-                and seamless approval workflows. Submit expenses in seconds, not minutes.
+              
+              <p className="text-lg md:text-xl text-muted-foreground leading-relaxed max-w-xl">
+                PAISABACK eliminates the hassle of expense claims with AI-powered receipt scanning, 
+                smart categorization, and instant approval workflows. Submit in seconds, not hours.
               </p>
-              <div className="flex flex-wrap gap-4">
-                <Link to="/auth">
-                  <Button size="lg" className="bg-gradient-primary hover:opacity-90 text-lg px-8">
+              
+              <div className="flex flex-col sm:flex-row gap-4 pt-4">
+                <Link to="/auth" className="flex-1 sm:flex-initial">
+                  <Button size="lg" className="w-full sm:w-auto bg-gradient-primary hover:opacity-90 text-lg px-8 py-6 shadow-lg hover:shadow-xl transition-all">
                     Get Started Free
+                    <ArrowRight className="ml-2 w-5 h-5" />
                   </Button>
                 </Link>
-                <Link to="/employee">
-                  <Button size="lg" variant="outline" className="text-lg px-8">
+                <Link to="/employee" className="flex-1 sm:flex-initial">
+                  <Button size="lg" variant="outline" className="w-full sm:w-auto text-lg px-8 py-6 border-2 hover:bg-primary/5">
                     View Demo
                   </Button>
                 </Link>
               </div>
+
+              {/* Stats */}
+              <div className="grid grid-cols-3 gap-6 pt-8 border-t border-border/60">
+                {stats.map((stat, index) => {
+                  const Icon = stat.icon;
+                  return (
+                    <div key={index} className="text-center">
+                      <Icon className="w-5 h-5 text-primary mx-auto mb-2" />
+                      <div className="text-2xl md:text-3xl font-bold text-foreground">{stat.value}</div>
+                      <div className="text-xs md:text-sm text-muted-foreground mt-1">{stat.label}</div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
             
-            <div className="relative">
-              <div className="absolute inset-0 bg-gradient-primary opacity-20 blur-3xl rounded-full"></div>
+            <div className="relative order-first lg:order-last">
+              <div className="absolute inset-0 bg-gradient-hero opacity-10 blur-3xl rounded-full animate-pulse"></div>
               <img
                 src={heroImage}
-                alt="PAISABACK expense management dashboard"
-                className="relative rounded-2xl shadow-lg w-full"
+                alt="PAISABACK AI-powered expense management showing receipt scanning in action"
+                className="relative rounded-2xl shadow-xl w-full"
               />
             </div>
           </div>
         </section>
 
-        <section className="container mx-auto px-4 py-20">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-foreground mb-4">
-              Everything You Need for Expense Management
+        {/* Social Proof */}
+        <section className="py-12 border-y border-border/50 bg-card/30 backdrop-blur-sm">
+          <div className="container mx-auto px-4">
+            <p className="text-center text-sm text-muted-foreground mb-8 font-medium uppercase tracking-wider">
+              Trusted by Leading Organizations
+            </p>
+            <div className="flex flex-wrap justify-center items-center gap-8 md:gap-12">
+              {trustedCompanies.map((company, index) => (
+                <div
+                  key={index}
+                  className="text-lg md:text-xl font-bold text-muted-foreground/60 hover:text-foreground transition-colors px-4"
+                >
+                  {company}
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Features Section */}
+        <section className="container mx-auto px-4 py-20 md:py-28">
+          <div className="text-center mb-16 max-w-3xl mx-auto space-y-4">
+            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-foreground">
+              Everything You Need for Effortless Expense Management
             </h2>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              From AI-powered receipt scanning to multi-level approvals, PAISABACK has all the tools 
-              to make reimbursements effortless.
+            <p className="text-lg md:text-xl text-muted-foreground">
+              From AI-powered receipt scanning to multi-level approvals, PAISABACK streamlines 
+              every step of the reimbursement process.
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {features.map((feature, index) => {
               const Icon = feature.icon;
               return (
-                <Card key={index} className="shadow-card hover:shadow-lg transition-shadow">
-                  <CardHeader>
-                    <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
-                      <Icon className="w-6 h-6 text-primary" />
+                <Card 
+                  key={index} 
+                  className="bg-gradient-card border-border/50 shadow-card hover:shadow-xl transition-all duration-300 hover:-translate-y-1 group"
+                >
+                  <CardHeader className="space-y-4">
+                    <div className="w-14 h-14 rounded-xl bg-gradient-primary flex items-center justify-center shadow-md group-hover:shadow-glow transition-all">
+                      <Icon className="w-7 h-7 text-primary-foreground" />
                     </div>
-                    <CardTitle className="text-xl">{feature.title}</CardTitle>
+                    <div>
+                      <CardTitle className="text-xl mb-1">{feature.title}</CardTitle>
+                      <div className="text-sm font-medium text-primary">{feature.subtitle}</div>
+                    </div>
                     <CardDescription className="text-base leading-relaxed">
                       {feature.description}
                     </CardDescription>
@@ -115,38 +182,58 @@ const Index = () => {
           </div>
         </section>
 
-        <section className="container mx-auto px-4 py-20">
-          <Card className="shadow-lg bg-gradient-primary text-primary-foreground overflow-hidden relative">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-accent/20 rounded-full blur-3xl"></div>
-            <CardContent className="relative py-16 px-8 text-center">
-              <h2 className="text-4xl font-bold mb-4">Ready to Transform Your Expense Process?</h2>
-              <p className="text-lg text-primary-foreground/90 mb-8 max-w-2xl mx-auto">
-                Join thousands of employees and organizations saving time and money with PAISABACK.
-              </p>
-              <Link to="/auth">
-                <Button size="lg" variant="secondary" className="text-lg px-8">
-                  Start Free Trial
-                </Button>
-              </Link>
+        {/* CTA Section */}
+        <section className="container mx-auto px-4 py-16 md:py-20">
+          <Card className="shadow-xl bg-gradient-hero text-primary-foreground overflow-hidden relative border-0">
+            <div className="absolute top-0 right-0 w-96 h-96 bg-accent/10 rounded-full blur-3xl"></div>
+            <div className="absolute bottom-0 left-0 w-80 h-80 bg-primary-glow/20 rounded-full blur-3xl"></div>
+            <CardContent className="relative py-16 md:py-20 px-8 text-center">
+              <div className="max-w-3xl mx-auto space-y-6">
+                <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold">
+                  Ready to Transform Your Expense Process?
+                </h2>
+                <p className="text-lg md:text-xl text-primary-foreground/90">
+                  Join thousands of employees and organizations saving time and money with PAISABACK. 
+                  Start your free trial today—no credit card required.
+                </p>
+                <div className="pt-6">
+                  <Link to="/auth">
+                    <Button 
+                      size="lg" 
+                      className="bg-card text-foreground hover:bg-card/90 text-lg px-10 py-6 shadow-xl hover:shadow-2xl transition-all"
+                    >
+                      Start Free Trial
+                      <ArrowRight className="ml-2 w-5 h-5" />
+                    </Button>
+                  </Link>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </section>
       </main>
 
-      <footer className="border-t border-border bg-card">
-        <div className="container mx-auto px-4 py-8">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+      {/* Footer */}
+      <footer className="border-t border-border bg-card/50 backdrop-blur-sm">
+        <div className="container mx-auto px-4 py-10">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-6">
+            <div className="flex items-center gap-2">
+              <div className="bg-gradient-primary p-2 rounded-lg">
+                <Receipt className="w-5 h-5 text-primary-foreground" />
+              </div>
+              <span className="text-lg font-bold text-foreground">PAISABACK</span>
+            </div>
             <p className="text-sm text-muted-foreground">
               © 2025 PAISABACK. All rights reserved.
             </p>
-            <div className="flex gap-6">
-              <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+            <div className="flex gap-8">
+              <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors font-medium">
                 Privacy Policy
               </a>
-              <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+              <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors font-medium">
                 Terms of Service
               </a>
-              <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+              <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors font-medium">
                 Contact
               </a>
             </div>

@@ -37,7 +37,7 @@ export const Navigation = () => {
                   <Button variant="ghost" className="hidden sm:inline-flex">Sign In</Button>
                 </Link>
                 <Link to="/auth">
-                  <Button className="bg-gradient-primary hover:opacity-90">Get Started</Button>
+                  <Button variant="hero" className="shadow-md hover:shadow-lg">Get Started</Button>
                 </Link>
               </>
             )}
