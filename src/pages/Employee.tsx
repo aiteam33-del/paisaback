@@ -124,17 +124,15 @@ const processOCR = async (file: File) => {
     setIsProcessingOCR(true);
     toast.info("Extracting information from receipt...");
     try {
-      // Convert PDFs to image (first page) for OCR
-      if (file.type === 'application/pdf') {
-        file = await convertPdfFirstPageToPng(file);
-      }
+      // For PDFs, upload as-is; the backend handles PDFs directly
+      // Convert only images if needed (no conversion currently)
       // Upload file temporarily to get storage path
       const fileExt = file.name.split('.').pop();
       const tempFileName = `${user?.id}/temp-${Date.now()}.${fileExt}`;
 
       const { error: uploadError } = await supabase.storage
         .from('receipts')
-        .upload(tempFileName, file);
+        .upload(tempFileName, file, { contentType: file.type });
 
       if (uploadError) throw uploadError;
 
@@ -187,7 +185,7 @@ const processOCR = async (file: File) => {
 
       const { error: uploadError, data } = await supabase.storage
         .from('receipts')
-        .upload(fileName, file);
+        .upload(fileName, file, { contentType: file.type });
 
       if (uploadError) {
         toast.error(`Failed to upload ${file.name}`);
