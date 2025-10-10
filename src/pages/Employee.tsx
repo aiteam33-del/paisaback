@@ -246,6 +246,19 @@ const Employee = () => {
     rejected: "bg-destructive/20 text-destructive border-destructive/30",
   };
 
+  // Calculate total reimbursements for current month
+  const currentMonth = new Date().getMonth();
+  const currentYear = new Date().getFullYear();
+  
+  const monthExpenses = expenses.filter(exp => {
+    const expDate = new Date(exp.date);
+    return expDate.getMonth() === currentMonth && expDate.getFullYear() === currentYear;
+  });
+  
+  const totalAmount = monthExpenses.reduce((sum, exp) => sum + exp.amount, 0);
+  const approvedCount = monthExpenses.filter(exp => exp.status === 'approved').length;
+  const pendingCount = monthExpenses.filter(exp => exp.status === 'pending').length;
+
   return (
     <div className="min-h-screen bg-gradient-subtle">
       <Navigation />
@@ -502,9 +515,9 @@ const Employee = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <p className="text-4xl font-bold">₹6,500</p>
+                <p className="text-4xl font-bold">₹{totalAmount.toLocaleString('en-IN')}</p>
                 <p className="text-sm text-primary-foreground/80 mt-2">
-                  3 approved • 1 pending
+                  {approvedCount} approved • {pendingCount} pending
                 </p>
               </CardContent>
             </Card>
