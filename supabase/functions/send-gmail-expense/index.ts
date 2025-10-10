@@ -82,12 +82,11 @@ const handler = async (req: Request): Promise<Response> => {
           const blob = await response.blob();
           const arrayBuffer = await blob.arrayBuffer();
           
-          const uint8Array = new Uint8Array(arrayBuffer);
+          // Properly encode binary data to base64
+          const bytes = new Uint8Array(arrayBuffer);
           let binary = '';
-          const chunkSize = 8192;
-          for (let i = 0; i < uint8Array.length; i += chunkSize) {
-            const chunk = uint8Array.subarray(i, i + chunkSize);
-            binary += String.fromCharCode.apply(null, Array.from(chunk));
+          for (let i = 0; i < bytes.length; i++) {
+            binary += String.fromCharCode(bytes[i]);
           }
           const base64 = btoa(binary);
           
