@@ -88,18 +88,46 @@ const Employee = () => {
     
     setUploadedFiles(prev => [...prev, ...validFiles]);
 
-    // Process OCR for the first image file
+    // Process OCR: prefer first image, else first PDF
     const firstImageFile = validFiles.find(f => f.type.startsWith('image/'));
-    if (firstImageFile && user) {
-      await processOCR(firstImageFile);
+    const firstPdfFile = validFiles.find(f => f.type === 'application/pdf');
+    const targetFile = firstImageFile || firstPdfFile;
+    if (targetFile && user) {
+      await processOCR(targetFile);
     }
   };
 
-  const processOCR = async (file: File) => {
+const convertPdfFirstPageToPng = async (file: File) => {
+  const pdfjsLib = await import('pdfjs-dist');
+  // Use CDN worker to avoid bundling complexity
+  // @ts-ignore
+  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://unpkg.com/pdfjs-dist@4.8.69/build/pdf.worker.min.mjs';
+
+  const arrayBuffer = await file.arrayBuffer();
+  // @ts-ignore - pdfjs types can be finicky across versions
+  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+  const page = await pdf.getPage(1);
+  const viewport = page.getViewport({ scale: 2 });
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('Canvas not supported');
+  canvas.width = viewport.width;
+  canvas.height = viewport.height;
+  // @ts-ignore
+  await page.render({ canvasContext: ctx, viewport }).promise;
+  const blob: Blob = await new Promise((resolve) => canvas.toBlob((b) => resolve(b as Blob), 'image/png'));
+  return new File([blob], file.name.replace(/\.pdf$/i, '.png'), { type: 'image/png' });
+};
+
+const processOCR = async (file: File) => {
     setExtractedFields(null);
     setIsProcessingOCR(true);
     toast.info("Extracting information from receipt...");
     try {
+      // Convert PDFs to image (first page) for OCR
+      if (file.type === 'application/pdf') {
+        file = await convertPdfFirstPageToPng(file);
+      }
       // Upload file temporarily to get storage path
       const fileExt = file.name.split('.').pop();
       const tempFileName = `${user?.id}/temp-${Date.now()}.${fileExt}`;
