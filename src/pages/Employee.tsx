@@ -36,6 +36,7 @@ const Employee = () => {
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
   const [uploadedUrls, setUploadedUrls] = useState<string[]>([]);
   const [isProcessingOCR, setIsProcessingOCR] = useState(false);
+  const [extractedFields, setExtractedFields] = useState<{ amount?: number; date?: string; merchant?: string; transaction_id?: string; category?: string } | null>(null);
   
   // Form fields
   const [vendor, setVendor] = useState("");
@@ -94,9 +95,9 @@ const Employee = () => {
   };
 
   const processOCR = async (file: File) => {
+    setExtractedFields(null);
     setIsProcessingOCR(true);
     toast.info("Extracting information from receipt...");
-
     try {
       // Upload file temporarily to get storage path
       const fileExt = file.name.split('.').pop();
@@ -116,11 +117,18 @@ const Employee = () => {
       if (ocrError) throw ocrError;
 
       // Populate form fields with extracted data
-      if (ocrData.vendor) setVendor(ocrData.vendor);
+      if (ocrData.merchant) setVendor(ocrData.merchant);
+      else if (ocrData.vendor) setVendor(ocrData.vendor);
       if (ocrData.amount) setAmount(ocrData.amount.toString());
       if (ocrData.date) setDate(ocrData.date);
       if (ocrData.category) setCategory(ocrData.category);
-
+      setExtractedFields({
+        merchant: ocrData.merchant || ocrData.vendor,
+        amount: ocrData.amount,
+        date: ocrData.date,
+        category: ocrData.category,
+        transaction_id: ocrData.transaction_id,
+      });
       toast.success("Information extracted! You can edit the fields if needed.");
       
       // Clean up temporary file
@@ -157,11 +165,16 @@ const Employee = () => {
         continue;
       }
 
-      const { data: urlData } = supabase.storage
+      const { data: signedData, error: signedErr } = await supabase.storage
         .from('receipts')
-        .getPublicUrl(fileName);
+        .createSignedUrl(fileName, 60 * 60 * 24 * 7); // 7 days
 
-      urls.push(urlData.publicUrl);
+      if (signedErr) {
+        toast.error(`Failed to get secure URL for ${file.name}`);
+        continue;
+      }
+
+      urls.push(signedData.signedUrl);
       setUploadProgress(((i + 1) / uploadedFiles.length) * 100);
     }
 
@@ -216,6 +229,7 @@ const Employee = () => {
       setUploadedFiles([]);
       setUploadedUrls([]);
       setUploadProgress(0);
+      setExtractedFields(null);
 
       // Refresh expenses
       fetchExpenses();

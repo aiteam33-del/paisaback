@@ -73,12 +73,11 @@ serve(async (req) => {
     }
 
     // Build prompt
-    const systemPrompt = "You extract expense data from receipts. Return ONLY strict JSON with keys vendor (string), amount (number), date (YYYY-MM-DD), category (one of travel, food, lodging, office, other).";
+    const systemPrompt = "You are an expert OCR agent for receipts and payment screenshots (e.g., GPay). Return STRICT JSON only with keys: merchant (string), amount (number), date (YYYY-MM-DD), transaction_id (string), category (one of travel, food, lodging, office, other). Do not include any extra text.";
 
     let extractedText = "";
 
-    if (OPENAI_API_KEY) {
-      // Use OpenAI Chat Completions with image input (base64 data URI)
+    async function askOpenAI(): Promise<string> {
       const payload = {
         model: "gpt-5-mini-2025-08-07",
         messages: [
@@ -86,7 +85,7 @@ serve(async (req) => {
           {
             role: "user",
             content: [
-              { type: "text", text: "Extract fields from this receipt." },
+              { type: "text", text: "Extract fields from this receipt/screenshot." },
               { type: "image_url", image_url: { url: `data:${mimeType};base64,${base64Data}` } },
             ],
           },
@@ -106,14 +105,15 @@ serve(async (req) => {
       if (!response.ok) {
         const t = await response.text();
         console.error("OpenAI error:", response.status, t);
-        throw new Error(`OpenAI error ${response.status}`);
+        throw new Error(`openai_${response.status}`);
       }
       const data = await response.json();
-      extractedText = data.choices?.[0]?.message?.content || "";
-    } else {
-      // Fallback to Lovable AI Gateway (Gemini)
+      return data.choices?.[0]?.message?.content || "";
+    }
+
+    async function askLovable(): Promise<string> {
       const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-      if (!LOVABLE_API_KEY) throw new Error("AI key not configured");
+      if (!LOVABLE_API_KEY) throw new Error("lovable_key_missing");
 
       const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
@@ -128,7 +128,7 @@ serve(async (req) => {
             {
               role: "user",
               content: [
-                { type: "text", text: "Extract fields from this receipt." },
+                { type: "text", text: "Extract fields from this receipt/screenshot." },
                 { type: "image_url", image_url: { url: `data:${mimeType};base64,${base64Data}` } },
               ],
             },
@@ -139,32 +139,52 @@ serve(async (req) => {
       if (!response.ok) {
         const t = await response.text();
         console.error("AI gateway error:", response.status, t);
-        throw new Error(`AI gateway error ${response.status}`);
+        throw new Error(`lovable_${response.status}`);
       }
       const data = await response.json();
-      extractedText = data.choices?.[0]?.message?.content || "";
+      return data.choices?.[0]?.message?.content || "";
+    }
+
+    try {
+      if (OPENAI_API_KEY) {
+        try {
+          extractedText = await askOpenAI();
+        } catch (err) {
+          console.error("OpenAI failed, falling back to Lovable AI", err);
+          extractedText = await askLovable();
+        }
+      } else {
+        extractedText = await askLovable();
+      }
+    } catch (finalErr) {
+      console.error("Both providers failed", finalErr);
+      throw finalErr;
     }
 
     // Parse JSON from extractedText
     let extractedData: any = {
-      vendor: "",
+      merchant: "",
       amount: 0,
       date: new Date().toISOString().slice(0, 10),
+      transaction_id: "",
       category: "other",
     };
 
     try {
       const match = extractedText.match(/\{[\s\S]*\}/);
-      extractedData = JSON.parse(match ? match[0] : extractedText);
-      // Basic normalization
-      extractedData.vendor = String(extractedData.vendor || "").slice(0, 120);
-      extractedData.amount = Number(extractedData.amount || 0);
-      extractedData.date = String(extractedData.date || new Date().toISOString().slice(0, 10)).slice(0, 10);
-      const cat = String(extractedData.category || "other").toLowerCase();
+      const parsed = JSON.parse(match ? match[0] : extractedText);
+      extractedData.merchant = String(parsed.merchant || parsed.vendor || "").slice(0, 120);
+      extractedData.amount = Number(parsed.amount || 0);
+      extractedData.date = String(parsed.date || new Date().toISOString().slice(0, 10)).slice(0, 10);
+      const cat = String(parsed.category || "other").toLowerCase();
       extractedData.category = ["travel", "food", "lodging", "office", "other"].includes(cat) ? cat : "other";
+      extractedData.transaction_id = String(parsed.transaction_id || parsed.txn_id || parsed.transactionId || "").slice(0, 120);
     } catch (e) {
       console.warn("Failed to parse JSON from model output, using defaults.");
     }
+
+    // Backwards compatibility for UI expecting vendor
+    extractedData.vendor = extractedData.merchant;
 
     return new Response(JSON.stringify(extractedData), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
