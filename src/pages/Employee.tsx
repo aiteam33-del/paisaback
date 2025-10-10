@@ -260,20 +260,12 @@ const Employee = () => {
     rejected: "bg-destructive/20 text-destructive border-destructive/30",
   };
 
-  // Calculate total reimbursements for current month
-  const currentMonth = new Date().getMonth();
-  const currentYear = new Date().getFullYear();
+  // Calculate total reimbursements (all time)
+  const approvedExpenses = expenses.filter(exp => exp.status === 'approved');
+  const pendingExpenses = expenses.filter(exp => exp.status === 'pending');
   
-  const monthExpenses = expenses.filter(exp => {
-    const expDate = new Date(exp.date);
-    return expDate.getMonth() === currentMonth && expDate.getFullYear() === currentYear;
-  });
-  
-  const approvedExpenses = monthExpenses.filter(exp => exp.status === 'approved');
-  const pendingExpenses = monthExpenses.filter(exp => exp.status === 'pending');
-  
-  const approvedAmount = approvedExpenses.reduce((sum, exp) => sum + exp.amount, 0);
-  const pendingAmount = pendingExpenses.reduce((sum, exp) => sum + exp.amount, 0);
+  const approvedAmount = approvedExpenses.reduce((sum, exp) => sum + (Number(exp.amount) || 0), 0);
+  const pendingAmount = pendingExpenses.reduce((sum, exp) => sum + (Number(exp.amount) || 0), 0);
   const totalAmount = approvedAmount + pendingAmount;
 
   return (
@@ -528,7 +520,7 @@ const Employee = () => {
               <CardHeader>
                 <CardTitle>Total Reimbursements</CardTitle>
                 <CardDescription className="text-primary-foreground/80">
-                  This month
+                  All reimbursements
                 </CardDescription>
               </CardHeader>
               <CardContent>
