@@ -37,6 +37,7 @@ const Employee = () => {
   const [uploadedUrls, setUploadedUrls] = useState<string[]>([]);
   const [isProcessingOCR, setIsProcessingOCR] = useState(false);
   const [extractedFields, setExtractedFields] = useState<{ amount?: number; date?: string; merchant?: string; transaction_id?: string; category?: string } | null>(null);
+  const [ocrText, setOcrText] = useState<string>("");
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   
   // Form fields
@@ -121,18 +122,36 @@ const convertPdfFirstPageToPng = async (file: File) => {
 
 const processOCR = async (file: File) => {
     setExtractedFields(null);
+    setOcrText("");
     setIsProcessingOCR(true);
     toast.info("Extracting information from receipt...");
     try {
-      // For PDFs, upload as-is; the backend handles PDFs directly
-      // Convert only images if needed (no conversion currently)
-      // Upload file temporarily to get storage path
-      const fileExt = file.name.split('.').pop();
+      let fileForAI = file;
+      if (file.type === 'application/pdf') {
+        console.log('processOCR: converting PDF first page to PNG for OCR');
+        fileForAI = await convertPdfFirstPageToPng(file);
+      }
+
+      // Client-side OCR for verification (raw text)
+      try {
+        const imageUrl = URL.createObjectURL(fileForAI);
+        const Tesseract = await import('tesseract.js');
+        const result: any = await Tesseract.recognize(imageUrl, 'eng', { logger: (m: any) => console.log('tesseract:', m) });
+        URL.revokeObjectURL(imageUrl);
+        const text: string = result?.data?.text || '';
+        setOcrText(text);
+        console.log('OCR raw text length:', text.length);
+      } catch (tErr) {
+        console.warn('Tesseract OCR failed:', tErr);
+      }
+
+      // Upload temporary file (image for AI extraction)
+      const fileExt = fileForAI.name.split('.').pop();
       const tempFileName = `${user?.id}/temp-${Date.now()}.${fileExt}`;
 
       const { error: uploadError } = await supabase.storage
         .from('receipts')
-        .upload(tempFileName, file, { contentType: file.type });
+        .upload(tempFileName, fileForAI, { contentType: fileForAI.type || 'image/png' });
 
       if (uploadError) throw uploadError;
 
@@ -156,7 +175,7 @@ const processOCR = async (file: File) => {
         category: ocrData.category,
         transaction_id: ocrData.transaction_id,
       });
-      toast.success("Information extracted! You can edit the fields if needed.");
+      toast.success("Information extracted! Verify below.");
       
       // Clean up temporary file
       await supabase.storage.from('receipts').remove([tempFileName]);
@@ -543,7 +562,26 @@ const processOCR = async (file: File) => {
                       <span>Extracting information from receipt...</span>
                     </div>
                   )}
-                </div>
+
+                  {ocrText && (
+                    <div className="mt-2">
+                      <Label>Extracted Text (OCR)</Label>
+                      <div className="mt-1 rounded-md border border-border bg-muted/30 p-2 max-h-40 overflow-auto text-xs text-muted-foreground whitespace-pre-wrap">
+                        {ocrText.slice(0, 4000)}
+                      </div>
+                    </div>
+                  )}
+
+                  {extractedFields && (
+                    <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
+                      <div><span className="text-muted-foreground">Merchant:</span> <span className="font-medium text-foreground">{extractedFields.merchant || '-'}</span></div>
+                      <div><span className="text-muted-foreground">Amount:</span> <span className="font-medium text-foreground">{extractedFields.amount ?? '-'}</span></div>
+                      <div><span className="text-muted-foreground">Date:</span> <span className="font-medium text-foreground">{extractedFields.date || '-'}</span></div>
+                      <div><span className="text-muted-foreground">Category:</span> <span className="font-medium text-foreground">{extractedFields.category || '-'}</span></div>
+                    </div>
+                  )}
+
+                  </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="date">Date</Label>
