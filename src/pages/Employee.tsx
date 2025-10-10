@@ -99,9 +99,9 @@ const Employee = () => {
 
 const convertPdfFirstPageToPng = async (file: File) => {
   const pdfjsLib = await import('pdfjs-dist');
-  // Use CDN worker to avoid bundling complexity
+  // Use CDN worker matching the installed API version to avoid version mismatch errors
   // @ts-ignore
-  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://unpkg.com/pdfjs-dist@4.8.69/build/pdf.worker.min.mjs';
+  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://unpkg.com/pdfjs-dist@5.4.296/build/pdf.worker.min.mjs';
 
   const arrayBuffer = await file.arrayBuffer();
   // @ts-ignore - pdfjs types can be finicky across versions
