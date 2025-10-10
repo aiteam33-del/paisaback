@@ -2,8 +2,8 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Navigation } from "@/components/ui/navigation";
-import { Receipt, Sparkles, TrendingUp, Shield, Zap, CheckCircle2, ArrowRight, Clock, Users, DollarSign } from "lucide-react";
-import heroImage from "@/assets/hero-image-new.png";
+import { Receipt, Sparkles, TrendingUp, Shield, Zap, CheckCircle2, ArrowRight } from "lucide-react";
+import heroImage from "@/assets/hero-image-modern.png";
 
 const Index = () => {
   const features = [
@@ -45,19 +45,6 @@ const Index = () => {
     },
   ];
 
-  const stats = [
-    { icon: Clock, value: "10x", label: "Faster Submissions" },
-    { icon: Users, value: "5000+", label: "Active Users" },
-    { icon: DollarSign, value: "₹50M+", label: "Processed Monthly" },
-  ];
-
-  const trustedCompanies = [
-    "Tech Corp",
-    "Innovation Labs",
-    "Global Services",
-    "Finance Plus",
-    "Future Industries",
-  ];
 
   return (
     <div className="min-h-screen bg-gradient-subtle">
@@ -98,20 +85,6 @@ const Index = () => {
                   </Button>
                 </Link>
               </div>
-
-              {/* Stats */}
-              <div className="grid grid-cols-3 gap-6 pt-8 border-t border-border/60">
-                {stats.map((stat, index) => {
-                  const Icon = stat.icon;
-                  return (
-                    <div key={index} className="text-center">
-                      <Icon className="w-5 h-5 text-primary mx-auto mb-2" />
-                      <div className="text-2xl md:text-3xl font-bold text-foreground">{stat.value}</div>
-                      <div className="text-xs md:text-sm text-muted-foreground mt-1">{stat.label}</div>
-                    </div>
-                  );
-                })}
-              </div>
             </div>
             
             <div className="relative order-first lg:order-last">
@@ -121,25 +94,6 @@ const Index = () => {
                 alt="PAISABACK AI-powered expense management showing receipt scanning in action"
                 className="relative rounded-2xl shadow-xl w-full"
               />
-            </div>
-          </div>
-        </section>
-
-        {/* Social Proof */}
-        <section className="py-12 border-y border-border/50 bg-card/30 backdrop-blur-sm">
-          <div className="container mx-auto px-4">
-            <p className="text-center text-sm text-muted-foreground mb-8 font-medium uppercase tracking-wider">
-              Trusted by Leading Organizations
-            </p>
-            <div className="flex flex-wrap justify-center items-center gap-8 md:gap-12">
-              {trustedCompanies.map((company, index) => (
-                <div
-                  key={index}
-                  className="text-lg md:text-xl font-bold text-muted-foreground/60 hover:text-foreground transition-colors px-4"
-                >
-                  {company}
-                </div>
-              ))}
             </div>
           </div>
         </section>
