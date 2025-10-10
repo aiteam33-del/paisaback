@@ -82,14 +82,14 @@ const handler = async (req: Request): Promise<Response> => {
           const blob = await response.blob();
           const arrayBuffer = await blob.arrayBuffer();
           
-          // Properly encode binary data to base64
           const bytes = new Uint8Array(arrayBuffer);
           let binary = '';
-          for (let i = 0; i < bytes.length; i++) {
-            binary += String.fromCharCode(bytes[i]);
+          const chunkSize = 8192;
+          for (let i = 0; i < bytes.length; i += chunkSize) {
+            const chunk = bytes.subarray(i, i + chunkSize);
+            binary += String.fromCharCode(...chunk);
           }
           const base64 = btoa(binary);
-          
           const urlParts = url.split('/');
           const filename = urlParts[urlParts.length - 1].split('?')[0] || `receipt_${index + 1}.png`;
           
@@ -152,7 +152,16 @@ This is an automated email from PAISABACK Expense Management System`;
 
     mimeMessage.push(`--${boundary}--`);
 
-    const encodedMessage = btoa(mimeMessage.join('\r\n'))
+    const rawMessage = mimeMessage.join('\r\n');
+    // Encode as UTF-8 bytes and then base64 (avoid Latin1 errors)
+    const messageBytes = new TextEncoder().encode(rawMessage);
+    let binaryMsg = '';
+    const chunkSizeMsg = 8192;
+    for (let i = 0; i < messageBytes.length; i += chunkSizeMsg) {
+      const chunk = messageBytes.subarray(i, i + chunkSizeMsg);
+      binaryMsg += String.fromCharCode(...chunk);
+    }
+    const encodedMessage = btoa(binaryMsg)
       .replace(/\+/g, '-')
       .replace(/\//g, '_')
       .replace(/=+$/, '');
