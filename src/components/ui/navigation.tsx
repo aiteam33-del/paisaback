@@ -19,22 +19,22 @@ export const Navigation = () => {
             <span className="text-xl font-bold text-foreground">PAISABACK</span>
           </Link>
           
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 md:gap-4">
             {user ? (
               <>
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <div className="hidden sm:flex items-center gap-2 text-sm text-muted-foreground">
                   <User className="w-4 h-4" />
                   <span>{user.email}</span>
                 </div>
-                <Button variant="ghost" onClick={signOut}>
-                  <LogOut className="w-4 h-4 mr-2" />
-                  Logout
+                <Button variant="ghost" onClick={signOut} className="gap-2">
+                  <LogOut className="w-4 h-4" />
+                  <span className="hidden sm:inline">Logout</span>
                 </Button>
               </>
             ) : location.pathname === "/" && (
               <>
                 <Link to="/auth">
-                  <Button variant="ghost">Sign In</Button>
+                  <Button variant="ghost" className="hidden sm:inline-flex">Sign In</Button>
                 </Link>
                 <Link to="/auth">
                   <Button className="bg-gradient-primary hover:opacity-90">Get Started</Button>
