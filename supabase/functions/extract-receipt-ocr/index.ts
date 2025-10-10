@@ -1,6 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.74.0";
-import * as pdfjsLib from "npm:pdfjs-dist@4.3.136";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -36,37 +35,6 @@ async function arrayBufferToBase64(buf: ArrayBuffer): Promise<string> {
   }
   // btoa is available in Deno
   return btoa(binary);
-}
-
-// PDF text extraction helpers
-function base64ToUint8Array(b64: string): Uint8Array {
-  const binary = atob(b64);
-  const len = binary.length;
-  const bytes = new Uint8Array(len);
-  for (let i = 0; i < len; i++) bytes[i] = binary.charCodeAt(i);
-  return bytes;
-}
-
-async function extractPdfTextFromBase64(b64: string): Promise<string> {
-  try {
-    const data = base64ToUint8Array(b64);
-    // pdfjs works directly with byte data
-    const loadingTask = (pdfjsLib as any).getDocument({ data });
-    const doc = await loadingTask.promise;
-    const maxPages = Math.min(doc.numPages || 1, 3);
-    let text = "";
-    for (let i = 1; i <= maxPages; i++) {
-      const page = await doc.getPage(i);
-      const tc = await page.getTextContent();
-      const pageText = (tc.items || []).map((it: any) => String(it.str || "")).join(" ");
-      text += pageText + "\n";
-    }
-    // Limit to avoid oversized prompts
-    return text.slice(0, 20000);
-  } catch (e) {
-    console.warn("PDF extraction failed:", e);
-    return "";
-  }
 }
 
 serve(async (req) => {
@@ -105,14 +73,7 @@ serve(async (req) => {
     }
 
     const isPdf = mimeType === "application/pdf";
-    let pdfText: string | null = null;
-    if (isPdf) {
-      try {
-        pdfText = await extractPdfTextFromBase64(base64Data);
-      } catch (e) {
-        console.warn("Failed to extract PDF text:", e);
-      }
-    }
+    console.log(`Processing ${isPdf ? 'PDF' : 'image'} document, mime: ${mimeType}`);
 
     // Build prompt - updated to handle invoices, bills, and receipts
     const systemPrompt = "You are an expert OCR agent for receipts, invoices, bills, and payment screenshots. Extract information from the document and return STRICT JSON only with keys: merchant (string - company/vendor name), amount (number - final total amount to be paid), date (YYYY-MM-DD - invoice/transaction date), transaction_id (string - invoice number, order number, or transaction ID), category (one of travel, food, lodging, office, other). For invoices, use the Grand Total or final amount. Do not include any extra text, only valid JSON.";
@@ -126,15 +87,10 @@ serve(async (req) => {
           { role: "system", content: systemPrompt },
           {
             role: "user",
-            content: (isPdf && pdfText)
-              ? [
-                  { type: "text", text: "Extract fields from this invoice text. Focus on the final total amount to be paid." },
-                  { type: "text", text: pdfText }
-                ]
-              : [
-                  { type: "text", text: "Extract fields from this receipt or bill. Focus on the final total amount to be paid." },
-                  { type: "image_url", image_url: { url: `data:${mimeType};base64,${base64Data}` } },
-                ],
+            content: [
+              { type: "text", text: `Extract fields from this ${isPdf ? 'invoice PDF' : 'receipt or bill'}. Focus on the final total amount to be paid.` },
+              { type: "image_url", image_url: { url: `data:${mimeType};base64,${base64Data}` } },
+            ],
           },
         ],
         max_completion_tokens: 500,
@@ -174,15 +130,10 @@ serve(async (req) => {
             { role: "system", content: systemPrompt },
             {
               role: "user",
-              content: (isPdf && pdfText)
-                ? [
-                    { type: "text", text: "Extract fields from this invoice text. Focus on the final total amount to be paid. If it's an invoice, use the Grand Total value." },
-                    { type: "text", text: pdfText }
-                  ]
-                : [
-                    { type: "text", text: "Extract fields from this receipt or bill. Focus on the final total amount to be paid." },
-                    { type: "image_url", image_url: { url: `data:${mimeType};base64,${base64Data}` } },
-                  ],
+              content: [
+                { type: "text", text: `Extract fields from this ${isPdf ? 'invoice PDF' : 'receipt or bill'}. Focus on the final total amount to be paid. If it's an invoice, use the Grand Total value.` },
+                { type: "image_url", image_url: { url: `data:${mimeType};base64,${base64Data}` } },
+              ],
             },
           ],
         }),
@@ -228,11 +179,11 @@ serve(async (req) => {
       extractedData.merchant = String(parsed.merchant || parsed.vendor || parsed.company || "").slice(0, 120);
       extractedData.amount = Number(parsed.amount || parsed.total || parsed.grand_total || 0);
       extractedData.date = String(parsed.date || parsed.invoice_date || new Date().toISOString().slice(0, 10)).slice(0, 10);
-      const cat = String(parsed.category || "other").toLowerCase();
-      extractedData.category = ["travel", "food", "lodging", "office", "other"].includes(cat) ? cat : "other";
+      const cat = String(parsed.category || "office").toLowerCase();
+      extractedData.category = ["travel", "food", "lodging", "office", "other"].includes(cat) ? cat : "office";
       extractedData.transaction_id = String(parsed.transaction_id || parsed.txn_id || parsed.transactionId || parsed.invoice_number || parsed.order_number || "").slice(0, 120);
       
-      console.log("Parsed OCR data:", extractedData);
+      console.log("Successfully parsed OCR data:", JSON.stringify(extractedData));
     } catch (e) {
       console.warn("Failed to parse JSON from model output, using defaults.", e);
       console.log("Raw extracted text:", extractedText);
