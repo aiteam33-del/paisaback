@@ -264,11 +264,12 @@ const Employee = () => {
       return;
     }
 
-    const recipientEmail = profile.superior_email || profile.email;
-    if (!recipientEmail) {
-      toast.error("No recipient email found. Please update your profile.");
-      return;
-    }
+    // TEMPORARY: For testing with Resend free tier, send to account owner email
+    // Once you verify a domain at resend.com/domains, change this back to:
+    // const recipientEmail = profile.superior_email || profile.email;
+    const recipientEmail = "ai_team33@mesaschool.co";
+    
+    console.log("Sending test email to:", recipientEmail);
 
     if (expenses.length === 0) {
       toast.error("No expenses to send. Please submit at least one expense.");
@@ -321,11 +322,8 @@ const Employee = () => {
       return;
     }
 
-    const recipientEmail = profile.superior_email || profile.email;
-    if (!recipientEmail) {
-      toast.error("No recipient email found. Please update your profile.");
-      return;
-    }
+    // TEMPORARY: For testing with Resend free tier, use account owner email
+    const recipientEmail = "ai_team33@mesaschool.co";
 
     if (expenses.length === 0) {
       toast.error("No expenses to download. Please submit at least one expense.");
