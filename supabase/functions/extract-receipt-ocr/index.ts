@@ -72,8 +72,8 @@ serve(async (req) => {
       throw new Error("Provide either {bucket, path} or imageUrl");
     }
 
-    // Build prompt
-    const systemPrompt = "You are an expert OCR agent for receipts and payment screenshots (e.g., GPay). Return STRICT JSON only with keys: merchant (string), amount (number), date (YYYY-MM-DD), transaction_id (string), category (one of travel, food, lodging, office, other). Do not include any extra text.";
+    // Build prompt - updated to handle invoices, bills, and receipts
+    const systemPrompt = "You are an expert OCR agent for receipts, invoices, bills, and payment screenshots. Extract information from the document and return STRICT JSON only with keys: merchant (string - company/vendor name), amount (number - final total amount to be paid), date (YYYY-MM-DD - invoice/transaction date), transaction_id (string - invoice number, order number, or transaction ID), category (one of travel, food, lodging, office, other). For invoices, use the Grand Total or final amount. Do not include any extra text, only valid JSON.";
 
     let extractedText = "";
 
@@ -85,12 +85,12 @@ serve(async (req) => {
           {
             role: "user",
             content: [
-              { type: "text", text: "Extract fields from this receipt/screenshot." },
+              { type: "text", text: "Extract fields from this receipt, invoice, or bill. Focus on the final total amount to be paid." },
               { type: "image_url", image_url: { url: `data:${mimeType};base64,${base64Data}` } },
             ],
           },
         ],
-        max_completion_tokens: 300,
+        max_completion_tokens: 500,
       } as any;
 
       const response = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -128,7 +128,7 @@ serve(async (req) => {
             {
               role: "user",
               content: [
-                { type: "text", text: "Extract fields from this receipt/screenshot." },
+                { type: "text", text: "Extract fields from this receipt, invoice, or bill document. Focus on the final total amount to be paid. If it's an invoice, use the Grand Total value." },
                 { type: "image_url", image_url: { url: `data:${mimeType};base64,${base64Data}` } },
               ],
             },
@@ -173,14 +173,17 @@ serve(async (req) => {
     try {
       const match = extractedText.match(/\{[\s\S]*\}/);
       const parsed = JSON.parse(match ? match[0] : extractedText);
-      extractedData.merchant = String(parsed.merchant || parsed.vendor || "").slice(0, 120);
-      extractedData.amount = Number(parsed.amount || 0);
-      extractedData.date = String(parsed.date || new Date().toISOString().slice(0, 10)).slice(0, 10);
+      extractedData.merchant = String(parsed.merchant || parsed.vendor || parsed.company || "").slice(0, 120);
+      extractedData.amount = Number(parsed.amount || parsed.total || parsed.grand_total || 0);
+      extractedData.date = String(parsed.date || parsed.invoice_date || new Date().toISOString().slice(0, 10)).slice(0, 10);
       const cat = String(parsed.category || "other").toLowerCase();
       extractedData.category = ["travel", "food", "lodging", "office", "other"].includes(cat) ? cat : "other";
-      extractedData.transaction_id = String(parsed.transaction_id || parsed.txn_id || parsed.transactionId || "").slice(0, 120);
+      extractedData.transaction_id = String(parsed.transaction_id || parsed.txn_id || parsed.transactionId || parsed.invoice_number || parsed.order_number || "").slice(0, 120);
+      
+      console.log("Parsed OCR data:", extractedData);
     } catch (e) {
-      console.warn("Failed to parse JSON from model output, using defaults.");
+      console.warn("Failed to parse JSON from model output, using defaults.", e);
+      console.log("Raw extracted text:", extractedText);
     }
 
     // Backwards compatibility for UI expecting vendor
