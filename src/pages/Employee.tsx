@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Navigation } from "@/components/ui/navigation";
-import { Upload, Receipt, Clock, CheckCircle2, XCircle, Loader2, X, Camera, ChevronRight } from "lucide-react";
+import { Upload, Receipt, Clock, CheckCircle2, XCircle, Loader2, X, Camera, ChevronRight, Mail } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { useAuth } from "@/hooks/useAuth";
@@ -37,6 +37,7 @@ const Employee = () => {
   const [uploadedUrls, setUploadedUrls] = useState<string[]>([]);
   const [isProcessingOCR, setIsProcessingOCR] = useState(false);
   const [extractedFields, setExtractedFields] = useState<{ amount?: number; date?: string; merchant?: string; transaction_id?: string; category?: string } | null>(null);
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
   
   // Form fields
   const [vendor, setVendor] = useState("");
@@ -237,6 +238,58 @@ const Employee = () => {
       toast.error(error.message || "Failed to submit expense");
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleSendEmail = async () => {
+    if (!user) {
+      toast.error("Please log in to send email");
+      return;
+    }
+
+    // Fetch user profile to get superior email and full name
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .select("superior_email, full_name, email")
+      .eq("id", user.id)
+      .single();
+
+    if (profileError || !profile) {
+      toast.error("Failed to load profile information");
+      return;
+    }
+
+    const recipientEmail = profile.superior_email || profile.email;
+    if (!recipientEmail) {
+      toast.error("No recipient email found. Please update your profile.");
+      return;
+    }
+
+    if (expenses.length === 0) {
+      toast.error("No expenses to send. Please submit at least one expense.");
+      return;
+    }
+
+    setIsSendingEmail(true);
+    toast.info("Preparing and sending email...");
+
+    try {
+      const { data, error } = await supabase.functions.invoke('send-expense-email', {
+        body: {
+          userId: user.id,
+          recipientEmail,
+          employeeName: profile.full_name || "Employee"
+        }
+      });
+
+      if (error) throw error;
+
+      toast.success("✅ Reimbursement email sent successfully!");
+    } catch (error: any) {
+      console.error("Email send error:", error);
+      toast.error(error.message || "Failed to send email. Please try again.");
+    } finally {
+      setIsSendingEmail(false);
     }
   };
 
@@ -579,6 +632,25 @@ const Employee = () => {
                 </div>
               </CardContent>
             </Card>
+
+            <Button 
+              onClick={handleSendEmail}
+              disabled={isSendingEmail || expenses.length === 0}
+              className="w-full bg-gradient-primary hover:opacity-90"
+              size="lg"
+            >
+              {isSendingEmail ? (
+                <>
+                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                  Sending Email...
+                </>
+              ) : (
+                <>
+                  <Mail className="w-5 h-5 mr-2" />
+                  Send Mail Now
+                </>
+              )}
+            </Button>
           </div>
         </div>
       </main>
