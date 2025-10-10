@@ -139,7 +139,7 @@ const ExpenseHistory = () => {
             <CardTitle className="text-lg">Filters</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium">Search</label>
                 <div className="relative">
@@ -191,12 +191,12 @@ const ExpenseHistory = () => {
         {/* Summary Card */}
         <Card className="shadow-card mb-6 bg-gradient-primary text-primary-foreground">
           <CardContent className="pt-6">
-            <div className="flex justify-between items-center">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
               <div>
                 <p className="text-sm text-primary-foreground/80 mb-1">Total Amount (Filtered)</p>
                 <p className="text-3xl font-bold">₹{totalAmount.toLocaleString('en-IN')}</p>
               </div>
-              <div className="text-right">
+              <div className="sm:text-right">
                 <p className="text-sm text-primary-foreground/80 mb-1">Total Expenses</p>
                 <p className="text-3xl font-bold">{filteredExpenses.length}</p>
               </div>
@@ -221,10 +221,10 @@ const ExpenseHistory = () => {
               filteredExpenses.map((expense) => (
                 <div
                   key={expense.id}
-                  className="flex items-center justify-between p-4 rounded-lg border border-border hover:shadow-sm transition-shadow"
+                  className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 rounded-lg border border-border hover:shadow-sm transition-shadow gap-3"
                 >
                   <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
+                    <div className="flex flex-wrap items-center gap-2 mb-1">
                       <p className="font-medium text-foreground">{expense.vendor}</p>
                       <Badge variant="outline" className={statusColors[expense.status as keyof typeof statusColors]}>
                         {statusIcons[expense.status as keyof typeof statusIcons]}
@@ -255,7 +255,7 @@ const ExpenseHistory = () => {
                       </div>
                     )}
                   </div>
-                  <p className="text-lg font-semibold text-foreground ml-4">₹{expense.amount}</p>
+                  <p className="text-lg font-semibold text-foreground sm:ml-4">₹{expense.amount}</p>
                 </div>
               ))
             )}

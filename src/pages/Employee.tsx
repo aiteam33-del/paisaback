@@ -292,20 +292,21 @@ const Employee = () => {
                 {/* File Upload Section */}
                 <div className="space-y-3">
                   <Label>Upload Receipts / Screenshots</Label>
-                  <div className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-primary/50 transition-colors">
+                  <div className="border-2 border-dashed border-border rounded-lg p-4 sm:p-6 text-center hover:border-primary/50 transition-colors">
                     <div className="flex flex-col items-center gap-3">
-                      <Upload className="w-10 h-10 text-muted-foreground" />
+                      <Upload className="w-8 h-8 sm:w-10 sm:h-10 text-muted-foreground" />
                       <div>
-                        <p className="text-sm text-muted-foreground mb-2">
+                        <p className="text-xs sm:text-sm text-muted-foreground mb-2">
                           Upload images or PDF files
                         </p>
-                        <div className="flex gap-2 justify-center">
+                        <div className="flex flex-col sm:flex-row gap-2 justify-center">
                           <Button
                             type="button"
                             variant="outline"
                             size="sm"
                             onClick={() => fileInputRef.current?.click()}
                             disabled={isLoading}
+                            className="w-full sm:w-auto"
                           >
                             <Upload className="w-4 h-4 mr-2" />
                             Choose Files
@@ -316,6 +317,7 @@ const Employee = () => {
                             size="sm"
                             onClick={() => cameraInputRef.current?.click()}
                             disabled={isLoading}
+                            className="w-full sm:w-auto"
                           >
                             <Camera className="w-4 h-4 mr-2" />
                             Take Photo
@@ -404,7 +406,7 @@ const Employee = () => {
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="amount">Amount (₹)</Label>
                     <Input 
@@ -512,10 +514,10 @@ const Employee = () => {
                   expenses.slice(0, 1).map((expense) => (
                     <div
                       key={expense.id}
-                      className="flex items-center justify-between p-4 rounded-lg border border-border hover:shadow-sm transition-shadow"
+                      className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 rounded-lg border border-border hover:shadow-sm transition-shadow gap-3"
                     >
                       <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
+                        <div className="flex flex-wrap items-center gap-2 mb-1">
                           <p className="font-medium text-foreground">{expense.vendor}</p>
                           <Badge variant="outline" className={statusColors[expense.status as keyof typeof statusColors]}>
                             {statusIcons[expense.status as keyof typeof statusIcons]}
@@ -545,7 +547,7 @@ const Employee = () => {
                           </div>
                         )}
                       </div>
-                      <p className="text-lg font-semibold text-foreground">₹{expense.amount}</p>
+                      <p className="text-lg font-semibold text-foreground sm:ml-4">₹{expense.amount}</p>
                     </div>
                   ))
                 )}
@@ -560,7 +562,7 @@ const Employee = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <p className="text-4xl font-bold mb-3">₹{totalAmount.toLocaleString('en-IN')}</p>
+                <p className="text-3xl sm:text-4xl font-bold mb-3">₹{totalAmount.toLocaleString('en-IN')}</p>
                 <div className="space-y-1 text-sm text-primary-foreground/90">
                   <div className="flex justify-between">
                     <span>Approved:</span>
