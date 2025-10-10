@@ -504,9 +504,20 @@ const Employee = () => {
                           {expense.category} • {new Date(expense.date).toLocaleDateString()}
                         </p>
                         {expense.attachments && expense.attachments.length > 0 && (
-                          <p className="text-xs text-muted-foreground mt-1">
-                            📎 {expense.attachments.length} attachment{expense.attachments.length > 1 ? 's' : ''}
-                          </p>
+                          <div className="mt-2 space-y-1">
+                            {expense.attachments.map((url, idx) => (
+                              <Button
+                                key={idx}
+                                variant="ghost"
+                                size="sm"
+                                className="h-7 px-2 text-xs"
+                                onClick={() => window.open(url, '_blank')}
+                              >
+                                <Receipt className="w-3 h-3 mr-1" />
+                                View Document {expense.attachments!.length > 1 ? `${idx + 1}` : ''}
+                              </Button>
+                            ))}
+                          </div>
                         )}
                       </div>
                       <p className="text-lg font-semibold text-foreground">₹{expense.amount}</p>
