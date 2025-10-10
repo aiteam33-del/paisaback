@@ -436,13 +436,20 @@ const Employee = () => {
 
                 <div className="space-y-2">
                   <Label htmlFor="payment">Mode of Payment</Label>
-                  <Input 
-                    id="payment" 
-                    placeholder="Cash, Card, UPI, etc."
-                    value={modeOfPayment}
-                    onChange={(e) => setModeOfPayment(e.target.value)}
-                    disabled={isLoading}
-                  />
+                  <Select value={modeOfPayment} onValueChange={setModeOfPayment} disabled={isLoading}>
+                    <SelectTrigger id="payment">
+                      <SelectValue placeholder="Select payment method" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="cash">Cash</SelectItem>
+                      <SelectItem value="credit_card">Credit Card</SelectItem>
+                      <SelectItem value="debit_card">Debit Card</SelectItem>
+                      <SelectItem value="upi">UPI</SelectItem>
+                      <SelectItem value="net_banking">Net Banking</SelectItem>
+                      <SelectItem value="wallet">Digital Wallet</SelectItem>
+                      <SelectItem value="other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <div className="space-y-2">
