@@ -252,10 +252,15 @@ const Employee = () => {
       .from("profiles")
       .select("superior_email, full_name, email")
       .eq("id", user.id)
-      .single();
+      .maybeSingle();
 
-    if (profileError || !profile) {
+    if (profileError) {
       toast.error("Failed to load profile information");
+      return;
+    }
+
+    if (!profile) {
+      toast.error("No profile found. Please update your profile in the organization section.");
       return;
     }
 
@@ -304,10 +309,15 @@ const Employee = () => {
       .from("profiles")
       .select("superior_email, full_name, email")
       .eq("id", user.id)
-      .single();
+      .maybeSingle();
 
-    if (profileError || !profile) {
+    if (profileError) {
       toast.error("Failed to load profile information");
+      return;
+    }
+
+    if (!profile) {
+      toast.error("No profile found. Please update your profile in the organization section.");
       return;
     }
 
