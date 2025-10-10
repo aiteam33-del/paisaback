@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Navigation } from "@/components/ui/navigation";
-import { Upload, Receipt, Clock, CheckCircle2, XCircle, Loader2, X, Camera } from "lucide-react";
+import { Upload, Receipt, Clock, CheckCircle2, XCircle, Loader2, X, Camera, ChevronRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { useAuth } from "@/hooks/useAuth";
@@ -485,8 +485,23 @@ const Employee = () => {
           <div className="space-y-6">
             <Card className="shadow-card">
               <CardHeader>
-                <CardTitle>Recent Expenses</CardTitle>
-                <CardDescription>Track your submissions and approvals</CardDescription>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>Recent Expenses</CardTitle>
+                    <CardDescription>Your latest submission</CardDescription>
+                  </div>
+                  {expenses.length > 1 && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => navigate("/employee/history")}
+                      className="text-primary hover:text-primary/80"
+                    >
+                      View All
+                      <ChevronRight className="w-4 h-4 ml-1" />
+                    </Button>
+                  )}
+                </div>
               </CardHeader>
               <CardContent className="space-y-3">
                 {expenses.length === 0 ? (
@@ -494,7 +509,7 @@ const Employee = () => {
                     No expenses yet. Submit your first expense above!
                   </p>
                 ) : (
-                  expenses.map((expense) => (
+                  expenses.slice(0, 1).map((expense) => (
                     <div
                       key={expense.id}
                       className="flex items-center justify-between p-4 rounded-lg border border-border hover:shadow-sm transition-shadow"
