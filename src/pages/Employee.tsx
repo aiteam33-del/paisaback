@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Navigation } from "@/components/ui/navigation";
 import { Upload, Receipt, Clock, CheckCircle2, XCircle, Loader2, X, Camera, ChevronRight, Mail } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { useAuth } from "@/hooks/useAuth";
@@ -39,6 +40,8 @@ const Employee = () => {
   const [extractedFields, setExtractedFields] = useState<{ amount?: number; date?: string; merchant?: string; transaction_id?: string; category?: string } | null>(null);
   const [ocrText, setOcrText] = useState<string>("");
   const [isSendingEmail, setIsSendingEmail] = useState(false);
+  const [showEmailDialog, setShowEmailDialog] = useState(false);
+  const [recipientEmail, setRecipientEmail] = useState("");
   
   // Form fields
   const [vendor, setVendor] = useState("");
@@ -292,10 +295,15 @@ const processOCR = async (file: File) => {
       return;
     }
 
-    // Fetch user profile to get superior email and full name
+    if (!recipientEmail || !recipientEmail.includes('@')) {
+      toast.error("Please enter a valid email address");
+      return;
+    }
+
+    // Fetch user profile to get full name
     const { data: profile, error: profileError } = await supabase
       .from("profiles")
-      .select("superior_email, full_name, email")
+      .select("full_name")
       .eq("id", user.id)
       .maybeSingle();
 
@@ -308,13 +316,8 @@ const processOCR = async (file: File) => {
       toast.error("No profile found. Please update your profile in the organization section.");
       return;
     }
-
-    // TEMPORARY: For testing with Resend free tier, send to account owner email
-    // Once you verify a domain at resend.com/domains, change this back to:
-    // const recipientEmail = profile.superior_email || profile.email;
-    const recipientEmail = "ai_team33@mesaschool.co";
     
-    console.log("Sending test email to:", recipientEmail);
+    console.log("Sending email to:", recipientEmail);
 
     if (expenses.length === 0) {
       toast.error("No expenses to send. Please submit at least one expense.");
@@ -336,6 +339,8 @@ const processOCR = async (file: File) => {
       if (error) throw error;
 
       toast.success("✅ Reimbursement email sent successfully!");
+      setShowEmailDialog(false);
+      setRecipientEmail("");
     } catch (error: any) {
       console.error("Email send error:", error);
       toast.error(error.message || "Failed to send email. Please try again.");
@@ -781,7 +786,7 @@ const processOCR = async (file: File) => {
 
             <div className="flex flex-col sm:flex-row gap-3">
               <Button 
-                onClick={handleSendEmail}
+                onClick={() => setShowEmailDialog(true)}
                 disabled={isSendingEmail || expenses.length === 0}
                 className="flex-1 bg-gradient-primary hover:opacity-90"
                 size="lg"
@@ -812,6 +817,58 @@ const processOCR = async (file: File) => {
           </div>
         </div>
       </main>
+
+      <Dialog open={showEmailDialog} onOpenChange={setShowEmailDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Send Reimbursement Email</DialogTitle>
+            <DialogDescription>
+              Enter the email address where you want to send the reimbursement request
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="recipient-email">Recipient Email</Label>
+              <Input
+                id="recipient-email"
+                type="email"
+                placeholder="manager@example.com"
+                value={recipientEmail}
+                onChange={(e) => setRecipientEmail(e.target.value)}
+                disabled={isSendingEmail}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setShowEmailDialog(false);
+                setRecipientEmail("");
+              }}
+              disabled={isSendingEmail}
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleSendEmail}
+              disabled={isSendingEmail || !recipientEmail}
+            >
+              {isSendingEmail ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Sending...
+                </>
+              ) : (
+                <>
+                  <Mail className="w-4 h-4 mr-2" />
+                  Send Email
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
