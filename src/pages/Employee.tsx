@@ -21,6 +21,7 @@ interface Expense {
   category: string;
   status: string;
   date: string;
+  description?: string;
   attachments?: string[];
 }
 
@@ -39,6 +40,7 @@ const Employee = () => {
   const [extractedFields, setExtractedFields] = useState<{ amount?: number; date?: string; merchant?: string; transaction_id?: string; category?: string } | null>(null);
   const [ocrText, setOcrText] = useState<string>("");
   const [isSendingEmail, setIsSendingEmail] = useState(false);
+  const [makeWebhookUrl, setMakeWebhookUrl] = useState("");
   
   // Form fields
   const [vendor, setVendor] = useState("");
@@ -287,50 +289,82 @@ const processOCR = async (file: File) => {
   };
 
   const handleSendEmail = async () => {
-    if (!user) {
-      toast.error("Please log in");
-      return;
-    }
-
-    if (expenses.length === 0) {
-      toast.error("No expenses to send. Please add at least one expense.");
-      return;
-    }
-
-    setIsSendingEmail(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const providerToken = session?.provider_token;
+      setIsSendingEmail(true);
 
-      if (!providerToken) {
-        // Request Gmail send scope via Google OAuth
-        toast.info("Redirecting to Google to enable Gmail sending...");
-        sessionStorage.setItem("want_gmail_send", "1");
-        await supabase.auth.signInWithOAuth({
-          provider: "google",
-          options: {
-            scopes: "openid email profile https://www.googleapis.com/auth/gmail.send",
-            redirectTo: `${window.location.origin}/employee`,
-          },
-        });
-        return; // The page will redirect
+      if (!user) {
+        toast.error("Please log in");
+        return;
       }
 
-      const { data, error } = await supabase.functions.invoke("send-gmail-expense", {
-        body: {
-          userId: user.id,
-          accessToken: providerToken,
-        },
+      if (!makeWebhookUrl) {
+        toast.error("Please enter your Make.com webhook URL first");
+        return;
+      }
+
+      if (expenses.length === 0) {
+        toast.error("No expenses to send. Please add at least one expense.");
+        return;
+      }
+
+      // Fetch user profile
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      // Calculate category breakdown
+      const categoryBreakdown: Record<string, number> = {};
+      let totalAmount = 0;
+
+      expenses.forEach((expense) => {
+        const category = expense.category || "Uncategorized";
+        const amount = parseFloat(expense.amount.toString());
+        categoryBreakdown[category] = (categoryBreakdown[category] || 0) + amount;
+        totalAmount += amount;
       });
 
-      if (error) {
-        const serverMsg = (data as any)?.error || (error as any)?.message || "Edge Function error";
-        throw new Error(serverMsg);
+      // Prepare data for Make.com
+      const webhookData = {
+        user_email: profile?.email || user.email,
+        user_name: profile?.full_name || "Employee",
+        superior_email: profile?.superior_email,
+        total_amount: totalAmount,
+        currency: "INR",
+        category_breakdown: categoryBreakdown,
+        expenses: expenses.map(exp => ({
+          id: exp.id,
+          vendor: exp.vendor,
+          description: exp.description || '',
+          amount: exp.amount,
+          category: exp.category,
+          date: exp.date,
+          status: exp.status,
+          attachments: exp.attachments || []
+        })),
+        timestamp: new Date().toISOString()
+      };
+
+      console.log("Sending to Make.com:", webhookData);
+
+      // Send to Make.com webhook
+      const response = await fetch(makeWebhookUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(webhookData),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Make.com webhook returned ${response.status}`);
       }
-      toast.success("✅ Reimbursement email sent from your Gmail!");
+
+      toast.success("✅ Expense data sent to Make.com successfully!");
     } catch (error: any) {
-      console.error("Email send error:", error);
-      toast.error(error.message || "Failed to send email. Please try again.");
+      console.error("Make.com webhook error:", error);
+      toast.error(`Failed to send: ${error.message}`);
     } finally {
       setIsSendingEmail(false);
     }
@@ -771,36 +805,61 @@ const processOCR = async (file: File) => {
               </CardContent>
             </Card>
 
-            <div className="flex flex-col sm:flex-row gap-3">
-              <Button 
-                onClick={handleSendEmail}
-                disabled={isSendingEmail || expenses.length === 0}
-                className="flex-1 bg-gradient-primary hover:opacity-90"
-                size="lg"
-              >
-                {isSendingEmail ? (
-                  <>
-                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                    Sending...
-                  </>
-                ) : (
-                  <>
-                    <Mail className="w-5 h-5 mr-2" />
-                    Send Mail Now
-                  </>
-                )}
-              </Button>
-              <Button 
-                onClick={handleDownloadEmailDraft}
-                disabled={isSendingEmail || expenses.length === 0}
-                variant="outline"
-                className="flex-1"
-                size="lg"
-              >
-                <Receipt className="w-5 h-5 mr-2" />
-                Download Draft
-              </Button>
-            </div>
+            <Card className="shadow-card">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Mail className="w-5 h-5 text-primary" />
+                  Send Reimbursement Request
+                </CardTitle>
+                <CardDescription>Send your expenses via Make.com automation</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <Label htmlFor="webhook-url" className="mb-2">Make.com Webhook URL</Label>
+                  <Input
+                    id="webhook-url"
+                    type="url"
+                    value={makeWebhookUrl}
+                    onChange={(e) => setMakeWebhookUrl(e.target.value)}
+                    placeholder="https://hook.eu2.make.com/..."
+                    className="mb-2"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Create a webhook trigger in Make.com and paste the URL here
+                  </p>
+                </div>
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <Button 
+                    onClick={handleSendEmail}
+                    disabled={isSendingEmail || expenses.length === 0 || !makeWebhookUrl}
+                    className="flex-1 bg-gradient-primary hover:opacity-90"
+                    size="lg"
+                  >
+                    {isSendingEmail ? (
+                      <>
+                        <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                        Sending...
+                      </>
+                    ) : (
+                      <>
+                        <Mail className="w-5 h-5 mr-2" />
+                        Send to Make.com
+                      </>
+                    )}
+                  </Button>
+                  <Button 
+                    onClick={handleDownloadEmailDraft}
+                    disabled={isSendingEmail || expenses.length === 0}
+                    variant="outline"
+                    className="flex-1"
+                    size="lg"
+                  >
+                    <Receipt className="w-5 h-5 mr-2" />
+                    Download Draft
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </main>
