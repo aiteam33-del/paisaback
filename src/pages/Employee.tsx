@@ -316,14 +316,17 @@ const processOCR = async (file: File) => {
         return; // The page will redirect
       }
 
-      const { error } = await supabase.functions.invoke("send-gmail-expense", {
+      const { data, error } = await supabase.functions.invoke("send-gmail-expense", {
         body: {
           userId: user.id,
           accessToken: providerToken,
         },
       });
 
-      if (error) throw error;
+      if (error) {
+        const serverMsg = (data as any)?.error || (error as any)?.message || "Edge Function error";
+        throw new Error(serverMsg);
+      }
       toast.success("✅ Reimbursement email sent from your Gmail!");
     } catch (error: any) {
       console.error("Email send error:", error);
