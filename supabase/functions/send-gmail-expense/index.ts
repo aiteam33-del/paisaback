@@ -137,7 +137,7 @@ const handler = async (req: Request): Promise<Response> => {
     const validAttachments = attachments.filter(a => a !== null);
 
     // Generate HTML email body
-    const appUrl = 'https://paisaback.lovable.app';
+    const appUrl = Deno.env.get('PUBLIC_APP_URL') || Deno.env.get('APP_URL') || 'https://paisaback.lovable.app';
     const expensesUrl = `${appUrl}/employee`;
     
     let categoryHtml = '';
@@ -165,10 +165,15 @@ const handler = async (req: Request): Promise<Response> => {
             ${expense.description ? `<div><strong>Description:</strong> ${expense.description}</div>` : ''}
             ${expense.mode_of_payment ? `<div><strong>Payment:</strong> ${expense.mode_of_payment}</div>` : ''}
             <div><strong>Status:</strong> ${expense.status}</div>
+            ${expense.attachments && Array.isArray(expense.attachments) && expense.attachments.length ? `
+              <div style="margin-top: 6px;">
+                <strong>Receipt${expense.attachments.length > 1 ? 's' : ''}:</strong>
+                ${expense.attachments.map((u: string, i: number) => `<a href="${u}" target="_blank" rel="noopener noreferrer" style="color: #047857; font-size: 13px; text-decoration: underline;">View${expense.attachments.length > 1 ? ` #${i + 1}` : ''}</a>`).join(' · ')}
+              </div>
+            ` : ''}
             <div style="margin-top: 8px;">
               <a href="${expenseUrl}" style="color: #047857; font-size: 13px; text-decoration: underline;">View Expense Details →</a>
             </div>
-          </div>
         </div>`;
     });
 
