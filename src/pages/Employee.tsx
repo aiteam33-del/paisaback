@@ -40,6 +40,8 @@ const Employee = () => {
   const [extractedFields, setExtractedFields] = useState<{ amount?: number; date?: string; merchant?: string; transaction_id?: string; category?: string } | null>(null);
   const [ocrText, setOcrText] = useState<string>("");
   const [isSendingEmail, setIsSendingEmail] = useState(false);
+  const [gmailConnected, setGmailConnected] = useState(false);
+  const [gmailAccessToken, setGmailAccessToken] = useState<string | null>(null);
   
   // Form fields
   const [vendor, setVendor] = useState("");
@@ -58,25 +60,37 @@ const Employee = () => {
   useEffect(() => {
     if (user) {
       fetchExpenses();
+      checkGmailConnection();
     }
   }, [user]);
 
-  // If Gmail OAuth just completed in another tab/window, auto-send email
+  // Check if Gmail is already connected
+  const checkGmailConnection = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.provider_token) {
+        setGmailAccessToken(session.provider_token);
+        setGmailConnected(true);
+      }
+    } catch (error) {
+      console.error("Error checking Gmail connection:", error);
+    }
+  };
+
+  // Handle OAuth callback after redirect
   useEffect(() => {
-    const maybeSendAfterOAuth = async () => {
-      try {
-        const pending = localStorage.getItem('pendingGmailSend');
-        if (!pending) return;
-        const { data: { session } } = await supabase.auth.getSession();
-        const token = session?.provider_token as string | undefined;
-        if (token) {
-          await sendViaGmail(token);
-        }
-      } catch (e) {
-        console.warn('Post-OAuth Gmail send skipped:', e);
+    const handleOAuthCallback = async () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const code = urlParams.get('code');
+      
+      if (code) {
+        // OAuth callback detected
+        await checkGmailConnection();
+        // Clean up URL
+        window.history.replaceState({}, document.title, window.location.pathname);
       }
     };
-    maybeSendAfterOAuth();
+    handleOAuthCallback();
   }, []);
 
   const fetchExpenses = async () => {
@@ -305,62 +319,73 @@ const processOCR = async (file: File) => {
     }
   };
 
-  // Helper: send expenses via Gmail using provider access token
-  const sendViaGmail = async (accessToken: string) => {
+  const handleConnectGmail = async () => {
+    try {
+      if (!user) {
+        toast.error("Please log in");
+        return;
+      }
+
+      toast.info("Connecting to Gmail...");
+      
+      const { data, error: oauthError } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          scopes: 'https://www.googleapis.com/auth/gmail.send',
+          redirectTo: `${window.location.origin}/employee`,
+          queryParams: { 
+            access_type: 'offline',
+            prompt: 'consent'
+          },
+        },
+      });
+
+      if (oauthError) throw oauthError;
+    } catch (error: any) {
+      console.error("Error connecting Gmail:", error);
+      toast.error(error.message || "Failed to connect Gmail");
+    }
+  };
+
+  const handleSendEmail = async () => {
     try {
       setIsSendingEmail(true);
-      if (!user) throw new Error("Please log in");
+      
+      if (!user) {
+        toast.error("Please log in");
+        return;
+      }
 
+      if (expenses.length === 0) {
+        toast.error("No expenses to send. Please add at least one expense.");
+        return;
+      }
+
+      if (!gmailAccessToken) {
+        toast.error("Please connect Gmail first");
+        return;
+      }
+
+      // Call edge function with access token
       const { data: result, error: functionError } = await supabase.functions.invoke(
         'send-gmail-expense',
         {
           body: {
             userId: user.id,
-            accessToken,
+            accessToken: gmailAccessToken,
           },
         }
       );
 
       if (functionError) throw functionError;
+
       toast.success("✅ Email sent successfully via Gmail!");
       console.log("Email result:", result);
     } catch (error: any) {
       console.error("Error sending email:", error);
       toast.error(error.message || "Failed to send email");
     } finally {
-      localStorage.removeItem('pendingGmailSend');
       setIsSendingEmail(false);
-    }
-  };
-
-  const handleSendEmail = async () => {
-    try {
-      if (!user) {
-        toast.error("Please log in");
-        return;
-      }
-      if (expenses.length === 0) {
-        toast.error("No expenses to send. Please add at least one expense.");
-        return;
-      }
-
-      // Start OAuth flow and return; the page will redirect to Google
-      localStorage.setItem('pendingGmailSend', '1');
-      const { data, error: oauthError } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          scopes: 'https://www.googleapis.com/auth/gmail.send',
-          redirectTo: `${window.location.origin}/employee`,
-          queryParams: { prompt: 'consent' },
-        },
-      });
-      if (oauthError) throw oauthError;
-      // Some environments require manual redirect
-      if (data?.url) window.location.href = data.url;
-    } catch (error: any) {
-      console.error("Error starting Google OAuth:", error);
-      toast.error(error.message || "Failed to start Gmail authorization");
-      localStorage.removeItem('pendingGmailSend');
     }
   };
 
@@ -805,39 +830,52 @@ const processOCR = async (file: File) => {
                   <Mail className="w-5 h-5 text-primary" />
                   Send Reimbursement Request
                 </CardTitle>
-                <CardDescription>Send your expenses via Gmail</CardDescription>
+                <CardDescription>
+                  {gmailConnected ? "Send your expenses via Gmail" : "Connect Gmail to send expenses"}
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="flex flex-col sm:flex-row gap-3">
+                {!gmailConnected ? (
                   <Button 
-                    onClick={handleSendEmail}
-                    disabled={isSendingEmail || expenses.length === 0}
-                    className="flex-1 bg-gradient-primary hover:opacity-90"
+                    onClick={handleConnectGmail}
+                    className="w-full bg-gradient-primary hover:opacity-90"
                     size="lg"
                   >
-                    {isSendingEmail ? (
-                      <>
-                        <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                        Sending...
-                      </>
-                    ) : (
-                      <>
-                        <Mail className="w-5 h-5 mr-2" />
-                        Send via Gmail
-                      </>
-                    )}
+                    <Mail className="w-5 h-5 mr-2" />
+                    Connect Gmail
                   </Button>
-                  <Button 
-                    onClick={handleDownloadEmailDraft}
-                    disabled={isSendingEmail || expenses.length === 0}
-                    variant="outline"
-                    className="flex-1"
-                    size="lg"
-                  >
-                    <Receipt className="w-5 h-5 mr-2" />
-                    Download Draft
-                  </Button>
-                </div>
+                ) : (
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <Button 
+                      onClick={handleSendEmail}
+                      disabled={isSendingEmail || expenses.length === 0}
+                      className="flex-1 bg-gradient-primary hover:opacity-90"
+                      size="lg"
+                    >
+                      {isSendingEmail ? (
+                        <>
+                          <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                          Sending...
+                        </>
+                      ) : (
+                        <>
+                          <Mail className="w-5 h-5 mr-2" />
+                          Send via Gmail
+                        </>
+                      )}
+                    </Button>
+                    <Button 
+                      onClick={handleDownloadEmailDraft}
+                      disabled={isSendingEmail || expenses.length === 0}
+                      variant="outline"
+                      className="flex-1"
+                      size="lg"
+                    >
+                      <Receipt className="w-5 h-5 mr-2" />
+                      Download Draft
+                    </Button>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
