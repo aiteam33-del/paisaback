@@ -44,6 +44,20 @@ const Auth = () => {
     setIsLoading(true);
     try {
       await signIn(signInEmail, signInPassword);
+      
+      // Update profile with superior email and frequency if provided for employees
+      if (selectedRole === "employee" && (superiorEmail || emailFrequency !== "weekly")) {
+        const { data: { user: currentUser } } = await supabase.auth.getUser();
+        if (currentUser) {
+          await supabase
+            .from("profiles")
+            .update({
+              superior_email: superiorEmail || null,
+              email_frequency: emailFrequency,
+            })
+            .eq("id", currentUser.id);
+        }
+      }
     } catch (error) {
       // Error is already handled in useAuth
     } finally {
@@ -177,6 +191,39 @@ const Auth = () => {
                         disabled={isLoading}
                       />
                     </div>
+                    
+                    {selectedRole === "employee" && (
+                      <>
+                        <div className="space-y-2">
+                          <Label htmlFor="signin-superior-email">Superior's Email (Optional)</Label>
+                          <Input 
+                            id="signin-superior-email" 
+                            type="email"
+                            placeholder="manager@company.com"
+                            value={superiorEmail}
+                            onChange={(e) => setSuperiorEmail(e.target.value)}
+                            disabled={isLoading}
+                          />
+                          <p className="text-xs text-muted-foreground">
+                            Update your superior's email for automated expense reports
+                          </p>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="signin-email-frequency">Email Frequency</Label>
+                          <Select value={emailFrequency} onValueChange={setEmailFrequency} disabled={isLoading}>
+                            <SelectTrigger id="signin-email-frequency">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="daily">Daily (9 AM UTC)</SelectItem>
+                              <SelectItem value="weekly">Weekly (Mon 9 AM UTC)</SelectItem>
+                              <SelectItem value="monthly">Monthly (1st, 9 AM UTC)</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </>
+                    )}
+                    
                     <Button 
                       type="submit"
                       className="w-full bg-gradient-primary hover:opacity-90"

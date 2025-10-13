@@ -75,6 +75,7 @@ export type Database = {
           email_frequency: string | null
           full_name: string | null
           id: string
+          last_email_sent: string | null
           organization_domain: string | null
           superior_email: string | null
           updated_at: string
@@ -85,6 +86,7 @@ export type Database = {
           email_frequency?: string | null
           full_name?: string | null
           id: string
+          last_email_sent?: string | null
           organization_domain?: string | null
           superior_email?: string | null
           updated_at?: string
@@ -95,6 +97,7 @@ export type Database = {
           email_frequency?: string | null
           full_name?: string | null
           id?: string
+          last_email_sent?: string | null
           organization_domain?: string | null
           superior_email?: string | null
           updated_at?: string
@@ -127,6 +130,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_users_due_for_email: {
+        Args: { frequency_type: string }
+        Returns: {
+          email: string
+          full_name: string
+          superior_email: string
+          user_id: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

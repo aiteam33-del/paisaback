@@ -12,6 +12,196 @@ interface ExpenseEmailRequest {
   employeeName: string;
 }
 
+const getCategoryIcon = (category: string): string => {
+  const icons: Record<string, string> = {
+    'food': '🍽️',
+    'travel': '🚗',
+    'hotel': '🏨',
+    'flight': '✈️',
+    'entertainment': '🎭',
+    'office': '🏢',
+    'other': '📋',
+  };
+  return icons[category.toLowerCase()] || '📋';
+};
+
+const getCategoryColor = (category: string): string => {
+  const colors: Record<string, string> = {
+    'food': '#FF6B6B',
+    'travel': '#4ECDC4',
+    'hotel': '#95E1D3',
+    'flight': '#F38181',
+    'entertainment': '#AA96DA',
+    'office': '#FCBAD3',
+    'other': '#C7CEEA',
+  };
+  return colors[category.toLowerCase()] || '#C7CEEA';
+};
+
+const generateProfessionalEmailHTML = (
+  employeeName: string,
+  expenses: any[],
+  totalAmount: number,
+  categoryBreakdown: any,
+  period: { start: string; end: string }
+): string => {
+  const categoryRows = Object.entries(categoryBreakdown)
+    .map(([category, data]: [string, any]) => `
+      <tr style="border-bottom: 1px solid #E5E7EB;">
+        <td style="padding: 16px 12px;">
+          <span style="font-size: 20px; margin-right: 8px;">${getCategoryIcon(category)}</span>
+          <span style="font-weight: 500; color: #374151;">${category}</span>
+        </td>
+        <td style="padding: 16px 12px; text-align: center; color: #6B7280;">${data.count}</td>
+        <td style="padding: 16px 12px; text-align: right;">
+          <span style="font-weight: 600; color: #111827;">₹${data.amount.toFixed(2)}</span>
+        </td>
+        <td style="padding: 16px 12px; text-align: right; color: #6B7280;">
+          ${((data.amount / totalAmount) * 100).toFixed(1)}%
+        </td>
+      </tr>
+    `).join('');
+
+  const expenseRows = expenses.map((expense, index) => `
+    <div style="background: ${index % 2 === 0 ? '#F9FAFB' : '#FFFFFF'}; padding: 16px; border-radius: 8px; margin-bottom: 12px; border-left: 4px solid ${getCategoryColor(expense.category)};">
+      <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px;">
+        <div style="flex: 1;">
+          <div style="font-weight: 600; color: #111827; font-size: 16px; margin-bottom: 4px;">
+            ${getCategoryIcon(expense.category)} ${expense.vendor}
+          </div>
+          <div style="color: #6B7280; font-size: 14px; margin-bottom: 4px;">
+            ${new Date(expense.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+          </div>
+          ${expense.description ? `
+            <div style="color: #374151; font-size: 14px; margin-top: 8px; padding: 8px; background: white; border-radius: 4px;">
+              <strong>Description:</strong> ${expense.description}
+            </div>
+          ` : ''}
+        </div>
+        <div style="text-align: right;">
+          <div style="font-weight: 700; color: #0B6E4F; font-size: 18px;">₹${expense.amount}</div>
+          <div style="display: inline-block; margin-top: 4px; padding: 4px 12px; background: ${expense.status === 'approved' ? '#D1FAE5' : expense.status === 'rejected' ? '#FEE2E2' : '#FEF3C7'}; color: ${expense.status === 'approved' ? '#065F46' : expense.status === 'rejected' ? '#991B1B' : '#92400E'}; border-radius: 12px; font-size: 12px; font-weight: 600; text-transform: uppercase;">
+            ${expense.status}
+          </div>
+        </div>
+      </div>
+      <div style="display: flex; gap: 16px; font-size: 13px; color: #6B7280; flex-wrap: wrap;">
+        <div><strong>Category:</strong> ${expense.category}</div>
+        ${expense.mode_of_payment ? `<div><strong>Payment:</strong> ${expense.mode_of_payment}</div>` : ''}
+        ${expense.attachments && expense.attachments.length > 0 ? `<div><strong>📎 Receipts:</strong> ${expense.attachments.length} attached</div>` : ''}
+      </div>
+    </div>
+  `).join('');
+
+  const avgExpense = expenses.length > 0 ? (totalAmount / expenses.length).toFixed(2) : '0.00';
+  const mostCommonCategory = Object.entries(categoryBreakdown).sort((a: any, b: any) => b[1].count - a[1].count)[0]?.[0] || 'N/A';
+
+  return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Expense Report - ${employeeName}</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #F3F4F6;">
+  <div style="max-width: 800px; margin: 0 auto; background: white;">
+    
+    <!-- Header -->
+    <div style="background: linear-gradient(135deg, #0B6E4F 0%, #08A88A 100%); padding: 40px 30px; text-align: center;">
+      <h1 style="margin: 0; color: white; font-size: 32px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px;">
+        💰 PAISABACK
+      </h1>
+      <p style="margin: 10px 0 0 0; color: rgba(255,255,255,0.9); font-size: 16px;">
+        Expense Reimbursement Report
+      </p>
+    </div>
+
+    <!-- Content -->
+    <div style="padding: 30px;">
+      
+      <!-- Employee Info -->
+      <div style="margin-bottom: 30px;">
+        <h2 style="color: #111827; font-size: 24px; margin: 0 0 8px 0;">Employee: ${employeeName}</h2>
+        <p style="color: #6B7280; margin: 0; font-size: 14px;">
+          Report Period: ${period.start} to ${period.end}
+        </p>
+      </div>
+
+      <!-- Executive Summary -->
+      <div style="background: linear-gradient(135deg, #0B6E4F 0%, #08A88A 100%); border-radius: 12px; padding: 24px; margin-bottom: 30px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+        <div style="text-align: center; color: white;">
+          <div style="font-size: 14px; text-transform: uppercase; letter-spacing: 1px; opacity: 0.9; margin-bottom: 8px;">
+            Total Reimbursement Amount
+          </div>
+          <div style="font-size: 48px; font-weight: 700; margin-bottom: 20px;">
+            ₹${totalAmount.toFixed(2)}
+          </div>
+          <div style="display: flex; justify-content: space-around; flex-wrap: wrap; gap: 20px;">
+            <div>
+              <div style="font-size: 12px; opacity: 0.9; margin-bottom: 4px;">Total Expenses</div>
+              <div style="font-size: 24px; font-weight: 600;">${expenses.length}</div>
+            </div>
+            <div>
+              <div style="font-size: 12px; opacity: 0.9; margin-bottom: 4px;">Avg Amount</div>
+              <div style="font-size: 24px; font-weight: 600;">₹${avgExpense}</div>
+            </div>
+            <div>
+              <div style="font-size: 12px; opacity: 0.9; margin-bottom: 4px;">Top Category</div>
+              <div style="font-size: 24px; font-weight: 600;">${getCategoryIcon(mostCommonCategory)} ${mostCommonCategory}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Category Breakdown -->
+      <div style="margin-bottom: 30px;">
+        <h3 style="color: #111827; font-size: 20px; margin: 0 0 16px 0; border-bottom: 2px solid #0B6E4F; padding-bottom: 8px;">
+          📊 Category Breakdown
+        </h3>
+        <table style="width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+          <thead>
+            <tr style="background: #F9FAFB; border-bottom: 2px solid #E5E7EB;">
+              <th style="padding: 12px; text-align: left; font-weight: 600; color: #374151; font-size: 14px;">Category</th>
+              <th style="padding: 12px; text-align: center; font-weight: 600; color: #374151; font-size: 14px;">Count</th>
+              <th style="padding: 12px; text-align: right; font-weight: 600; color: #374151; font-size: 14px;">Amount</th>
+              <th style="padding: 12px; text-align: right; font-weight: 600; color: #374151; font-size: 14px;">% of Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${categoryRows}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Detailed Expense List -->
+      <div style="margin-bottom: 30px;">
+        <h3 style="color: #111827; font-size: 20px; margin: 0 0 16px 0; border-bottom: 2px solid #0B6E4F; padding-bottom: 8px;">
+          📋 Detailed Expense List
+        </h3>
+        ${expenseRows}
+      </div>
+
+      <!-- Footer -->
+      <div style="margin-top: 40px; padding-top: 20px; border-top: 2px solid #E5E7EB; text-align: center; color: #6B7280; font-size: 14px;">
+        <p style="margin: 0 0 8px 0;">
+          This is an automated expense report generated by PAISABACK
+        </p>
+        <p style="margin: 0; font-size: 12px;">
+          Generated on ${new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+        </p>
+        <p style="margin: 12px 0 0 0; font-size: 12px; color: #9CA3AF;">
+          For questions or concerns, please contact ${employeeName}
+        </p>
+      </div>
+
+    </div>
+  </div>
+</body>
+</html>
+  `;
+};
+
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -19,6 +209,12 @@ const handler = async (req: Request): Promise<Response> => {
 
   try {
     const { userId, recipientEmail, employeeName }: ExpenseEmailRequest = await req.json();
+    console.log('Processing expense email request for user:', userId);
+
+    const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
+    if (!RESEND_API_KEY) {
+      throw new Error("RESEND_API_KEY not configured");
+    }
 
     // Create Supabase client
     const supabase = createClient(
@@ -26,131 +222,80 @@ const handler = async (req: Request): Promise<Response> => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Fetch all expenses for the user
-    const { data: expenses, error } = await supabase
+    // Fetch expenses
+    const { data: expenses, error: expensesError } = await supabase
       .from('expenses')
       .select('*')
       .eq('user_id', userId)
-      .order('created_at', { ascending: false });
+      .order('date', { ascending: false });
 
-    if (error) throw error;
+    if (expensesError) throw expensesError;
 
-    // Generate category-wise breakdown
-    const categoryBreakdown: Record<string, { amount: number; count: number }> = {};
+    if (!expenses || expenses.length === 0) {
+      throw new Error('No expenses found for this user');
+    }
+
+    // Generate breakdown
+    const categoryBreakdown: any = {};
     let totalAmount = 0;
 
-    expenses?.forEach((expense: any) => {
-      const category = expense.category || 'other';
+    expenses.forEach((expense) => {
+      const category = expense.category || 'Other';
       if (!categoryBreakdown[category]) {
         categoryBreakdown[category] = { amount: 0, count: 0 };
       }
-      categoryBreakdown[category].amount += Number(expense.amount);
+      categoryBreakdown[category].amount += parseFloat(expense.amount);
       categoryBreakdown[category].count += 1;
-      totalAmount += Number(expense.amount);
+      totalAmount += parseFloat(expense.amount);
     });
 
-    // Generate breakdown HTML
-    let breakdownHTML = '<h3 style="color: #333; margin-top: 20px;">Category-wise Expense Breakdown:</h3><ul style="list-style: none; padding: 0;">';
-    Object.entries(categoryBreakdown).forEach(([category, data]) => {
-      breakdownHTML += `<li style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;"><strong>${category.charAt(0).toUpperCase() + category.slice(1)}</strong>: ₹${data.amount.toLocaleString('en-IN')} (${data.count} expense${data.count > 1 ? 's' : ''})</li>`;
-    });
-    breakdownHTML += `</ul><p style="font-size: 18px; font-weight: bold; margin-top: 20px; padding: 15px; background: #f0fdf4; border-left: 4px solid #0B6E4F; border-radius: 4px;">Total Amount: ₹${totalAmount.toLocaleString('en-IN')}</p>`;
+    // Get date range
+    const dates = expenses.map(e => new Date(e.date)).sort((a, b) => a.getTime() - b.getTime());
+    const period = {
+      start: dates[0].toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+      end: dates[dates.length - 1].toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+    };
 
-    // Collect all attachment URLs
-    const attachmentUrls: string[] = [];
-    expenses?.forEach((expense: any) => {
-      if (expense.attachments && Array.isArray(expense.attachments)) {
-        attachmentUrls.push(...expense.attachments);
-      }
-    });
-
-    // Download attachments and convert to base64
-    const attachments = await Promise.all(
-      attachmentUrls.map(async (url, index) => {
-        try {
-          const response = await fetch(url);
-          const blob = await response.blob();
-          const arrayBuffer = await blob.arrayBuffer();
-          
-          // Convert to base64 in chunks to avoid stack overflow
-          const uint8Array = new Uint8Array(arrayBuffer);
-          let binary = '';
-          const chunkSize = 8192;
-          for (let i = 0; i < uint8Array.length; i += chunkSize) {
-            const chunk = uint8Array.subarray(i, i + chunkSize);
-            binary += String.fromCharCode.apply(null, Array.from(chunk));
+    // Download and encode attachments
+    const attachments: any[] = [];
+    for (const expense of expenses) {
+      if (expense.attachments && expense.attachments.length > 0) {
+        for (const attachmentUrl of expense.attachments) {
+          try {
+            const response = await fetch(attachmentUrl);
+            const blob = await response.blob();
+            const arrayBuffer = await blob.arrayBuffer();
+            const uint8Array = new Uint8Array(arrayBuffer);
+            let binary = '';
+            const chunkSize = 8192;
+            for (let i = 0; i < uint8Array.length; i += chunkSize) {
+              const chunk = uint8Array.subarray(i, i + chunkSize);
+              binary += String.fromCharCode.apply(null, Array.from(chunk));
+            }
+            const base64 = btoa(binary);
+            
+            const filename = attachmentUrl.split('/').pop() || 'receipt.jpg';
+            attachments.push({
+              filename,
+              content: base64,
+            });
+          } catch (error) {
+            console.error('Error downloading attachment:', error);
           }
-          const base64 = btoa(binary);
-          
-          // Extract filename from URL or generate one
-          const urlParts = url.split('/');
-          const filename = urlParts[urlParts.length - 1].split('?')[0] || `receipt_${index + 1}.png`;
-          
-          return {
-            filename,
-            content: base64,
-          };
-        } catch (err) {
-          console.error(`Failed to download attachment ${url}:`, err);
-          return null;
         }
-      })
-    );
-
-    const validAttachments = attachments.filter(a => a !== null);
-
-    const emailHTML = `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <meta charset="utf-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        </head>
-        <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; background: #f9fafb;">
-          <div style="background: linear-gradient(135deg, #0B6E4F 0%, #08563e 100%); padding: 30px; border-radius: 8px 8px 0 0; text-align: center;">
-            <h1 style="color: white; margin: 0; font-size: 28px;">PAISABACK</h1>
-            <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0 0;">Expense Reimbursement Request</p>
-          </div>
-          
-          <div style="background: white; padding: 30px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px;">
-            <h2 style="color: #0B6E4F; margin-top: 0;">Expense Reimbursement Request</h2>
-            <p style="font-size: 16px; margin-bottom: 20px;">Dear Finance Team,</p>
-            
-            <p style="margin-bottom: 20px;">
-              Please find attached my recent reimbursement claims along with the supporting bills and screenshots.
-            </p>
-            
-            ${breakdownHTML}
-            
-            <p style="margin-top: 30px; padding: 15px; background: #fef3c7; border-left: 4px solid #f59e0b; border-radius: 4px;">
-              <strong>📎 Attachments:</strong> ${validAttachments.length} receipt${validAttachments.length !== 1 ? 's' : ''} attached
-            </p>
-            
-            <p style="margin-top: 30px;">
-              Kindly process the reimbursement to my account at your earliest convenience.
-            </p>
-            
-            <p style="margin-top: 20px;">
-              Regards,<br>
-              <strong>${employeeName}</strong>
-            </p>
-            
-            <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
-            
-            <p style="color: #6b7280; font-size: 12px; text-align: center;">
-              This is an automated email from PAISABACK Expense Management System
-            </p>
-          </div>
-        </body>
-      </html>
-    `;
-
-    const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
-    if (!RESEND_API_KEY) {
-      throw new Error("RESEND_API_KEY not configured");
+      }
     }
 
-    // Send email via Resend API
+    // Generate HTML email
+    const htmlContent = generateProfessionalEmailHTML(
+      employeeName,
+      expenses,
+      totalAmount,
+      categoryBreakdown,
+      period
+    );
+
+    // Send email via Resend
     const resendResponse = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
@@ -159,42 +304,32 @@ const handler = async (req: Request): Promise<Response> => {
       },
       body: JSON.stringify({
         from: 'PAISABACK <onboarding@resend.dev>',
-        to: [recipientEmail],
-        subject: 'Expense Reimbursement Request',
-        html: emailHTML,
-        attachments: validAttachments,
+        to: recipientEmail,
+        subject: `💰 Expense Reimbursement Request - ${employeeName} (₹${totalAmount.toFixed(2)})`,
+        html: htmlContent,
+        attachments: attachments,
       }),
     });
 
     if (!resendResponse.ok) {
       const errorText = await resendResponse.text();
-      console.error('Resend API error:', errorText);
+      console.error('Resend error:', errorText);
       throw new Error(`Failed to send email: ${errorText}`);
     }
 
     const result = await resendResponse.json();
-    console.log("Email sent successfully:", result);
+    console.log('Email sent successfully via Resend:', result);
 
-    return new Response(JSON.stringify({ 
-      success: true, 
-      message: "Email sent successfully",
-      totalAmount,
-      attachmentCount: validAttachments.length 
-    }), {
-      status: 200,
-      headers: {
-        "Content-Type": "application/json",
-        ...corsHeaders,
-      },
-    });
+    return new Response(
+      JSON.stringify({ success: true, emailId: result.id }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
+    );
+
   } catch (error: any) {
-    console.error("Error in send-expense-email function:", error);
+    console.error('Error in send-expense-email:', error);
     return new Response(
       JSON.stringify({ error: error.message }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      }
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
     );
   }
 };
