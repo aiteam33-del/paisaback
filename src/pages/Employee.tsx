@@ -61,6 +61,24 @@ const Employee = () => {
     }
   }, [user]);
 
+  // If Gmail OAuth just completed in another tab/window, auto-send email
+  useEffect(() => {
+    const maybeSendAfterOAuth = async () => {
+      try {
+        const pending = localStorage.getItem('pendingGmailSend');
+        if (!pending) return;
+        const { data: { session } } = await supabase.auth.getSession();
+        const token = session?.provider_token as string | undefined;
+        if (token) {
+          await sendViaGmail(token);
+        }
+      } catch (e) {
+        console.warn('Post-OAuth Gmail send skipped:', e);
+      }
+    };
+    maybeSendAfterOAuth();
+  }, []);
+
   const fetchExpenses = async () => {
     if (!user) return;
 
@@ -287,58 +305,62 @@ const processOCR = async (file: File) => {
     }
   };
 
-  const handleSendEmail = async () => {
+  // Helper: send expenses via Gmail using provider access token
+  const sendViaGmail = async (accessToken: string) => {
     try {
       setIsSendingEmail(true);
-      
-      if (!user) {
-        toast.error("Please log in");
-        return;
-      }
+      if (!user) throw new Error("Please log in");
 
-      if (expenses.length === 0) {
-        toast.error("No expenses to send. Please add at least one expense.");
-        return;
-      }
-
-      // Get Google OAuth token
-      const { data, error: oauthError } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          scopes: 'https://www.googleapis.com/auth/gmail.send',
-          redirectTo: `${window.location.origin}/employee`,
-        },
-      });
-
-      if (oauthError) throw oauthError;
-
-      // Wait for OAuth callback
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session?.provider_token) {
-        throw new Error("Failed to get Google access token");
-      }
-
-      // Call edge function with access token
       const { data: result, error: functionError } = await supabase.functions.invoke(
         'send-gmail-expense',
         {
           body: {
-            userId: user?.id,
-            accessToken: session.provider_token,
+            userId: user.id,
+            accessToken,
           },
         }
       );
 
       if (functionError) throw functionError;
-
       toast.success("✅ Email sent successfully via Gmail!");
       console.log("Email result:", result);
     } catch (error: any) {
       console.error("Error sending email:", error);
       toast.error(error.message || "Failed to send email");
     } finally {
+      localStorage.removeItem('pendingGmailSend');
       setIsSendingEmail(false);
+    }
+  };
+
+  const handleSendEmail = async () => {
+    try {
+      if (!user) {
+        toast.error("Please log in");
+        return;
+      }
+      if (expenses.length === 0) {
+        toast.error("No expenses to send. Please add at least one expense.");
+        return;
+      }
+
+      // Start OAuth flow and return; the page will redirect to Google
+      localStorage.setItem('pendingGmailSend', '1');
+      const { data, error: oauthError } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          scopes: 'https://www.googleapis.com/auth/gmail.send',
+          redirectTo: `${window.location.origin}/employee`,
+          queryParams: { prompt: 'consent' },
+        },
+      });
+      if (oauthError) throw oauthError;
+      // Some environments require manual redirect
+      if (data?.url) window.location.href = data.url;
+    } catch (error: any) {
+      console.error("Error starting Google OAuth:", error);
+      toast.error(error.message || "Failed to start Gmail authorization");
+      localStorage.removeItem('pendingGmailSend');
     }
   };
 
