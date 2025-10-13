@@ -136,10 +136,34 @@ const handler = async (req: Request): Promise<Response> => {
 
     const validAttachments = attachments.filter(a => a !== null);
 
+    // Generate a secure token for public expense viewing
+    const token = crypto.randomUUID();
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 30); // Token expires in 30 days
+
+    // Store the token in the database using service role
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
+
+    const { error: tokenError } = await supabaseAdmin
+      .from('expense_access_tokens')
+      .insert({
+        user_id: userId,
+        token: token,
+        expires_at: expiresAt.toISOString()
+      });
+
+    if (tokenError) {
+      console.error('Error creating access token:', tokenError);
+      throw new Error('Failed to create access token');
+    }
+
     // Prefer the caller origin to build correct links, then fall back to env, then default
     const callerOrigin = req.headers.get('origin') || '';
     const appUrl = callerOrigin || Deno.env.get('PUBLIC_APP_URL') || Deno.env.get('APP_URL') || 'https://paisaback.lovable.app';
-    const expensesUrl = `${appUrl}/employee/history`;
+    const expensesUrl = `${appUrl}/expense-summary?token=${token}`;
     let categoryHtml = '';
     Object.entries(categoryBreakdown).forEach(([category, data]) => {
       const icon = getCategoryIcon(category);
