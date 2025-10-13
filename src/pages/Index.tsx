@@ -1,11 +1,26 @@
-import { Link } from "react-router-dom";
+import { useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Navigation } from "@/components/ui/navigation";
 import { Receipt, Sparkles, TrendingUp, Shield, Zap, CheckCircle2, ArrowRight } from "lucide-react";
 import heroImage from "@/assets/hero-image-modern.png";
+import { useAuth } from "@/hooks/useAuth";
 
 const Index = () => {
+  const navigate = useNavigate();
+  const { user, userRole } = useAuth();
+
+  useEffect(() => {
+    if (user && userRole) {
+      // Redirect logged-in users to their appropriate dashboard
+      if (userRole === 'employee') {
+        navigate('/employee');
+      } else if (userRole === 'manager' || userRole === 'finance' || userRole === 'admin') {
+        navigate('/organization');
+      }
+    }
+  }, [user, userRole, navigate]);
   const features = [
     {
       icon: Receipt,
@@ -73,15 +88,10 @@ const Index = () => {
               </p>
               
               <div className="flex flex-col sm:flex-row gap-4 pt-4">
-                <Link to="/auth" className="flex-1 sm:flex-initial">
-                  <Button size="lg" className="w-full sm:w-auto bg-gradient-primary hover:opacity-90 text-lg px-8 py-6 shadow-lg hover:shadow-xl transition-all">
+                <Link to="/auth">
+                  <Button size="lg" className="bg-gradient-primary hover:opacity-90 text-lg px-8 py-6 shadow-lg hover:shadow-xl transition-all">
                     Get Started Free
                     <ArrowRight className="ml-2 w-5 h-5" />
-                  </Button>
-                </Link>
-                <Link to="/employee" className="flex-1 sm:flex-initial">
-                  <Button size="lg" variant="outline" className="w-full sm:w-auto text-lg px-8 py-6 border-2 hover:bg-primary/5">
-                    View Demo
                   </Button>
                 </Link>
               </div>
@@ -156,7 +166,7 @@ const Index = () => {
                       size="lg" 
                       className="bg-card text-foreground hover:bg-card/90 text-lg px-10 py-6 shadow-xl hover:shadow-2xl transition-all"
                     >
-                      Start Free Trial
+                      Get Started Free
                       <ArrowRight className="ml-2 w-5 h-5" />
                     </Button>
                   </Link>
