@@ -153,10 +153,11 @@ const handler = async (req: Request): Promise<Response> => {
 
     let detailedExpenseHtml = '';
     expenses?.forEach((expense: any, index: number) => {
+      const expenseUrl = `${appUrl}/employee?expense=${expense.id}`;
       detailedExpenseHtml += `
         <div style="margin: 16px 0; padding: 12px; background: #f9f9f9; border-radius: 6px;">
           <div style="font-weight: bold; color: #1a1a1a;">
-            ${index + 1}. ${getCategoryIcon(expense.category)} ${expense.vendor}
+            ${index + 1}. <a href="${expenseUrl}" style="color: #047857; text-decoration: none;">${getCategoryIcon(expense.category)} ${expense.vendor}</a>
           </div>
           <div style="margin-top: 8px; font-size: 14px; color: #666;">
             <div><strong>Date:</strong> ${new Date(expense.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</div>
@@ -164,6 +165,9 @@ const handler = async (req: Request): Promise<Response> => {
             ${expense.description ? `<div><strong>Description:</strong> ${expense.description}</div>` : ''}
             ${expense.mode_of_payment ? `<div><strong>Payment:</strong> ${expense.mode_of_payment}</div>` : ''}
             <div><strong>Status:</strong> ${expense.status}</div>
+            <div style="margin-top: 8px;">
+              <a href="${expenseUrl}" style="color: #047857; font-size: 13px; text-decoration: underline;">View Expense Details →</a>
+            </div>
           </div>
         </div>`;
     });
