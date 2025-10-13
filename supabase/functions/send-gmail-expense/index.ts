@@ -136,22 +136,125 @@ const handler = async (req: Request): Promise<Response> => {
 
     const validAttachments = attachments.filter(a => a !== null);
 
-    // Create email body
-    const emailBody = `Dear Finance Team,
+    // Generate HTML email body
+    const appUrl = 'https://paisaback.lovable.app';
+    const expensesUrl = `${appUrl}/employee`;
+    
+    let categoryHtml = '';
+    Object.entries(categoryBreakdown).forEach(([category, data]) => {
+      const icon = getCategoryIcon(category);
+      const percentage = ((data.amount / totalAmount) * 100).toFixed(1);
+      categoryHtml += `
+        <div style="margin: 8px 0;">
+          <strong>${icon} ${category.charAt(0).toUpperCase() + category.slice(1)}:</strong> 
+          ₹${data.amount.toLocaleString('en-IN')} (${data.count} expense${data.count > 1 ? 's' : ''}, ${percentage}%)
+        </div>`;
+    });
 
-Please find my reimbursement request with supporting receipts attached.
-${breakdownText}
-${expenseDetails}
+    let detailedExpenseHtml = '';
+    expenses?.forEach((expense: any, index: number) => {
+      detailedExpenseHtml += `
+        <div style="margin: 16px 0; padding: 12px; background: #f9f9f9; border-radius: 6px;">
+          <div style="font-weight: bold; color: #1a1a1a;">
+            ${index + 1}. ${getCategoryIcon(expense.category)} ${expense.vendor}
+          </div>
+          <div style="margin-top: 8px; font-size: 14px; color: #666;">
+            <div><strong>Date:</strong> ${new Date(expense.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</div>
+            <div><strong>Amount:</strong> ₹${expense.amount}</div>
+            ${expense.description ? `<div><strong>Description:</strong> ${expense.description}</div>` : ''}
+            ${expense.mode_of_payment ? `<div><strong>Payment:</strong> ${expense.mode_of_payment}</div>` : ''}
+            <div><strong>Status:</strong> ${expense.status}</div>
+          </div>
+        </div>`;
+    });
 
-${validAttachments.length} receipt${validAttachments.length !== 1 ? 's' : ''} attached for your review.
+    const emailBody = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
+  <div style="max-width: 600px; margin: 0 auto; background: #ffffff;">
+    <!-- Header -->
+    <div style="background: linear-gradient(135deg, #047857 0%, #059669 100%); padding: 40px 20px; text-align: center;">
+      <h1 style="color: #ffffff; margin: 0; font-size: 32px; font-weight: bold; letter-spacing: 2px;">
+        PAISABACK
+      </h1>
+      <p style="color: #d1fae5; margin: 8px 0 0 0; font-size: 14px;">
+        Expense Reimbursement Request
+      </p>
+    </div>
 
-Kindly process the reimbursement to my account at your earliest convenience.
+    <!-- Content -->
+    <div style="padding: 32px 20px;">
+      <h2 style="color: #047857; margin: 0 0 20px 0; font-size: 22px;">
+        Expense Reimbursement Request
+      </h2>
 
-Regards,
-${profile.full_name}
+      <p style="color: #1a1a1a; line-height: 1.6; margin: 0 0 20px 0;">
+        Dear Finance Team,
+      </p>
 
----
-This is an automated email from PAISABACK Expense Management System`;
+      <p style="color: #1a1a1a; line-height: 1.6; margin: 0 0 24px 0;">
+        Please find attached my recent reimbursement claims along with the supporting bills and screenshots.
+      </p>
+
+      <!-- View Expenses Button -->
+      <div style="margin: 24px 0; text-align: center;">
+        <a href="${expensesUrl}" style="display: inline-block; background: #047857; color: #ffffff; padding: 12px 32px; text-decoration: none; border-radius: 6px; font-weight: 600;">
+          View All Expenses
+        </a>
+      </div>
+
+      <!-- Category Breakdown -->
+      <h3 style="color: #1a1a1a; margin: 32px 0 16px 0; font-size: 18px;">
+        Category-wise Expense Breakdown:
+      </h3>
+      <div style="padding: 16px; background: #f9fafb; border-radius: 8px; margin-bottom: 24px;">
+        ${categoryHtml}
+      </div>
+
+      <!-- Total Amount -->
+      <div style="background: #d1fae5; border-left: 4px solid #047857; padding: 16px; margin: 24px 0; border-radius: 4px;">
+        <div style="font-size: 18px; font-weight: bold; color: #1a1a1a;">
+          Total Amount: ₹${totalAmount.toLocaleString('en-IN')}
+        </div>
+      </div>
+
+      <!-- Attachments Notice -->
+      <div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 16px; margin: 24px 0; border-radius: 4px;">
+        <div style="color: #92400e;">
+          📎 <strong>Attachments:</strong> ${validAttachments.length} receipt${validAttachments.length !== 1 ? 's' : ''} attached
+        </div>
+      </div>
+
+      <!-- Detailed Expenses -->
+      <h3 style="color: #1a1a1a; margin: 32px 0 16px 0; font-size: 18px;">
+        Detailed Expense List:
+      </h3>
+      ${detailedExpenseHtml}
+
+      <p style="color: #1a1a1a; line-height: 1.6; margin: 32px 0 8px 0;">
+        Kindly process the reimbursement to my account at your earliest convenience.
+      </p>
+
+      <p style="color: #1a1a1a; line-height: 1.6; margin: 8px 0;">
+        Regards,<br>
+        <strong>${profile.full_name}</strong>
+      </p>
+    </div>
+
+    <!-- Footer -->
+    <div style="background: #f9fafb; padding: 20px; text-align: center; border-top: 1px solid #e5e7eb;">
+      <p style="color: #6b7280; font-size: 12px; margin: 0;">
+        This is an automated email from PAISABACK Expense Management System
+      </p>
+    </div>
+  </div>
+</body>
+</html>`;
 
     // Create MIME message with attachments
     const boundary = "boundary_" + Math.random().toString(36).substring(2);
@@ -163,7 +266,7 @@ This is an automated email from PAISABACK Expense Management System`;
       `Content-Type: multipart/mixed; boundary="${boundary}"`,
       ``,
       `--${boundary}`,
-      `Content-Type: text/plain; charset=UTF-8`,
+      `Content-Type: text/html; charset=UTF-8`,
       ``,
       emailBody,
       ``
