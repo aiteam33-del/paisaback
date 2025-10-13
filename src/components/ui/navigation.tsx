@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { LogOut, User } from "lucide-react";
 import { Wallet } from "lucide-react";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export const Navigation = () => {
   const { user, signOut } = useAuth();
@@ -26,6 +27,7 @@ export const Navigation = () => {
                   <User className="w-4 h-4" />
                   <span>{user.email}</span>
                 </div>
+                <ThemeToggle />
                 <Button variant="ghost" onClick={signOut} className="gap-2">
                   <LogOut className="w-4 h-4" />
                   <span className="hidden sm:inline">Logout</span>
@@ -33,6 +35,7 @@ export const Navigation = () => {
               </>
             ) : location.pathname === "/" && (
               <>
+                <ThemeToggle />
                 <Link to="/auth">
                   <Button variant="ghost" className="hidden sm:inline-flex">Sign In</Button>
                 </Link>
