@@ -136,10 +136,10 @@ const handler = async (req: Request): Promise<Response> => {
 
     const validAttachments = attachments.filter(a => a !== null);
 
-    // Generate HTML email body
-    const appUrl = Deno.env.get('PUBLIC_APP_URL') || Deno.env.get('APP_URL') || 'https://paisaback.lovable.app';
-    const expensesUrl = `${appUrl}/employee`;
-    
+    // Prefer the caller origin to build correct links, then fall back to env, then default
+    const callerOrigin = req.headers.get('origin') || '';
+    const appUrl = callerOrigin || Deno.env.get('PUBLIC_APP_URL') || Deno.env.get('APP_URL') || 'https://paisaback.lovable.app';
+    const expensesUrl = `${appUrl}/employee/history`;
     let categoryHtml = '';
     Object.entries(categoryBreakdown).forEach(([category, data]) => {
       const icon = getCategoryIcon(category);
@@ -210,10 +210,10 @@ const handler = async (req: Request): Promise<Response> => {
         Please find attached my recent reimbursement claims along with the supporting bills and screenshots.
       </p>
 
-      <!-- View Expenses Button -->
+      <!-- View Expense Summary Button -->
       <div style="margin: 24px 0; text-align: center;">
         <a href="${expensesUrl}" style="display: inline-block; background: #047857; color: #ffffff; padding: 12px 32px; text-decoration: none; border-radius: 6px; font-weight: 600;">
-          View All Expenses
+          View Expense Summary
         </a>
       </div>
 
