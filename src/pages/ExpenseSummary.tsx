@@ -3,7 +3,11 @@ import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Receipt, Calendar, CreditCard, FileText, AlertCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Loader2, Receipt, FileText, AlertCircle, Search, Wallet, Clock } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface Expense {
@@ -29,7 +33,13 @@ const ExpenseSummary = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [filteredExpenses, setFilteredExpenses] = useState<Expense[]>([]);
   const [user, setUser] = useState<UserInfo | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [categoryFilter, setCategoryFilter] = useState("all");
+  const [selectedAttachments, setSelectedAttachments] = useState<string[]>([]);
+  const [isAttachmentDialogOpen, setIsAttachmentDialogOpen] = useState(false);
 
   useEffect(() => {
     const verifyTokenAndFetchExpenses = async () => {
@@ -62,6 +72,7 @@ const ExpenseSummary = () => {
 
         setUser(data.user);
         setExpenses(data.expenses);
+        setFilteredExpenses(data.expenses);
         setLoading(false);
       } catch (err: any) {
         console.error('Error verifying token:', err);
@@ -72,6 +83,33 @@ const ExpenseSummary = () => {
 
     verifyTokenAndFetchExpenses();
   }, [token]);
+
+  useEffect(() => {
+    let filtered = expenses;
+
+    if (searchQuery) {
+      filtered = filtered.filter(
+        (expense) =>
+          expense.vendor.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          expense.description.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
+
+    if (statusFilter !== "all") {
+      filtered = filtered.filter((expense) => expense.status === statusFilter);
+    }
+
+    if (categoryFilter !== "all") {
+      filtered = filtered.filter((expense) => expense.category === categoryFilter);
+    }
+
+    setFilteredExpenses(filtered);
+  }, [searchQuery, statusFilter, categoryFilter, expenses]);
+
+  const handleViewAttachments = (attachments: string[]) => {
+    setSelectedAttachments(attachments);
+    setIsAttachmentDialogOpen(true);
+  };
 
   if (loading) {
     return (
@@ -104,169 +142,200 @@ const ExpenseSummary = () => {
     );
   }
 
-  const statusColors: Record<string, string> = {
-    pending: "bg-yellow-500",
-    approved: "bg-green-500",
-    rejected: "bg-red-500",
-  };
-
-  const statusIcons: Record<string, any> = {
-    pending: "⏳",
-    approved: "✅",
-    rejected: "❌",
-  };
-
-  const totalAmount = expenses.reduce((sum, expense) => sum + Number(expense.amount), 0);
-  const categoryBreakdown = expenses.reduce((acc, expense) => {
-    acc[expense.category] = (acc[expense.category] || 0) + Number(expense.amount);
-    return acc;
-  }, {} as Record<string, number>);
+  const totalAmount = filteredExpenses.reduce((sum, expense) => sum + Number(expense.amount), 0);
+  const categories = Array.from(new Set(expenses.map(e => e.category)));
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/5 to-primary/10 p-4 md:p-8">
-      <div className="max-w-6xl mx-auto space-y-6">
-        {/* Header */}
+    <div className="min-h-screen bg-background">
+      {/* Header */}
+      <div className="bg-card border-b sticky top-0 z-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="bg-primary rounded-lg p-2">
+                <Wallet className="h-6 w-6 text-primary-foreground" />
+              </div>
+              <div>
+                <h1 className="text-xl font-bold">PAISABACK</h1>
+                <p className="text-sm text-muted-foreground">{user?.email}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+        {/* Filters */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-2xl">Expense Summary</CardTitle>
-            <CardDescription>
-              Employee: {user?.full_name} ({user?.email})
-            </CardDescription>
+            <CardTitle className="text-lg">Filters</CardTitle>
           </CardHeader>
+          <CardContent>
+            <div className="grid gap-4 md:grid-cols-3">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Search</label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search by vendor or description..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-9"
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Status</label>
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="All Statuses" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Statuses</SelectItem>
+                    <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="approved">Approved</SelectItem>
+                    <SelectItem value="rejected">Rejected</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Category</label>
+                <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="All Categories" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Categories</SelectItem>
+                    {categories.map((category) => (
+                      <SelectItem key={category} value={category}>
+                        {category.charAt(0).toUpperCase() + category.slice(1)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </CardContent>
         </Card>
 
-        {/* Summary Cards */}
-        <div className="grid gap-4 md:grid-cols-3">
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Total Expenses
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">₹{totalAmount.toFixed(2)}</div>
-              <p className="text-xs text-muted-foreground mt-1">
-                {expenses.length} {expenses.length === 1 ? 'expense' : 'expenses'}
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Pending
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {expenses.filter(e => e.status === 'pending').length}
+        {/* Summary Card */}
+        <Card className="bg-primary text-primary-foreground">
+          <CardContent className="pt-6">
+            <div className="flex justify-between items-center">
+              <div>
+                <p className="text-sm opacity-90 mb-1">Total Amount (Filtered)</p>
+                <p className="text-4xl font-bold">₹{totalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
               </div>
-              <p className="text-xs text-muted-foreground mt-1">
-                ₹{expenses.filter(e => e.status === 'pending').reduce((sum, e) => sum + Number(e.amount), 0).toFixed(2)}
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Approved
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-green-600">
-                {expenses.filter(e => e.status === 'approved').length}
+              <div className="text-right">
+                <p className="text-sm opacity-90 mb-1">Total Expenses</p>
+                <p className="text-4xl font-bold">{filteredExpenses.length}</p>
               </div>
-              <p className="text-xs text-muted-foreground mt-1">
-                ₹{expenses.filter(e => e.status === 'approved').reduce((sum, e) => sum + Number(e.amount), 0).toFixed(2)}
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Category Breakdown */}
-        {Object.keys(categoryBreakdown).length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Category Breakdown</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                {Object.entries(categoryBreakdown).map(([category, amount]) => (
-                  <div key={category} className="flex justify-between items-center p-2 rounded-lg bg-muted/50">
-                    <span className="font-medium capitalize">{category}</span>
-                    <span className="font-bold">₹{amount.toFixed(2)}</span>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Expenses List */}
         <Card>
           <CardHeader>
             <CardTitle>All Expenses</CardTitle>
-            <CardDescription>Complete list of expense claims</CardDescription>
+            <CardDescription>
+              {filteredExpenses.length} {filteredExpenses.length === 1 ? 'expense' : 'expenses'} found
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            {expenses.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
+            {filteredExpenses.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground">
                 <Receipt className="h-12 w-12 mx-auto mb-4 opacity-50" />
                 <p>No expenses found</p>
               </div>
             ) : (
-              <div className="space-y-4">
-                {expenses.map((expense) => (
-                  <div
-                    key={expense.id}
-                    className="p-4 rounded-lg border bg-card hover:shadow-md transition-shadow"
-                  >
-                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                      <div className="space-y-2 flex-1">
-                        <div className="flex items-start justify-between">
-                          <div>
-                            <h3 className="font-semibold text-lg">{expense.vendor}</h3>
-                            <p className="text-sm text-muted-foreground">{expense.description}</p>
-                          </div>
-                          <Badge
-                            variant="outline"
-                            className={`${statusColors[expense.status]} text-white`}
-                          >
-                            {statusIcons[expense.status]} {expense.status}
-                          </Badge>
-                        </div>
-
-                        <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
-                          <div className="flex items-center gap-1">
-                            <FileText className="h-4 w-4" />
-                            <span className="capitalize">{expense.category}</span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Calendar className="h-4 w-4" />
-                            <span>{new Date(expense.date).toLocaleDateString()}</span>
-                          </div>
-                          {expense.attachments && expense.attachments.length > 0 && (
-                            <div className="flex items-center gap-1">
-                              <Receipt className="h-4 w-4" />
-                              <span>{expense.attachments.length} attachment(s)</span>
+              <div className="space-y-3">
+                {filteredExpenses.map((expense) => (
+                  <Card key={expense.id} className="hover:shadow-md transition-shadow">
+                    <CardContent className="pt-6">
+                      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+                        <div className="flex-1 space-y-2">
+                          <div className="flex items-start justify-between gap-4">
+                            <div>
+                              <h3 className="font-bold text-lg">{expense.vendor}</h3>
+                              <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
+                                <span className="capitalize">{expense.category}</span>
+                                <span>•</span>
+                                <span>{new Date(expense.date).toLocaleDateString('en-IN')}</span>
+                              </div>
                             </div>
+                            <Badge 
+                              variant="secondary" 
+                              className={`whitespace-nowrap ${
+                                expense.status === 'pending' ? 'bg-yellow-500/10 text-yellow-700 border-yellow-300' :
+                                expense.status === 'approved' ? 'bg-green-500/10 text-green-700 border-green-300' :
+                                'bg-red-500/10 text-red-700 border-red-300'
+                              }`}
+                            >
+                              <Clock className="h-3 w-3 mr-1" />
+                              {expense.status.charAt(0).toUpperCase() + expense.status.slice(1)}
+                            </Badge>
+                          </div>
+                          <p className="text-sm text-muted-foreground">{expense.description}</p>
+                          {expense.attachments && expense.attachments.length > 0 && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleViewAttachments(expense.attachments!)}
+                              className="mt-2"
+                            >
+                              <FileText className="h-4 w-4 mr-2" />
+                              View Document
+                            </Button>
                           )}
                         </div>
+                        <div className="sm:text-right">
+                          <p className="text-2xl font-bold">₹{Number(expense.amount).toFixed(2)}</p>
+                        </div>
                       </div>
-
-                      <div className="flex items-center gap-2">
-                        <CreditCard className="h-5 w-5 text-primary" />
-                        <span className="text-2xl font-bold">₹{Number(expense.amount).toFixed(2)}</span>
-                      </div>
-                    </div>
-                  </div>
+                    </CardContent>
+                  </Card>
                 ))}
               </div>
             )}
           </CardContent>
         </Card>
       </div>
+
+      {/* Attachments Dialog */}
+      <Dialog open={isAttachmentDialogOpen} onOpenChange={setIsAttachmentDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Receipt Attachments</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {selectedAttachments.map((url, index) => (
+              <div key={index} className="border rounded-lg overflow-hidden">
+                <img
+                  src={url}
+                  alt={`Receipt ${index + 1}`}
+                  className="w-full h-auto"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.style.display = 'none';
+                    const errorDiv = document.createElement('div');
+                    errorDiv.className = 'p-8 text-center text-muted-foreground';
+                    errorDiv.innerHTML = `
+                      <div class="flex flex-col items-center gap-2">
+                        <svg class="h-12 w-12 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                        <p>Unable to load image. <a href="${url}" target="_blank" class="text-primary hover:underline">Open in new tab</a></p>
+                      </div>
+                    `;
+                    target.parentNode?.appendChild(errorDiv);
+                  }}
+                />
+              </div>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
