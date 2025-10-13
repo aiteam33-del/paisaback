@@ -40,7 +40,6 @@ const Employee = () => {
   const [extractedFields, setExtractedFields] = useState<{ amount?: number; date?: string; merchant?: string; transaction_id?: string; category?: string } | null>(null);
   const [ocrText, setOcrText] = useState<string>("");
   const [isSendingEmail, setIsSendingEmail] = useState(false);
-  const [makeWebhookUrl, setMakeWebhookUrl] = useState("");
   
   // Form fields
   const [vendor, setVendor] = useState("");
@@ -291,14 +290,9 @@ const processOCR = async (file: File) => {
   const handleSendEmail = async () => {
     try {
       setIsSendingEmail(true);
-
+      
       if (!user) {
         toast.error("Please log in");
-        return;
-      }
-
-      if (!makeWebhookUrl) {
-        toast.error("Please enter your Make.com webhook URL first");
         return;
       }
 
@@ -307,64 +301,42 @@ const processOCR = async (file: File) => {
         return;
       }
 
-      // Fetch user profile
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", user.id)
-        .maybeSingle();
-
-      // Calculate category breakdown
-      const categoryBreakdown: Record<string, number> = {};
-      let totalAmount = 0;
-
-      expenses.forEach((expense) => {
-        const category = expense.category || "Uncategorized";
-        const amount = parseFloat(expense.amount.toString());
-        categoryBreakdown[category] = (categoryBreakdown[category] || 0) + amount;
-        totalAmount += amount;
-      });
-
-      // Prepare data for Make.com
-      const webhookData = {
-        user_email: profile?.email || user.email,
-        user_name: profile?.full_name || "Employee",
-        superior_email: profile?.superior_email,
-        total_amount: totalAmount,
-        currency: "INR",
-        category_breakdown: categoryBreakdown,
-        expenses: expenses.map(exp => ({
-          id: exp.id,
-          vendor: exp.vendor,
-          description: exp.description || '',
-          amount: exp.amount,
-          category: exp.category,
-          date: exp.date,
-          status: exp.status,
-          attachments: exp.attachments || []
-        })),
-        timestamp: new Date().toISOString()
-      };
-
-      console.log("Sending to Make.com:", webhookData);
-
-      // Send to Make.com webhook
-      const response = await fetch(makeWebhookUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+      // Get Google OAuth token
+      const { data, error: oauthError } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          scopes: 'https://www.googleapis.com/auth/gmail.send',
+          redirectTo: `${window.location.origin}/employee`,
         },
-        body: JSON.stringify(webhookData),
       });
 
-      if (!response.ok) {
-        throw new Error(`Make.com webhook returned ${response.status}`);
+      if (oauthError) throw oauthError;
+
+      // Wait for OAuth callback
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session?.provider_token) {
+        throw new Error("Failed to get Google access token");
       }
 
-      toast.success("✅ Expense data sent to Make.com successfully!");
+      // Call edge function with access token
+      const { data: result, error: functionError } = await supabase.functions.invoke(
+        'send-gmail-expense',
+        {
+          body: {
+            userId: user?.id,
+            accessToken: session.provider_token,
+          },
+        }
+      );
+
+      if (functionError) throw functionError;
+
+      toast.success("✅ Email sent successfully via Gmail!");
+      console.log("Email result:", result);
     } catch (error: any) {
-      console.error("Make.com webhook error:", error);
-      toast.error(`Failed to send: ${error.message}`);
+      console.error("Error sending email:", error);
+      toast.error(error.message || "Failed to send email");
     } finally {
       setIsSendingEmail(false);
     }
@@ -811,27 +783,13 @@ const processOCR = async (file: File) => {
                   <Mail className="w-5 h-5 text-primary" />
                   Send Reimbursement Request
                 </CardTitle>
-                <CardDescription>Send your expenses via Make.com automation</CardDescription>
+                <CardDescription>Send your expenses via Gmail</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div>
-                  <Label htmlFor="webhook-url" className="mb-2">Make.com Webhook URL</Label>
-                  <Input
-                    id="webhook-url"
-                    type="url"
-                    value={makeWebhookUrl}
-                    onChange={(e) => setMakeWebhookUrl(e.target.value)}
-                    placeholder="https://hook.eu2.make.com/..."
-                    className="mb-2"
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Create a webhook trigger in Make.com and paste the URL here
-                  </p>
-                </div>
                 <div className="flex flex-col sm:flex-row gap-3">
                   <Button 
                     onClick={handleSendEmail}
-                    disabled={isSendingEmail || expenses.length === 0 || !makeWebhookUrl}
+                    disabled={isSendingEmail || expenses.length === 0}
                     className="flex-1 bg-gradient-primary hover:opacity-90"
                     size="lg"
                   >
@@ -843,7 +801,7 @@ const processOCR = async (file: File) => {
                     ) : (
                       <>
                         <Mail className="w-5 h-5 mr-2" />
-                        Send to Make.com
+                        Send via Gmail
                       </>
                     )}
                   </Button>
