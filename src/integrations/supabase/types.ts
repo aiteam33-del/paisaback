@@ -100,6 +100,7 @@ export type Database = {
           full_name: string | null
           id: string
           last_email_sent: string | null
+          next_email_at: string | null
           organization_domain: string | null
           superior_email: string | null
           updated_at: string
@@ -111,6 +112,7 @@ export type Database = {
           full_name?: string | null
           id: string
           last_email_sent?: string | null
+          next_email_at?: string | null
           organization_domain?: string | null
           superior_email?: string | null
           updated_at?: string
@@ -122,6 +124,7 @@ export type Database = {
           full_name?: string | null
           id?: string
           last_email_sent?: string | null
+          next_email_at?: string | null
           organization_domain?: string | null
           superior_email?: string | null
           updated_at?: string

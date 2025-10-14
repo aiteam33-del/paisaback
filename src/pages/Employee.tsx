@@ -81,17 +81,23 @@ const Employee = () => {
     
     const { data } = await supabase
       .from("profiles")
-      .select("full_name, email_frequency, last_email_sent")
+      .select("full_name, email_frequency, last_email_sent, next_email_at")
       .eq("id", user.id)
       .maybeSingle();
     
     if (data) {
       if (data.full_name) setUserName(data.full_name);
       if (data.email_frequency) setEmailFrequency(data.email_frequency);
-      if (data.last_email_sent) setLastEmailSent(data.last_email_sent);
+      
+      // For custom schedules, use next_email_at instead of last_email_sent
+      const timeToUse = data.email_frequency === 'custom' && data.next_email_at 
+        ? data.next_email_at 
+        : data.last_email_sent;
+      
+      if (timeToUse) setLastEmailSent(timeToUse);
       
       // Calculate next email time
-      calculateNextEmailTime(data.email_frequency, data.last_email_sent);
+      calculateNextEmailTime(data.email_frequency, timeToUse);
     }
   };
 
@@ -212,7 +218,7 @@ const Employee = () => {
         .from("profiles")
         .update({ 
           email_frequency: 'custom',
-          last_email_sent: scheduledDateTime.toISOString()
+          next_email_at: scheduledDateTime.toISOString()
         })
         .eq("id", user.id);
       
