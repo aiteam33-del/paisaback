@@ -42,6 +42,7 @@ const Employee = () => {
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [gmailConnected, setGmailConnected] = useState(false);
   const [gmailAccessToken, setGmailAccessToken] = useState<string | null>(null);
+  const [userName, setUserName] = useState<string>("");
   
   // Form fields
   const [vendor, setVendor] = useState("");
@@ -61,8 +62,23 @@ const Employee = () => {
     if (user) {
       fetchExpenses();
       checkGmailConnection();
+      fetchUserProfile();
     }
   }, [user]);
+
+  const fetchUserProfile = async () => {
+    if (!user) return;
+    
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("full_name")
+      .eq("id", user.id)
+      .single();
+    
+    if (data?.full_name) {
+      setUserName(data.full_name);
+    }
+  };
 
   // Check if Gmail is already connected
   const checkGmailConnection = async () => {
@@ -499,7 +515,9 @@ const processOCR = async (file: File) => {
       
       <main className="container mx-auto px-4 pt-24 pb-16">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground mb-2">Employee Dashboard</h1>
+          <h1 className="text-3xl font-bold text-foreground mb-2">
+            {userName ? `Welcome, ${userName}` : "Employee Dashboard"}
+          </h1>
           <p className="text-muted-foreground">Submit and track your expense claims</p>
         </div>
 
