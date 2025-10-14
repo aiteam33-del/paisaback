@@ -76,7 +76,7 @@ serve(async (req) => {
     console.log(`Processing ${isPdf ? 'PDF' : 'image'} document, mime: ${mimeType}`);
 
     // Build prompt - updated to handle invoices, bills, and receipts
-    const systemPrompt = "You are an expert OCR agent for receipts, invoices, bills, and payment screenshots. Extract information from the document and return STRICT JSON only with keys: merchant (string - company/vendor name), amount (number - final total amount to be paid), date (YYYY-MM-DD - invoice/transaction date), transaction_id (string - invoice number, order number, or transaction ID), category (one of travel, food, lodging, office, other). For invoices, use the Grand Total or final amount. Do not include any extra text, only valid JSON.";
+    const systemPrompt = "You are an expert OCR agent for receipts, invoices, bills, and payment screenshots. Extract information from the document and return STRICT JSON only with keys: merchant (string - company/vendor name), amount (number - final total amount to be paid), date (YYYY-MM-DD - invoice/transaction date), transaction_id (string - invoice number, order number, or transaction ID), category (one of travel, food, lodging, office, other), payment_method (string - detect payment method: if you see GPay, Google Pay, Paytm, PhonePe, BHIM, or any UPI app name, return 'upi'. For credit cards return 'credit_card', for debit cards return 'debit_card', for cash return 'cash'. Return empty string if unknown). For invoices, use the Grand Total or final amount. Do not include any extra text, only valid JSON.";
 
     let extractedText = "";
 
@@ -171,6 +171,7 @@ serve(async (req) => {
       date: new Date().toISOString().slice(0, 10),
       transaction_id: "",
       category: "other",
+      payment_method: "",
     };
 
     try {
@@ -182,6 +183,19 @@ serve(async (req) => {
       const cat = String(parsed.category || "office").toLowerCase();
       extractedData.category = ["travel", "food", "lodging", "office", "other"].includes(cat) ? cat : "office";
       extractedData.transaction_id = String(parsed.transaction_id || parsed.txn_id || parsed.transactionId || parsed.invoice_number || parsed.order_number || "").slice(0, 120);
+      
+      // Extract payment method
+      let paymentMethod = String(parsed.payment_method || "").toLowerCase();
+      // Additional detection from merchant name or transaction_id for UPI apps
+      const textToCheck = `${extractedData.merchant} ${extractedData.transaction_id}`.toLowerCase();
+      if (!paymentMethod || paymentMethod === "unknown") {
+        if (textToCheck.includes("gpay") || textToCheck.includes("google pay") || 
+            textToCheck.includes("paytm") || textToCheck.includes("phonepe") || 
+            textToCheck.includes("bhim") || textToCheck.includes("upi")) {
+          paymentMethod = "upi";
+        }
+      }
+      extractedData.payment_method = paymentMethod;
       
       console.log("Successfully parsed OCR data:", JSON.stringify(extractedData));
     } catch (e) {

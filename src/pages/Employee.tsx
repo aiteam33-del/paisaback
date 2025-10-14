@@ -37,7 +37,7 @@ const Employee = () => {
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
   const [uploadedUrls, setUploadedUrls] = useState<string[]>([]);
   const [isProcessingOCR, setIsProcessingOCR] = useState(false);
-  const [extractedFields, setExtractedFields] = useState<{ amount?: number; date?: string; merchant?: string; transaction_id?: string; category?: string } | null>(null);
+  const [extractedFields, setExtractedFields] = useState<{ amount?: number; date?: string; merchant?: string; transaction_id?: string; category?: string; payment_method?: string } | null>(null);
   const [ocrText, setOcrText] = useState<string>("");
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [gmailConnected, setGmailConnected] = useState(false);
@@ -217,12 +217,14 @@ const processOCR = async (file: File) => {
       if (ocrData.amount) setAmount(ocrData.amount.toString());
       if (ocrData.date) setDate(ocrData.date);
       if (ocrData.category) setCategory(ocrData.category);
+      if (ocrData.payment_method) setModeOfPayment(ocrData.payment_method);
       setExtractedFields({
         merchant: ocrData.merchant || ocrData.vendor,
         amount: ocrData.amount,
         date: ocrData.date,
         category: ocrData.category,
         transaction_id: ocrData.transaction_id,
+        payment_method: ocrData.payment_method,
       });
       toast.success("Information extracted! Verify below.");
       
@@ -654,6 +656,8 @@ const processOCR = async (file: File) => {
                     value={date}
                     onChange={(e) => setDate(e.target.value)}
                     disabled={isLoading}
+                    readOnly={!!extractedFields}
+                    className={extractedFields ? "bg-muted/50 cursor-not-allowed" : ""}
                   />
                 </div>
 
@@ -665,6 +669,8 @@ const processOCR = async (file: File) => {
                     value={vendor}
                     onChange={(e) => setVendor(e.target.value)}
                     disabled={isLoading}
+                    readOnly={!!extractedFields}
+                    className={extractedFields ? "bg-muted/50 cursor-not-allowed" : ""}
                   />
                 </div>
 
@@ -679,6 +685,8 @@ const processOCR = async (file: File) => {
                       value={amount}
                       onChange={(e) => setAmount(e.target.value)}
                       disabled={isLoading}
+                      readOnly={!!extractedFields}
+                      className={extractedFields ? "bg-muted/50 cursor-not-allowed" : ""}
                     />
                   </div>
                   <div className="space-y-2">
