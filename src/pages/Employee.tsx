@@ -686,7 +686,7 @@ const processOCR = async (file: File) => {
                       onChange={(e) => setAmount(e.target.value)}
                       disabled={isLoading}
                       readOnly={!!extractedFields}
-                      className={extractedFields ? "bg-muted/50 cursor-not-allowed" : ""}
+                      className={`[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${extractedFields ? "bg-muted/50 cursor-not-allowed" : ""}`}
                     />
                   </div>
                   <div className="space-y-2">
