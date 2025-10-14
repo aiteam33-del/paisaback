@@ -43,7 +43,8 @@ const generateProfessionalEmailHTML = (
   expenses: any[],
   totalAmount: number,
   categoryBreakdown: any,
-  period: { start: string; end: string }
+  period: { start: string; end: string },
+  viewDetailsUrl: string
 ): string => {
   const categoryRows = Object.entries(categoryBreakdown)
     .map(([category, data]: [string, any]) => `
@@ -182,6 +183,13 @@ const generateProfessionalEmailHTML = (
         ${expenseRows}
       </div>
 
+      <!-- Action Button -->
+      <div style="text-align: center; margin: 30px 0;">
+        <a href="${viewDetailsUrl}" style="display: inline-block; background: linear-gradient(135deg, #0B6E4F 0%, #08A88A 100%); color: white; padding: 16px 32px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+          📊 View Expense Details
+        </a>
+      </div>
+
       <!-- Footer -->
       <div style="margin-top: 40px; padding-top: 20px; border-top: 2px solid #E5E7EB; text-align: center; color: #6B7280; font-size: 14px;">
         <p style="margin: 0 0 8px 0;">
@@ -234,6 +242,29 @@ const handler = async (req: Request): Promise<Response> => {
     if (!expenses || expenses.length === 0) {
       throw new Error('No expenses found for this user');
     }
+
+    // Generate access token for viewing expenses
+    const token = crypto.randomUUID();
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 30); // Token valid for 30 days
+
+    const { error: tokenError } = await supabase
+      .from('expense_access_tokens')
+      .insert({
+        token,
+        user_id: userId,
+        expires_at: expiresAt.toISOString(),
+      });
+
+    if (tokenError) {
+      console.error('Error creating access token:', tokenError);
+      throw tokenError;
+    }
+
+    // Generate view details URL
+    const appUrl = Deno.env.get('PUBLIC_APP_URL') || 'https://expense-aid-hub.lovable.app';
+    const viewDetailsUrl = `${appUrl}/expense-summary?token=${token}`;
+    console.log('Generated view details URL:', viewDetailsUrl);
 
     // Generate breakdown
     const categoryBreakdown: any = {};
@@ -292,7 +323,8 @@ const handler = async (req: Request): Promise<Response> => {
       expenses,
       totalAmount,
       categoryBreakdown,
-      period
+      period,
+      viewDetailsUrl
     );
 
     // Send email via Resend
