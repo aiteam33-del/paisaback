@@ -294,6 +294,15 @@ const processOCR = async (file: File) => {
     setIsLoading(true);
 
     try {
+      // Ensure we have a fresh session
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError || !session) {
+        toast.error("Session expired. Please log in again.");
+        navigate("/auth");
+        return;
+      }
+
       // Upload files first
       const attachmentUrls = await uploadFiles();
 
