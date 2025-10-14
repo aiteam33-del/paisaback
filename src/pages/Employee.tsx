@@ -6,12 +6,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 import { Navigation } from "@/components/ui/navigation";
-import { Upload, Receipt, Clock, CheckCircle2, XCircle, Loader2, X, Camera, ChevronRight, Mail } from "lucide-react";
+import { Upload, Receipt, Clock, CheckCircle2, XCircle, Loader2, X, Camera, ChevronRight, Mail, Calendar as CalendarIcon, Settings } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 interface Expense {
@@ -46,6 +50,8 @@ const Employee = () => {
   const [emailFrequency, setEmailFrequency] = useState<string>("");
   const [lastEmailSent, setLastEmailSent] = useState<string | null>(null);
   const [nextEmailTime, setNextEmailTime] = useState<string>("");
+  const [customScheduleDate, setCustomScheduleDate] = useState<Date>();
+  const [isUpdatingFrequency, setIsUpdatingFrequency] = useState(false);
   
   // Form fields
   const [vendor, setVendor] = useState("");
@@ -155,6 +161,55 @@ const Employee = () => {
       }
     } catch (error) {
       console.error("Error checking Gmail connection:", error);
+    }
+  };
+
+  const handleUpdateEmailFrequency = async (newFrequency: string) => {
+    if (!user) return;
+    
+    setIsUpdatingFrequency(true);
+    try {
+      const { error } = await supabase
+        .from("profiles")
+        .update({ email_frequency: newFrequency })
+        .eq("id", user.id);
+      
+      if (error) throw error;
+      
+      setEmailFrequency(newFrequency);
+      calculateNextEmailTime(newFrequency, lastEmailSent);
+      toast.success("Email schedule updated!");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to update schedule");
+    } finally {
+      setIsUpdatingFrequency(false);
+    }
+  };
+
+  const handleScheduleCustomEmail = async () => {
+    if (!customScheduleDate || !user) {
+      toast.error("Please select a date and time");
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from("profiles")
+        .update({ 
+          email_frequency: 'custom',
+          last_email_sent: customScheduleDate.toISOString()
+        })
+        .eq("id", user.id);
+      
+      if (error) throw error;
+      
+      setEmailFrequency('custom');
+      setLastEmailSent(customScheduleDate.toISOString());
+      calculateNextEmailTime('custom', customScheduleDate.toISOString());
+      toast.success(`Email scheduled for ${format(customScheduleDate, "PPP 'at' p")}`);
+      setCustomScheduleDate(undefined);
+    } catch (error: any) {
+      toast.error(error.message || "Failed to schedule email");
     }
   };
 
@@ -708,15 +763,6 @@ const processOCR = async (file: File) => {
                     </div>
                   )}
 
-                  {ocrText && (
-                    <div className="mt-2">
-                      <Label>Extracted Text (OCR)</Label>
-                      <div className="mt-1 rounded-md border border-border bg-muted/30 p-2 max-h-40 overflow-auto text-xs text-muted-foreground whitespace-pre-wrap">
-                        {ocrText.slice(0, 4000)}
-                      </div>
-                    </div>
-                  )}
-
                   {extractedFields && (
                     <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
                       <div><span className="text-muted-foreground">Merchant:</span> <span className="font-medium text-foreground">{extractedFields.merchant || '-'}</span></div>
@@ -952,6 +998,71 @@ const processOCR = async (file: File) => {
                     </p>
                   </div>
                 )}
+
+                {/* Email Frequency Selector */}
+                <div className="space-y-2">
+                  <Label htmlFor="emailFrequency" className="flex items-center gap-2">
+                    <Settings className="w-4 h-4" />
+                    Email Schedule
+                  </Label>
+                  <Select 
+                    value={emailFrequency} 
+                    onValueChange={handleUpdateEmailFrequency}
+                    disabled={isUpdatingFrequency}
+                  >
+                    <SelectTrigger id="emailFrequency">
+                      <SelectValue placeholder="Select frequency" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="daily">Daily (Every 24 hours)</SelectItem>
+                      <SelectItem value="weekly">Weekly (Every 7 days)</SelectItem>
+                      <SelectItem value="monthly">Monthly (Every 30 days)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Custom Date/Time Scheduler */}
+                <div className="space-y-2">
+                  <Label>Or schedule for a specific time</Label>
+                  <div className="flex gap-2">
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className={cn(
+                            "flex-1 justify-start text-left font-normal",
+                            !customScheduleDate && "text-muted-foreground"
+                          )}
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {customScheduleDate ? format(customScheduleDate, "PPP 'at' p") : "Pick date & time"}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={customScheduleDate}
+                          onSelect={setCustomScheduleDate}
+                          disabled={(date) => date < new Date()}
+                          initialFocus
+                          className="pointer-events-auto"
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    {customScheduleDate && (
+                      <Button 
+                        onClick={handleScheduleCustomEmail}
+                        size="sm"
+                        className="shrink-0"
+                      >
+                        Schedule
+                      </Button>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Schedule a one-time email for your chosen date and time
+                  </p>
+                </div>
                 
                 {!gmailConnected ? (
                   <Button 
