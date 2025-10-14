@@ -67,6 +67,7 @@ export default {
         },
         success: "hsl(var(--success))",
         warning: "hsl(var(--warning))",
+        "neon-green": "hsl(var(--neon-green))",
       },
       backgroundImage: {
         'gradient-primary': 'var(--gradient-primary)',
