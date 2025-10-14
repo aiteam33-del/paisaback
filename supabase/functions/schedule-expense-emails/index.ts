@@ -76,7 +76,8 @@ serve(async (req) => {
             return { user: user.email, status: 'skipped', reason: 'no expenses' };
           }
 
-          // Send email via Resend function
+          // Send email via send-expense-email (uses Resend for scheduled emails)
+          // Note: Cannot use Gmail for scheduled emails as OAuth tokens expire
           const { error: emailError } = await supabase.functions.invoke('send-expense-email', {
             body: {
               userId: user.user_id,
@@ -85,7 +86,10 @@ serve(async (req) => {
             }
           });
 
-          if (emailError) throw emailError;
+          if (emailError) {
+            console.error(`Error sending email for ${user.email}:`, emailError);
+            throw emailError;
+          }
 
           // Update timestamps after sending
           if (frequency === 'custom') {
