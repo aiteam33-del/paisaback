@@ -69,11 +69,11 @@ const Employee = () => {
   const fetchUserProfile = async () => {
     if (!user) return;
     
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from("profiles")
       .select("full_name")
       .eq("id", user.id)
-      .single();
+      .maybeSingle();
     
     if (data?.full_name) {
       setUserName(data.full_name);
