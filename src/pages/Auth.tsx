@@ -166,6 +166,27 @@ const Auth = () => {
                       />
                     </div>
                     <div className="space-y-2">
+                      <Label htmlFor="signup-email">Email</Label>
+                      <Input
+                        id="signup-email"
+                        type="email"
+                        placeholder="your@email.com"
+                        value={signUpEmail}
+                        onChange={(e) => setSignUpEmail(e.target.value)}
+                        disabled={isLoading}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="signup-password">Password</Label>
+                      <Input 
+                        id="signup-password" 
+                        type="password"
+                        value={signUpPassword}
+                        onChange={(e) => setSignUpPassword(e.target.value)}
+                        disabled={isLoading}
+                      />
+                    </div>
+                    <div className="space-y-2">
                       <Label htmlFor="superior-email">Superior&apos;s Email (Optional)</Label>
                       <Input 
                         id="superior-email" 
@@ -194,27 +215,6 @@ const Auth = () => {
                         </Select>
                       </div>
                     )}
-                    <div className="space-y-2">
-                      <Label htmlFor="signup-email">Email</Label>
-                      <Input
-                        id="signup-email"
-                        type="email"
-                        placeholder="your@email.com"
-                        value={signUpEmail}
-                        onChange={(e) => setSignUpEmail(e.target.value)}
-                        disabled={isLoading}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="signup-password">Password</Label>
-                      <Input 
-                        id="signup-password" 
-                        type="password"
-                        value={signUpPassword}
-                        onChange={(e) => setSignUpPassword(e.target.value)}
-                        disabled={isLoading}
-                      />
-                    </div>
                     <Button 
                       type="submit"
                       className="w-full bg-gradient-primary hover:opacity-90"

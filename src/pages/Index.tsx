@@ -87,11 +87,13 @@ const Index = () => {
                 smart categorization, and instant approval workflows. Submit in seconds, not hours.
               </p>
               
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-accent/10 text-accent-foreground border border-accent/20">
-                <span className="text-sm font-medium">📧 Currently supports Gmail only</span>
+              <div className="flex flex-col sm:flex-row gap-4 pt-4">
+                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-accent/20 border border-accent/30">
+                  <span className="text-sm font-medium">📧 Currently supports Gmail only</span>
+                </div>
               </div>
               
-              <div className="flex flex-col sm:flex-row gap-4 pt-4">
+              <div className="flex flex-col sm:flex-row gap-4">
                 <Link to="/auth">
                   <Button size="lg" className="bg-gradient-primary hover:opacity-90 text-lg px-8 py-6 shadow-lg hover:shadow-xl transition-all">
                     Get Started Free
