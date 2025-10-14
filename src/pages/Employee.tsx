@@ -295,6 +295,12 @@ const processOCR = async (file: File) => {
 
     try {
       // Ensure we have a fresh session
+      // Try to proactively refresh in case the access token expired
+      const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+      if (refreshError) {
+        console.warn("refreshSession error", refreshError.message);
+      }
+
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       
       if (sessionError || !session) {
