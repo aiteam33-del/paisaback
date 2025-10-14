@@ -7,7 +7,7 @@ const corsHeaders = {
 };
 
 interface ScheduleRequest {
-  frequency: 'daily' | 'weekly' | 'monthly';
+  frequency: 'daily' | 'weekly' | 'monthly' | 'custom';
 }
 
 serve(async (req) => {
@@ -25,12 +25,27 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // Get users due for email
-    const { data: users, error: usersError } = await supabase
-      .rpc('get_users_due_for_email', { frequency_type: frequency });
-
-    if (usersError) {
-      console.error('Error fetching users:', usersError);
-      throw usersError;
+    let users: any[] = [];
+    if (frequency === 'custom') {
+      const { data: customUsers, error: customErr } = await supabase
+        .from('profiles')
+        .select('id, email, full_name, superior_email, next_email_at')
+        .eq('email_frequency', 'custom')
+        .not('superior_email', 'is', null)
+        .lte('next_email_at', new Date().toISOString());
+      if (customErr) throw customErr;
+      users = (customUsers || []).map(u => ({
+        user_id: u.id,
+        email: u.email,
+        full_name: u.full_name,
+        superior_email: u.superior_email,
+        next_email_at: u.next_email_at,
+      }));
+    } else {
+      const { data: dueUsers, error: usersError } = await supabase
+        .rpc('get_users_due_for_email', { frequency_type: frequency });
+      if (usersError) throw usersError;
+      users = dueUsers || [];
     }
 
     if (!users || users.length === 0) {
@@ -72,14 +87,23 @@ serve(async (req) => {
 
           if (emailError) throw emailError;
 
-          // Update last_email_sent timestamp
-          const { error: updateError } = await supabase
-            .from('profiles')
-            .update({ last_email_sent: new Date().toISOString() })
-            .eq('id', user.user_id);
-
-          if (updateError) {
-            console.error(`Error updating last_email_sent for ${user.email}:`, updateError);
+          // Update timestamps after sending
+          if (frequency === 'custom') {
+            const { error: updateError } = await supabase
+              .from('profiles')
+              .update({ last_email_sent: new Date().toISOString(), next_email_at: null })
+              .eq('id', user.user_id);
+            if (updateError) {
+              console.error(`Error updating profile for ${user.email}:`, updateError);
+            }
+          } else {
+            const { error: updateError } = await supabase
+              .from('profiles')
+              .update({ last_email_sent: new Date().toISOString() })
+              .eq('id', user.user_id);
+            if (updateError) {
+              console.error(`Error updating last_email_sent for ${user.email}:`, updateError);
+            }
           }
 
           console.log(`Email sent successfully to ${user.superior_email} for ${user.email}`);
