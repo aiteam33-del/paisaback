@@ -265,7 +265,7 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     // Generate view details URL
-    const appUrl = Deno.env.get('PUBLIC_APP_URL') || 'https://expense-aid-hub.lovable.app';
+    const appUrl = Deno.env.get('PUBLIC_APP_URL') || 'https://preview--expense-aid-hub.lovable.app';
     const viewDetailsUrl = `${appUrl}/expense-summary?token=${token}`;
     console.log('Generated view details URL:', viewDetailsUrl);
 
