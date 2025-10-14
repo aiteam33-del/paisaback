@@ -43,6 +43,9 @@ const Employee = () => {
   const [gmailConnected, setGmailConnected] = useState(false);
   const [gmailAccessToken, setGmailAccessToken] = useState<string | null>(null);
   const [userName, setUserName] = useState<string>("");
+  const [emailFrequency, setEmailFrequency] = useState<string>("");
+  const [lastEmailSent, setLastEmailSent] = useState<string | null>(null);
+  const [nextEmailTime, setNextEmailTime] = useState<string>("");
   
   // Form fields
   const [vendor, setVendor] = useState("");
@@ -71,13 +74,75 @@ const Employee = () => {
     
     const { data } = await supabase
       .from("profiles")
-      .select("full_name")
+      .select("full_name, email_frequency, last_email_sent")
       .eq("id", user.id)
       .maybeSingle();
     
-    if (data?.full_name) {
-      setUserName(data.full_name);
+    if (data) {
+      if (data.full_name) setUserName(data.full_name);
+      if (data.email_frequency) setEmailFrequency(data.email_frequency);
+      if (data.last_email_sent) setLastEmailSent(data.last_email_sent);
+      
+      // Calculate next email time
+      calculateNextEmailTime(data.email_frequency, data.last_email_sent);
     }
+  };
+
+  const calculateNextEmailTime = (frequency: string, lastSent: string | null) => {
+    if (!frequency) {
+      setNextEmailTime("");
+      return;
+    }
+
+    const now = new Date();
+    let nextDate = new Date();
+
+    if (lastSent) {
+      const lastSentDate = new Date(lastSent);
+      
+      switch (frequency) {
+        case 'daily':
+          nextDate = new Date(lastSentDate.getTime() + 24 * 60 * 60 * 1000);
+          break;
+        case 'weekly':
+          nextDate = new Date(lastSentDate.getTime() + 7 * 24 * 60 * 60 * 1000);
+          break;
+        case 'monthly':
+          nextDate = new Date(lastSentDate);
+          nextDate.setMonth(nextDate.getMonth() + 1);
+          break;
+        default:
+          nextDate = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+      }
+    } else {
+      // If never sent, schedule for tomorrow at 9 AM
+      nextDate.setDate(now.getDate() + 1);
+      nextDate.setHours(9, 0, 0, 0);
+    }
+
+    // Format the time
+    const timeUntil = nextDate.getTime() - now.getTime();
+    const hoursUntil = Math.floor(timeUntil / (1000 * 60 * 60));
+    const daysUntil = Math.floor(hoursUntil / 24);
+
+    let timeString = "";
+    if (daysUntil > 0) {
+      timeString = `${daysUntil} day${daysUntil > 1 ? 's' : ''}`;
+    } else if (hoursUntil > 0) {
+      timeString = `${hoursUntil} hour${hoursUntil > 1 ? 's' : ''}`;
+    } else {
+      timeString = "soon";
+    }
+
+    const dateString = nextDate.toLocaleDateString('en-US', { 
+      weekday: 'long', 
+      month: 'short', 
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit'
+    });
+
+    setNextEmailTime(`Next email in ${timeString} (${dateString})`);
   };
 
   // Check if Gmail is already connected
@@ -876,6 +941,18 @@ const processOCR = async (file: File) => {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
+                {nextEmailTime && emailFrequency && (
+                  <div className="p-3 rounded-lg bg-primary/10 border border-primary/20">
+                    <p className="text-sm font-medium text-foreground flex items-center gap-2">
+                      <Clock className="w-4 h-4 text-primary" />
+                      {nextEmailTime}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Based on your {emailFrequency} email schedule
+                    </p>
+                  </div>
+                )}
+                
                 {!gmailConnected ? (
                   <Button 
                     onClick={handleConnectGmail}
