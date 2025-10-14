@@ -104,7 +104,10 @@ const Employee = () => {
     const now = new Date();
     let nextDate = new Date();
 
-    if (lastSent) {
+    if (frequency === 'custom' && lastSent) {
+      // For custom frequency, the lastSent IS the scheduled time
+      nextDate = new Date(lastSent);
+    } else if (lastSent) {
       const lastSentDate = new Date(lastSent);
       
       switch (frequency) {
