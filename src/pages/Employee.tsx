@@ -51,6 +51,7 @@ const Employee = () => {
   const [lastEmailSent, setLastEmailSent] = useState<string | null>(null);
   const [nextEmailTime, setNextEmailTime] = useState<string>("");
   const [customScheduleDate, setCustomScheduleDate] = useState<Date>();
+  const [customScheduleTime, setCustomScheduleTime] = useState<string>("09:00");
   const [isUpdatingFrequency, setIsUpdatingFrequency] = useState(false);
   
   // Form fields
@@ -192,22 +193,34 @@ const Employee = () => {
       return;
     }
 
+    // Combine date and time
+    const [hours, minutes] = customScheduleTime.split(':').map(Number);
+    const scheduledDateTime = new Date(customScheduleDate);
+    scheduledDateTime.setHours(hours, minutes, 0, 0);
+
+    // Check if the scheduled time is in the past
+    if (scheduledDateTime < new Date()) {
+      toast.error("Cannot schedule email in the past");
+      return;
+    }
+
     try {
       const { error } = await supabase
         .from("profiles")
         .update({ 
           email_frequency: 'custom',
-          last_email_sent: customScheduleDate.toISOString()
+          last_email_sent: scheduledDateTime.toISOString()
         })
         .eq("id", user.id);
       
       if (error) throw error;
       
       setEmailFrequency('custom');
-      setLastEmailSent(customScheduleDate.toISOString());
-      calculateNextEmailTime('custom', customScheduleDate.toISOString());
-      toast.success(`Email scheduled for ${format(customScheduleDate, "PPP 'at' p")}`);
+      setLastEmailSent(scheduledDateTime.toISOString());
+      calculateNextEmailTime('custom', scheduledDateTime.toISOString());
+      toast.success(`Email scheduled for ${format(scheduledDateTime, "PPP 'at' p")}`);
       setCustomScheduleDate(undefined);
+      setCustomScheduleTime("09:00");
     } catch (error: any) {
       toast.error(error.message || "Failed to schedule email");
     }
@@ -650,7 +663,7 @@ const processOCR = async (file: File) => {
     <div className="min-h-screen bg-gradient-subtle">
       <Navigation />
       
-      <main className="container mx-auto px-4 pt-24 pb-16">
+      <main className="container mx-auto px-4 pt-24 pb-16 max-w-7xl">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-foreground mb-2">
             {userName ? `Welcome, ${userName}` : "Employee Dashboard"}
@@ -658,7 +671,7 @@ const processOCR = async (file: File) => {
           <p className="text-muted-foreground">Submit and track your expense claims</p>
         </div>
 
-        <div className="grid lg:grid-cols-2 gap-6">
+        <div className="grid lg:grid-cols-2 gap-6 max-w-full">
           <Card className="shadow-card">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -1024,7 +1037,7 @@ const processOCR = async (file: File) => {
                 {/* Custom Date/Time Scheduler */}
                 <div className="space-y-2">
                   <Label>Or schedule for a specific time</Label>
-                  <div className="flex gap-2">
+                  <div className="flex flex-col sm:flex-row gap-2">
                     <Popover>
                       <PopoverTrigger asChild>
                         <Button
@@ -1035,7 +1048,7 @@ const processOCR = async (file: File) => {
                           )}
                         >
                           <CalendarIcon className="mr-2 h-4 w-4" />
-                          {customScheduleDate ? format(customScheduleDate, "PPP 'at' p") : "Pick date & time"}
+                          {customScheduleDate ? format(customScheduleDate, "PPP") : "Pick date"}
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent className="w-auto p-0" align="start">
@@ -1055,11 +1068,19 @@ const processOCR = async (file: File) => {
                         />
                       </PopoverContent>
                     </Popover>
+                    
+                    <Input
+                      type="time"
+                      value={customScheduleTime}
+                      onChange={(e) => setCustomScheduleTime(e.target.value)}
+                      className="w-full sm:w-32"
+                    />
+                    
                     {customScheduleDate && (
                       <Button 
                         onClick={handleScheduleCustomEmail}
                         size="sm"
-                        className="shrink-0"
+                        className="shrink-0 w-full sm:w-auto"
                       >
                         Schedule
                       </Button>
