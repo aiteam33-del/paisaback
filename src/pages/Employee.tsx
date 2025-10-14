@@ -694,7 +694,7 @@ const processOCR = async (file: File) => {
                 {/* File Upload Section */}
                 <div className="space-y-3">
                   <Label>Upload Receipts / Screenshots</Label>
-                  <div className="border-2 border-dashed border-border rounded-lg p-4 sm:p-6 text-center hover:border-primary/50 transition-colors">
+                  <div className="border-2 border-dashed border-[hsl(var(--neon-green))] rounded-lg p-4 sm:p-6 text-center hover:border-primary/50 transition-all shadow-[var(--neon-glow)]">
                     <div className="flex flex-col items-center gap-3">
                       <Upload className="w-8 h-8 sm:w-10 sm:h-10 text-muted-foreground" />
                       <div>
@@ -1053,7 +1053,7 @@ const processOCR = async (file: File) => {
                         <Button
                           variant="outline"
                           className={cn(
-                            "flex-1 justify-start text-left font-normal",
+                            "flex-1 justify-start text-left font-normal border-2 border-[hsl(var(--neon-green))] hover:shadow-[var(--neon-glow)] transition-shadow duration-300",
                             !customScheduleDate && "text-muted-foreground"
                           )}
                         >
