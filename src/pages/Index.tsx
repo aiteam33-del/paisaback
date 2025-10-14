@@ -88,18 +88,18 @@ const Index = () => {
               </p>
               
               <div className="flex flex-col sm:flex-row gap-4 pt-4">
-                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-accent/20 border border-accent/30">
-                  <span className="text-sm font-medium">📧 Currently supports Gmail only</span>
-                </div>
-              </div>
-              
-              <div className="flex flex-col sm:flex-row gap-4">
                 <Link to="/auth">
                   <Button size="lg" className="bg-gradient-primary hover:opacity-90 text-lg px-8 py-6 shadow-lg hover:shadow-xl transition-all">
                     Get Started Free
                     <ArrowRight className="ml-2 w-5 h-5" />
                   </Button>
                 </Link>
+              </div>
+              
+              <div className="flex flex-col sm:flex-row gap-4">
+                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-accent/20 border border-accent/30">
+                  <span className="text-sm font-medium">📧 Currently supports Gmail only</span>
+                </div>
               </div>
             </div>
             

@@ -186,8 +186,11 @@ const generateProfessionalEmailHTML = (
       <!-- Action Button -->
       <div style="text-align: center; margin: 30px 0;">
         <a href="${viewDetailsUrl}" style="display: inline-block; background: linear-gradient(135deg, #0B6E4F 0%, #08A88A 100%); color: white; padding: 16px 32px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-          📊 View Expense Details
+          📊 View ${employeeName}'s Expense Details
         </a>
+        <p style="margin-top: 12px; font-size: 13px; color: #6B7280;">
+          Click to review and approve these expenses
+        </p>
       </div>
 
       <!-- Footer -->
