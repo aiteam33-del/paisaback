@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Navigation } from "@/components/ui/navigation";
@@ -16,11 +15,6 @@ import { supabase } from "@/integrations/supabase/client";
 const Auth = () => {
   const [signInEmail, setSignInEmail] = useState("");
   const [signInPassword, setSignInPassword] = useState("");
-  const [signUpEmail, setSignUpEmail] = useState("");
-  const [signUpPassword, setSignUpPassword] = useState("");
-  const [signUpName, setSignUpName] = useState("");
-  const [superiorEmail, setSuperiorEmail] = useState("");
-  const [emailFrequency, setEmailFrequency] = useState("weekly");
   const [isLoading, setIsLoading] = useState(false);
   const [orgSignUpEmail, setOrgSignUpEmail] = useState("");
   const [orgSignUpPassword, setOrgSignUpPassword] = useState("");
@@ -30,7 +24,7 @@ const Auth = () => {
   const [selectedOrgId, setSelectedOrgId] = useState("");
   const [organizations, setOrganizations] = useState<any[]>([]);
   const [loadingOrgs, setLoadingOrgs] = useState(false);
-  const { signUp, signIn, user } = useAuth();
+  const { signIn, user } = useAuth();
   const navigate = useNavigate();
 
   // Redirect if already logged in
@@ -66,43 +60,6 @@ const Auth = () => {
     setIsLoading(true);
     try {
       await signIn(signInEmail, signInPassword);
-    } catch (error) {
-      // Error is already handled in useAuth
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleSignUp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!signUpEmail || !signUpPassword || !signUpName) {
-      toast.error("Please fill in all fields");
-      return;
-    }
-
-    if (superiorEmail && !superiorEmail.includes('@')) {
-      toast.error("Please enter a valid email for your superior");
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-      await signUp(signUpEmail, signUpPassword, signUpName);
-      
-      // Update profile with superior email and frequency
-      if (superiorEmail) {
-        const { data: { user: newUser } } = await supabase.auth.getUser();
-        if (newUser) {
-          await supabase
-            .from("profiles")
-            .update({
-              superior_email: superiorEmail,
-              email_frequency: emailFrequency
-            })
-            .eq("id", newUser.id);
-        }
-      }
     } catch (error) {
       // Error is already handled in useAuth
     } finally {
@@ -236,174 +193,95 @@ const Auth = () => {
           </div>
 
           <div className="grid md:grid-cols-2 gap-6">
-            {/* Employee Account */}
+            {/* Employee Sign In (Returning Users Only) */}
             <Card className="shadow-card border-border">
               <CardHeader>
                 <div className="flex items-center gap-3 mb-2">
                   <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-primary/10">
                     <User className="w-6 h-6 text-primary" />
                   </div>
-                  <CardTitle>Employee Account</CardTitle>
+                  <CardTitle>Employee Sign In</CardTitle>
                 </div>
-                <CardDescription>Sign in or create your account to get started</CardDescription>
+                <CardDescription>Already have an account? Sign in here</CardDescription>
               </CardHeader>
               <CardContent>
-              <Tabs defaultValue="signin" className="w-full">
-                <TabsList className="grid w-full grid-cols-2 mb-4">
-                  <TabsTrigger value="signin">Sign In</TabsTrigger>
-                  <TabsTrigger value="signup">Sign Up</TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="signin" className="space-y-4">
-                  <form onSubmit={handleSignIn} className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="signin-email">Email</Label>
-                      <Input
-                        id="signin-email"
-                        type="email"
-                        placeholder="your@email.com"
-                        value={signInEmail}
-                        onChange={(e) => setSignInEmail(e.target.value)}
-                        disabled={isLoading}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="signin-password">Password</Label>
-                      <Input 
-                        id="signin-password" 
-                        type="password"
-                        value={signInPassword}
-                        onChange={(e) => setSignInPassword(e.target.value)}
-                        disabled={isLoading}
-                      />
-                    </div>
-                    
-                    <Button 
-                      type="submit"
-                      className="w-full bg-gradient-primary hover:opacity-90"
+                <form onSubmit={handleSignIn} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="signin-email">Email</Label>
+                    <Input
+                      id="signin-email"
+                      type="email"
+                      placeholder="your@email.com"
+                      value={signInEmail}
+                      onChange={(e) => setSignInEmail(e.target.value)}
                       disabled={isLoading}
-                    >
-                      {isLoading ? (
-                        <>
-                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                          Signing in...
-                        </>
-                      ) : (
-                        "Sign In as employee"
-                      )}
-                    </Button>
-                  </form>
-                </TabsContent>
-
-                <TabsContent value="signup" className="space-y-4">
-                  <form onSubmit={handleSignUp} className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="signup-name">Full Name</Label>
-                      <Input 
-                        id="signup-name" 
-                        placeholder="John Doe"
-                        value={signUpName}
-                        onChange={(e) => setSignUpName(e.target.value)}
-                        disabled={isLoading}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="signup-email">Email</Label>
-                      <Input
-                        id="signup-email"
-                        type="email"
-                        placeholder="your@email.com"
-                        value={signUpEmail}
-                        onChange={(e) => setSignUpEmail(e.target.value)}
-                        disabled={isLoading}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="signup-password">Password</Label>
-                      <Input 
-                        id="signup-password" 
-                        type="password"
-                        value={signUpPassword}
-                        onChange={(e) => setSignUpPassword(e.target.value)}
-                        disabled={isLoading}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="superior-email">Superior&apos;s Email (Optional)</Label>
-                      <Input 
-                        id="superior-email" 
-                        type="email"
-                        placeholder="manager@company.com"
-                        value={superiorEmail}
-                        onChange={(e) => setSuperiorEmail(e.target.value)}
-                        disabled={isLoading}
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        Expense summaries will be emailed to this address.
-                      </p>
-                    </div>
-                    {superiorEmail && (
-                      <div className="space-y-2">
-                        <Label htmlFor="email-frequency">Email Frequency</Label>
-                        <Select value={emailFrequency} onValueChange={setEmailFrequency} disabled={isLoading}>
-                          <SelectTrigger id="email-frequency">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="daily">Daily (9 AM UTC)</SelectItem>
-                            <SelectItem value="weekly">Weekly (Mon 9 AM UTC)</SelectItem>
-                            <SelectItem value="monthly">Monthly (1st, 9 AM UTC)</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="signin-password">Password</Label>
+                    <Input 
+                      id="signin-password" 
+                      type="password"
+                      value={signInPassword}
+                      onChange={(e) => setSignInPassword(e.target.value)}
+                      disabled={isLoading}
+                    />
+                  </div>
+                  
+                  <Button 
+                    type="submit"
+                    className="w-full bg-gradient-primary hover:opacity-90"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Signing in...
+                      </>
+                    ) : (
+                      "Sign In"
                     )}
-                    <Button 
-                      type="submit"
-                      className="w-full bg-gradient-primary hover:opacity-90"
-                      disabled={isLoading}
-                    >
-                      {isLoading ? (
-                        <>
-                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                          Creating account...
-                        </>
-                      ) : (
-                        "Create Account"
-                      )}
-                    </Button>
-                  </form>
-                </TabsContent>
-              </Tabs>
+                  </Button>
+                  
+                  <p className="text-xs text-center text-muted-foreground mt-4">
+                    New user? Sign up using the Organization section →
+                  </p>
+                </form>
             </CardContent>
           </Card>
 
-          {/* Organization Account */}
+          {/* Organization Sign Up (New Users) */}
           <Card className="shadow-card border-border">
             <CardHeader>
               <div className="flex items-center gap-3 mb-2">
                 <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-primary/10">
                   <Building2 className="w-6 h-6 text-primary" />
                 </div>
-                <CardTitle>Organization</CardTitle>
+                <CardTitle>Organization Sign Up</CardTitle>
               </div>
-              <CardDescription>Create or join an organization</CardDescription>
+              <CardDescription>New users: Create or join an organization to get started</CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleOrgSignUp} className="space-y-4">
-                <RadioGroup value={orgMode} onValueChange={(value) => setOrgMode(value as "create" | "join")}>
-                  <div className="flex items-center space-x-2 p-3 border-2 border-[hsl(var(--neon-green))] rounded-lg cursor-pointer hover:shadow-[var(--neon-glow)] transition-shadow">
-                    <RadioGroupItem value="create" id="create" />
-                    <Label htmlFor="create" className="flex-1 cursor-pointer font-medium">
-                      Create New Organization
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-2 p-3 border-2 border-[hsl(var(--neon-green))] rounded-lg cursor-pointer hover:shadow-[var(--neon-glow)] transition-shadow">
-                    <RadioGroupItem value="join" id="join" />
-                    <Label htmlFor="join" className="flex-1 cursor-pointer font-medium">
-                      Join Existing Organization
-                    </Label>
-                  </div>
-                </RadioGroup>
+                <div className="space-y-3 mb-4">
+                  <Label className="text-base font-semibold">Choose your role:</Label>
+                  <RadioGroup value={orgMode} onValueChange={(value) => setOrgMode(value as "create" | "join")}>
+                    <div className="flex items-center space-x-2 p-3 border-2 border-[hsl(var(--neon-green))] rounded-lg cursor-pointer hover:shadow-[var(--neon-glow)] transition-shadow">
+                      <RadioGroupItem value="create" id="create" />
+                      <Label htmlFor="create" className="flex-1 cursor-pointer">
+                        <div className="font-medium">Create New Organization</div>
+                        <div className="text-xs text-muted-foreground">You will be the Admin</div>
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2 p-3 border-2 border-[hsl(var(--neon-green))] rounded-lg cursor-pointer hover:shadow-[var(--neon-glow)] transition-shadow">
+                      <RadioGroupItem value="join" id="join" />
+                      <Label htmlFor="join" className="flex-1 cursor-pointer">
+                        <div className="font-medium">Join Existing Organization</div>
+                        <div className="text-xs text-muted-foreground">You will be an Employee</div>
+                      </Label>
+                    </div>
+                  </RadioGroup>
+                </div>
 
                 {orgMode === "create" && (
                   <div className="space-y-2">
