@@ -30,7 +30,7 @@ interface Expense {
 }
 
 const Employee = () => {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, userRole } = useAuth();
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
@@ -67,6 +67,13 @@ const Employee = () => {
       navigate("/auth");
     }
   }, [user, authLoading, navigate]);
+
+  // Redirect admins to the org dashboard
+  useEffect(() => {
+    if (userRole === 'admin') {
+      navigate('/admin');
+    }
+  }, [userRole, navigate]);
 
   useEffect(() => {
     if (user) {
