@@ -6,8 +6,9 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Navigation } from "@/components/ui/navigation";
-import { User, Loader2 } from "lucide-react";
+import { User, Loader2, Building2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -21,6 +22,14 @@ const Auth = () => {
   const [superiorEmail, setSuperiorEmail] = useState("");
   const [emailFrequency, setEmailFrequency] = useState("weekly");
   const [isLoading, setIsLoading] = useState(false);
+  const [orgSignUpEmail, setOrgSignUpEmail] = useState("");
+  const [orgSignUpPassword, setOrgSignUpPassword] = useState("");
+  const [orgSignUpName, setOrgSignUpName] = useState("");
+  const [orgMode, setOrgMode] = useState<"create" | "join">("create");
+  const [orgName, setOrgName] = useState("");
+  const [selectedOrgId, setSelectedOrgId] = useState("");
+  const [organizations, setOrganizations] = useState<any[]>([]);
+  const [loadingOrgs, setLoadingOrgs] = useState(false);
   const { signUp, signIn, user } = useAuth();
   const navigate = useNavigate();
 
@@ -101,26 +110,144 @@ const Auth = () => {
     }
   };
 
+  const loadOrganizations = async () => {
+    setLoadingOrgs(true);
+    try {
+      const { data, error } = await supabase
+        .from("organizations")
+        .select("id, name")
+        .order("name");
+
+      if (error) throw error;
+      setOrganizations(data || []);
+    } catch (error: any) {
+      toast.error("Failed to load organizations");
+    } finally {
+      setLoadingOrgs(false);
+    }
+  };
+
+  const handleOrgSignUp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!orgSignUpEmail || !orgSignUpPassword || !orgSignUpName) {
+      toast.error("Please fill in all fields");
+      return;
+    }
+
+    if (orgMode === "create" && !orgName.trim()) {
+      toast.error("Please enter an organization name");
+      return;
+    }
+
+    if (orgMode === "join" && !selectedOrgId) {
+      toast.error("Please select an organization");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      // Sign up the user
+      const { error: authError, data: authData } = await supabase.auth.signUp({
+        email: orgSignUpEmail,
+        password: orgSignUpPassword,
+        options: {
+          data: { full_name: orgSignUpName },
+          emailRedirectTo: `${window.location.origin}/`
+        }
+      });
+
+      if (authError) throw authError;
+
+      if (authData.user) {
+        if (orgMode === "create") {
+          // Create organization
+          const { data: org, error: orgError } = await supabase
+            .from("organizations")
+            .insert({
+              name: orgName.trim(),
+              admin_user_id: authData.user.id
+            })
+            .select()
+            .single();
+
+          if (orgError) throw orgError;
+
+          // Update user's profile with organization
+          const { error: profileError } = await supabase
+            .from("profiles")
+            .update({ organization_id: org.id })
+            .eq("id", authData.user.id);
+
+          if (profileError) throw profileError;
+
+          // Add admin role
+          const { error: roleError } = await supabase
+            .from("user_roles")
+            .insert({
+              user_id: authData.user.id,
+              role: "admin"
+            });
+
+          if (roleError && !roleError.message.includes("duplicate")) throw roleError;
+
+          toast.success(`Organization "${orgName}" created successfully!`);
+          navigate("/admin");
+        } else {
+          // Join existing organization
+          const { error: profileError } = await supabase
+            .from("profiles")
+            .update({ organization_id: selectedOrgId })
+            .eq("id", authData.user.id);
+
+          if (profileError) throw profileError;
+
+          const orgName = organizations.find(o => o.id === selectedOrgId)?.name;
+          toast.success(`Successfully joined ${orgName}!`);
+          navigate("/employee");
+        }
+      }
+    } catch (error: any) {
+      if (error.message.includes("duplicate")) {
+        toast.error("An organization with this name already exists or email is already registered");
+      } else {
+        toast.error(error.message || "Failed to create account");
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (orgMode === "join") {
+      loadOrganizations();
+    }
+  }, [orgMode]);
+
   return (
     <div className="min-h-screen bg-gradient-subtle">
       <Navigation />
       
       <main className="container mx-auto px-4 pt-32 pb-16">
-        <div className="max-w-md mx-auto">
+        <div className="max-w-4xl mx-auto">
           <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4">
-              <User className="w-8 h-8 text-primary" />
-            </div>
             <h1 className="text-3xl font-bold text-foreground mb-2">Welcome to PAISABACK</h1>
             <p className="text-muted-foreground">Sign in to manage your expenses</p>
           </div>
 
-          <Card className="shadow-card border-border">
-            <CardHeader>
-              <CardTitle>Employee Account</CardTitle>
-              <CardDescription>Sign in or create your account to get started</CardDescription>
-            </CardHeader>
-            <CardContent>
+          <div className="grid md:grid-cols-2 gap-6">
+            {/* Employee Account */}
+            <Card className="shadow-card border-border">
+              <CardHeader>
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-primary/10">
+                    <User className="w-6 h-6 text-primary" />
+                  </div>
+                  <CardTitle>Employee Account</CardTitle>
+                </div>
+                <CardDescription>Sign in or create your account to get started</CardDescription>
+              </CardHeader>
+              <CardContent>
               <Tabs defaultValue="signin" className="w-full">
                 <TabsList className="grid w-full grid-cols-2 mb-4">
                   <TabsTrigger value="signin">Sign In</TabsTrigger>
@@ -249,6 +376,133 @@ const Auth = () => {
               </Tabs>
             </CardContent>
           </Card>
+
+          {/* Organization Account */}
+          <Card className="shadow-card border-border">
+            <CardHeader>
+              <div className="flex items-center gap-3 mb-2">
+                <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-primary/10">
+                  <Building2 className="w-6 h-6 text-primary" />
+                </div>
+                <CardTitle>Organization</CardTitle>
+              </div>
+              <CardDescription>Create or join an organization</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleOrgSignUp} className="space-y-4">
+                <RadioGroup value={orgMode} onValueChange={(value) => setOrgMode(value as "create" | "join")}>
+                  <div className="flex items-center space-x-2 p-3 border-2 border-[hsl(var(--neon-green))] rounded-lg cursor-pointer hover:shadow-[var(--neon-glow)] transition-shadow">
+                    <RadioGroupItem value="create" id="create" />
+                    <Label htmlFor="create" className="flex-1 cursor-pointer font-medium">
+                      Create New Organization
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2 p-3 border-2 border-[hsl(var(--neon-green))] rounded-lg cursor-pointer hover:shadow-[var(--neon-glow)] transition-shadow">
+                    <RadioGroupItem value="join" id="join" />
+                    <Label htmlFor="join" className="flex-1 cursor-pointer font-medium">
+                      Join Existing Organization
+                    </Label>
+                  </div>
+                </RadioGroup>
+
+                {orgMode === "create" && (
+                  <div className="space-y-2">
+                    <Label htmlFor="org-name">Organization Name</Label>
+                    <Input
+                      id="org-name"
+                      placeholder="Acme Inc."
+                      value={orgName}
+                      onChange={(e) => setOrgName(e.target.value)}
+                      disabled={isLoading}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      You will be the admin of this organization
+                    </p>
+                  </div>
+                )}
+
+                {orgMode === "join" && (
+                  <div className="space-y-2">
+                    <Label htmlFor="org-select">Select Organization</Label>
+                    {loadingOrgs ? (
+                      <div className="flex items-center justify-center p-4">
+                        <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                      </div>
+                    ) : organizations.length === 0 ? (
+                      <p className="text-sm text-muted-foreground p-4 text-center border border-dashed rounded-md">
+                        No organizations found
+                      </p>
+                    ) : (
+                      <Select value={selectedOrgId} onValueChange={setSelectedOrgId} disabled={isLoading}>
+                        <SelectTrigger id="org-select">
+                          <SelectValue placeholder="Choose your organization" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {organizations.map((org) => (
+                            <SelectItem key={org.id} value={org.id}>
+                              {org.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  </div>
+                )}
+
+                <div className="space-y-2">
+                  <Label htmlFor="org-signup-name">Full Name</Label>
+                  <Input 
+                    id="org-signup-name" 
+                    placeholder="John Doe"
+                    value={orgSignUpName}
+                    onChange={(e) => setOrgSignUpName(e.target.value)}
+                    disabled={isLoading}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="org-signup-email">Email</Label>
+                  <Input
+                    id="org-signup-email"
+                    type="email"
+                    placeholder="your@email.com"
+                    value={orgSignUpEmail}
+                    onChange={(e) => setOrgSignUpEmail(e.target.value)}
+                    disabled={isLoading}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="org-signup-password">Password</Label>
+                  <Input 
+                    id="org-signup-password" 
+                    type="password"
+                    value={orgSignUpPassword}
+                    onChange={(e) => setOrgSignUpPassword(e.target.value)}
+                    disabled={isLoading}
+                  />
+                </div>
+
+                <Button 
+                  type="submit"
+                  className="w-full bg-gradient-primary hover:opacity-90"
+                  disabled={isLoading || (orgMode === "join" && organizations.length === 0)}
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      {orgMode === "create" ? "Creating..." : "Joining..."}
+                    </>
+                  ) : (
+                    <>
+                      {orgMode === "create" ? "Create Organization & Sign Up" : "Join Organization & Sign Up"}
+                    </>
+                  )}
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+          </div>
         </div>
       </main>
     </div>
