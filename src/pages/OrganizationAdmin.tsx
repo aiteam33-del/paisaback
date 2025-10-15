@@ -89,8 +89,8 @@ const OrganizationAdmin = () => {
           .in("user_id", [...employeeIds, user.id])
           .order("date", { ascending: false });
 
-        // Calculate pending amounts per employee
-        const employeesWithPending = (employeesData || []).map(emp => {
+        // Calculate per-employee totals (pending, approved = to be paid, paid)
+        const employeesWithTotals = (employeesData || []).map(emp => {
           const empExpenses = (expensesData || []).filter(exp => exp.user_id === emp.id);
           const pending = empExpenses
             .filter(e => e.status === "pending")
@@ -107,10 +107,10 @@ const OrganizationAdmin = () => {
             totalPending: pending,
             totalToBePaid: toBePaid,
             totalPaid: paid,
-          };
+          } as Employee;
         });
 
-        setEmployees(employeesWithPending);
+        setEmployees(employeesWithTotals);
         
         // Create employee lookup for transforming expenses
         const allEmployees = [...(employeesData || []), { id: user.id, full_name: "", email: "" }];
@@ -155,9 +155,10 @@ const OrganizationAdmin = () => {
         .from("expenses")
         .update({
           status: newStatus,
-          manager_notes: managerNotes || null
+          manager_notes: managerNotes || null,
         })
-        .eq("id", expenseId);
+        .eq("id", expenseId)
+        .eq("status", "pending");
 
       if (error) throw error;
 
@@ -166,21 +167,20 @@ const OrganizationAdmin = () => {
       setManagerNotes("");
       await loadDashboardData();
     } catch (error: any) {
+      console.error("Expense update failed:", error);
       toast.error(`Failed to ${newStatus} expense`);
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  // Category breakdown: show both Approved (to be paid) and Paid
   const categoryStatusBreakdown = allExpenses.reduce((acc, exp) => {
     if (!acc[exp.category]) {
       acc[exp.category] = { approved: 0, paid: 0 };
     }
-    if (exp.status === "approved") {
-      acc[exp.category].approved += exp.amount;
-    } else if (exp.status === "paid") {
-      acc[exp.category].paid += exp.amount;
-    }
+    if (exp.status === "approved") acc[exp.category].approved += exp.amount;
+    if (exp.status === "paid") acc[exp.category].paid += exp.amount;
     return acc;
   }, {} as Record<string, { approved: number; paid: number }>);
 
@@ -310,6 +310,11 @@ const OrganizationAdmin = () => {
                   <TableRow key={employee.id}>
                     <TableCell className="font-medium">{employee.full_name || "N/A"}</TableCell>
                     <TableCell>{employee.email}</TableCell>
+                    <TableCell className="text-right">
+                      <span className={employee.totalPending > 0 ? "font-bold text-primary" : ""}>
+                        ${employee.totalPending.toFixed(2)}
+                      </span>
+                    </TableCell>
                     <TableCell className="text-right">
                       <span className={employee.totalToBePaid > 0 ? "font-bold text-primary" : ""}>
                         ${employee.totalToBePaid.toFixed(2)}
