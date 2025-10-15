@@ -18,6 +18,8 @@ interface Employee {
   full_name: string;
   email: string;
   totalPending: number;
+  totalToBePaid: number;
+  totalPaid: number;
 }
 
 interface Expense {
@@ -89,13 +91,22 @@ const OrganizationAdmin = () => {
 
         // Calculate pending amounts per employee
         const employeesWithPending = (employeesData || []).map(emp => {
-          const pending = (expensesData || [])
-            .filter(exp => exp.user_id === emp.id && exp.status === "pending")
-            .reduce((sum, exp) => sum + Number(exp.amount), 0);
+          const empExpenses = (expensesData || []).filter(exp => exp.user_id === emp.id);
+          const pending = empExpenses
+            .filter(e => e.status === "pending")
+            .reduce((sum, e) => sum + Number(e.amount), 0);
+          const toBePaid = empExpenses
+            .filter(e => e.status === "approved")
+            .reduce((sum, e) => sum + Number(e.amount), 0);
+          const paid = empExpenses
+            .filter(e => e.status === "paid")
+            .reduce((sum, e) => sum + Number(e.amount), 0);
           
           return {
             ...emp,
-            totalPending: pending
+            totalPending: pending,
+            totalToBePaid: toBePaid,
+            totalPaid: paid,
           };
         });
 
@@ -161,12 +172,17 @@ const OrganizationAdmin = () => {
     }
   };
 
-  const categoryBreakdown = allExpenses
-    .filter(exp => exp.status === "approved" || exp.status === "paid")
-    .reduce((acc, exp) => {
-      acc[exp.category] = (acc[exp.category] || 0) + exp.amount;
-      return acc;
-    }, {} as Record<string, number>);
+  const categoryStatusBreakdown = allExpenses.reduce((acc, exp) => {
+    if (!acc[exp.category]) {
+      acc[exp.category] = { approved: 0, paid: 0 };
+    }
+    if (exp.status === "approved") {
+      acc[exp.category].approved += exp.amount;
+    } else if (exp.status === "paid") {
+      acc[exp.category].paid += exp.amount;
+    }
+    return acc;
+  }, {} as Record<string, { approved: number; paid: number }>);
 
   const totalPending = allExpenses
     .filter(exp => exp.status === "pending")
@@ -246,7 +262,7 @@ const OrganizationAdmin = () => {
               <TrendingUp className="w-5 h-5" />
               Spending by Category
             </CardTitle>
-            <CardDescription>Total approved/paid amounts per category</CardDescription>
+            <CardDescription>To be paid and paid amounts per category</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
@@ -305,7 +321,7 @@ const OrganizationAdmin = () => {
                 ))}
                 {employees.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
+                    <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
                       No employees yet. Share your organization name for employees to join.
                     </TableCell>
                   </TableRow>
