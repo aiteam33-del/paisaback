@@ -31,7 +31,19 @@ const Auth = () => {
   useEffect(() => {
     const checkUserStatus = async () => {
       if (user) {
-        // Check if user has an organization
+        // If user owns an organization, treat as admin
+        const { data: orgByOwner } = await supabase
+          .from("organizations")
+          .select("id")
+          .eq("admin_user_id", user.id)
+          .maybeSingle();
+
+        if (orgByOwner) {
+          navigate("/admin");
+          return;
+        }
+
+        // Otherwise route based on whether they joined an org
         const { data: profile } = await supabase
           .from("profiles")
           .select("organization_id")
@@ -138,15 +150,7 @@ const Auth = () => {
 
           if (profileError) throw profileError;
 
-          // Add admin role
-          const { error: roleError } = await supabase
-            .from("user_roles")
-            .insert({
-              user_id: authData.user.id,
-              role: "admin"
-            });
-
-          if (roleError && !roleError.message.includes("duplicate")) throw roleError;
+          // Admin role is granted by a secure DB trigger; no client-side insert needed
 
           toast.success(`Organization "${orgName}" created successfully!`);
           navigate("/admin");

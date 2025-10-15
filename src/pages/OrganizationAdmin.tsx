@@ -53,14 +53,7 @@ const OrganizationAdmin = () => {
       return;
     }
 
-    if (userRole && userRole !== "admin") {
-      navigate("/employee");
-      return;
-    }
-
-    if (userRole === "admin") {
-      loadDashboardData();
-    }
+    loadDashboardData();
   }, [user, userRole, navigate]);
 
   const loadDashboardData = async () => {

@@ -108,15 +108,7 @@ const Onboarding = () => {
 
       if (profileError) throw profileError;
 
-      // Add admin role
-      const { error: roleError } = await supabase
-        .from("user_roles")
-        .insert({
-          user_id: user.id,
-          role: "admin"
-        });
-
-      if (roleError && !roleError.message.includes("duplicate")) throw roleError;
+      // Role granted by DB trigger; nothing to do here
 
       toast.success(`Organization "${orgName}" created successfully!`);
       navigate("/admin");

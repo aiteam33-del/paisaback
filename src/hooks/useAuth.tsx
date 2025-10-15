@@ -133,11 +133,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           .single();
 
         const role = roleData?.role || "employee";
-        
-        // Redirect based on role
+
         if (role === "admin") {
           navigate("/admin");
-        } else if (role === "manager" || role === "finance") {
+          return;
+        }
+
+        // Fallback: if user is org admin by ownership, treat as admin
+        const { data: orgExists } = await supabase
+          .from("organizations")
+          .select("id")
+          .eq("admin_user_id", data.user.id)
+          .maybeSingle();
+
+        if (orgExists) {
+          navigate("/admin");
+          return;
+        }
+        
+        if (role === "manager" || role === "finance") {
           navigate("/organization");
         } else {
           navigate("/employee");
