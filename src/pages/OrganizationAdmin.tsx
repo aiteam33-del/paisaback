@@ -162,7 +162,7 @@ const OrganizationAdmin = () => {
   };
 
   const categoryBreakdown = allExpenses
-    .filter(exp => exp.status !== "pending")
+    .filter(exp => exp.status === "approved" || exp.status === "paid")
     .reduce((acc, exp) => {
       acc[exp.category] = (acc[exp.category] || 0) + exp.amount;
       return acc;
