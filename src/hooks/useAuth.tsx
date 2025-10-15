@@ -87,8 +87,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       
       if (data.user) {
         toast.success("Account created successfully!");
-        // Role will be set automatically by the trigger
-        navigate("/employee");
+        // Redirect to onboarding to choose create/join organization
+        navigate("/onboarding");
       }
     } catch (error: any) {
       toast.error(error.message || "Failed to sign up");
@@ -109,6 +109,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (error) throw error;
 
       if (data.user) {
+        // Check if user has an organization
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("organization_id")
+          .eq("id", data.user.id)
+          .single();
+
+        if (!profile?.organization_id) {
+          // No organization, redirect to onboarding
+          toast.success("Welcome! Let's get you set up.");
+          navigate("/onboarding");
+          return;
+        }
+
         toast.success("Logged in successfully!");
         
         // Fetch user role and redirect

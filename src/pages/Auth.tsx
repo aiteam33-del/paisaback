@@ -26,9 +26,24 @@ const Auth = () => {
 
   // Redirect if already logged in
   useEffect(() => {
-    if (user) {
-      navigate("/employee");
-    }
+    const checkUserStatus = async () => {
+      if (user) {
+        // Check if user has an organization
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("organization_id")
+          .eq("id", user.id)
+          .single();
+
+        if (!profile?.organization_id) {
+          navigate("/onboarding");
+        } else {
+          navigate("/employee");
+        }
+      }
+    };
+    
+    checkUserStatus();
   }, [user, navigate]);
 
   const handleSignIn = async (e: React.FormEvent) => {

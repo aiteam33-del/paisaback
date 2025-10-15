@@ -92,6 +92,30 @@ export type Database = {
         }
         Relationships: []
       }
+      organizations: {
+        Row: {
+          admin_user_id: string
+          created_at: string
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          admin_user_id: string
+          created_at?: string
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          admin_user_id?: string
+          created_at?: string
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -102,6 +126,7 @@ export type Database = {
           last_email_sent: string | null
           next_email_at: string | null
           organization_domain: string | null
+          organization_id: string | null
           superior_email: string | null
           updated_at: string
         }
@@ -114,6 +139,7 @@ export type Database = {
           last_email_sent?: string | null
           next_email_at?: string | null
           organization_domain?: string | null
+          organization_id?: string | null
           superior_email?: string | null
           updated_at?: string
         }
@@ -126,10 +152,19 @@ export type Database = {
           last_email_sent?: string | null
           next_email_at?: string | null
           organization_domain?: string | null
+          organization_id?: string | null
           superior_email?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
@@ -171,6 +206,10 @@ export type Database = {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
+        Returns: boolean
+      }
+      is_org_admin: {
+        Args: { _org_id: string; _user_id: string }
         Returns: boolean
       }
     }
