@@ -266,14 +266,19 @@ const OrganizationAdmin = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {Object.entries(categoryBreakdown).map(([category, amount]) => (
+              {Object.entries(categoryStatusBreakdown).map(([category, amounts]) => (
                 <div key={category} className="flex items-center justify-between">
                   <span className="font-medium">{category}</span>
-                  <span className="text-2xl font-bold">${amount.toFixed(2)}</span>
+                  <div className="text-right">
+                    <div className="text-xs text-muted-foreground">To be paid</div>
+                    <div className="font-semibold">${(amounts as {approved: number; paid: number}).approved.toFixed(2)}</div>
+                    <div className="text-xs text-muted-foreground mt-1">Paid</div>
+                    <div className="font-semibold">${(amounts as {approved: number; paid: number}).paid.toFixed(2)}</div>
+                  </div>
                 </div>
               ))}
-              {Object.keys(categoryBreakdown).length === 0 && (
-                <p className="text-muted-foreground text-center py-4">No approved expenses yet</p>
+              {Object.keys(categoryStatusBreakdown).length === 0 && (
+                <p className="text-muted-foreground text-center py-4">No approved or paid expenses yet</p>
               )}
             </div>
           </CardContent>
@@ -294,7 +299,9 @@ const OrganizationAdmin = () => {
                 <TableRow>
                   <TableHead>Name</TableHead>
                   <TableHead>Email</TableHead>
-                  <TableHead className="text-right">Pending Amount</TableHead>
+                  <TableHead className="text-right">Pending</TableHead>
+                  <TableHead className="text-right">To be paid</TableHead>
+                  <TableHead className="text-right">Paid</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -304,8 +311,13 @@ const OrganizationAdmin = () => {
                     <TableCell className="font-medium">{employee.full_name || "N/A"}</TableCell>
                     <TableCell>{employee.email}</TableCell>
                     <TableCell className="text-right">
-                      <span className={employee.totalPending > 0 ? "font-bold text-primary" : ""}>
-                        ${employee.totalPending.toFixed(2)}
+                      <span className={employee.totalToBePaid > 0 ? "font-bold text-primary" : ""}>
+                        ${employee.totalToBePaid.toFixed(2)}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <span className={employee.totalPaid > 0 ? "font-bold text-primary" : ""}>
+                        ${employee.totalPaid.toFixed(2)}
                       </span>
                     </TableCell>
                     <TableCell className="text-right">
