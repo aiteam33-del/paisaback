@@ -63,6 +63,7 @@ const Employee = () => {
   const [customScheduleTime, setCustomScheduleTime] = useState<string>("09:00");
   const [isUpdatingFrequency, setIsUpdatingFrequency] = useState(false);
   const [orgId, setOrgId] = useState<string | null>(null);
+  const [orgName, setOrgName] = useState<string>("");
   const [joinPending, setJoinPending] = useState<boolean>(false);
   const [lastActivityTime, setLastActivityTime] = useState(Date.now());
   
@@ -199,6 +200,17 @@ const Employee = () => {
       if (data.full_name) setUserName(data.full_name);
       if (data.email_frequency) setEmailFrequency(data.email_frequency);
       setOrgId(data.organization_id ?? null);
+
+      // Fetch organization name
+      if (data.organization_id) {
+        const { data: orgData } = await supabase
+          .from("organizations")
+          .select("name")
+          .eq("id", data.organization_id)
+          .maybeSingle();
+        
+        if (orgData) setOrgName(orgData.name);
+      }
 
       if (!data.organization_id) {
         const { data: jr } = await supabase
@@ -852,7 +864,15 @@ const processOCR = async (file: File) => {
           <h1 className="text-3xl font-bold text-foreground mb-2">
             {userName ? `Welcome, ${userName}` : "Employee Dashboard"}
           </h1>
-          <p className="text-muted-foreground">Submit and track your expense claims</p>
+          <div className="flex items-center gap-2">
+            {orgName && (
+              <p className="text-muted-foreground">
+                {orgName}
+              </p>
+            )}
+            {orgName && <span className="text-muted-foreground">•</span>}
+            <p className="text-muted-foreground">Submit and track your expense claims</p>
+          </div>
         </div>
 
         <div className="grid lg:grid-cols-2 gap-6 max-w-full">
