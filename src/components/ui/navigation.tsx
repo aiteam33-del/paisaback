@@ -6,14 +6,17 @@ import { Wallet } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 
 export const Navigation = () => {
-  const { user, signOut } = useAuth();
+  const { user, signOut, userRole } = useAuth();
   const location = useLocation();
+  
+  // Redirect admin users to /admin instead of employee dashboard
+  const homeLink = user ? (userRole === 'admin' ? '/admin' : '/employee') : '/';
   
   return (
     <nav className="fixed top-0 w-full bg-card/80 backdrop-blur-lg border-b border-border z-50 shadow-sm">
       <div className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2 group">
+          <Link to={homeLink} className="flex items-center gap-2 group">
             <div className="bg-gradient-primary p-2 rounded-lg group-hover:shadow-md transition-all">
               <Wallet className="w-6 h-6 text-primary-foreground" />
             </div>

@@ -14,7 +14,7 @@ import { Navigation } from "@/components/ui/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Building2, Users, DollarSign, TrendingUp, CheckCircle, XCircle, Clock, Loader2, Search, Filter, Calendar } from "lucide-react";
+import { Building2, Users, DollarSign, TrendingUp, CheckCircle, XCircle, Clock, Loader2, Search, Filter, Calendar, Receipt } from "lucide-react";
 
 interface Employee {
   id: string;
@@ -33,6 +33,7 @@ interface Expense {
   status: string;
   description: string;
   vendor: string;
+  attachments?: string[];
   employee: {
     full_name: string;
     email: string;
@@ -138,6 +139,7 @@ const OrganizationAdmin = () => {
           status: exp.status,
           description: exp.description,
           vendor: exp.vendor,
+          attachments: exp.attachments || [],
           employee: employeeLookup.get(exp.user_id) || { full_name: "Unknown", email: "unknown" }
         }));
         
@@ -227,8 +229,8 @@ const OrganizationAdmin = () => {
     .filter(exp => exp.status === "pending")
     .reduce((sum, exp) => sum + exp.amount, 0);
 
-  const totalPaid = allExpenses
-    .filter(exp => exp.status === "approved" || exp.status === "paid")
+  const totalApproved = allExpenses
+    .filter(exp => exp.status === "approved")
     .reduce((sum, exp) => sum + exp.amount, 0);
 
   // Get unique categories for filter
@@ -274,7 +276,7 @@ const OrganizationAdmin = () => {
               <Clock className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">${totalPending.toFixed(2)}</div>
+              <div className="text-2xl font-bold">₹{totalPending.toFixed(2)}</div>
               <p className="text-xs text-muted-foreground">
                 Awaiting approval
               </p>
@@ -283,13 +285,13 @@ const OrganizationAdmin = () => {
 
            <Card className="shadow-card">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Paid</CardTitle>
-              <DollarSign className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium">Total Approved</CardTitle>
+              <CheckCircle className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">${totalPaid.toFixed(2)}</div>
+              <div className="text-2xl font-bold">₹{totalApproved.toFixed(2)}</div>
               <p className="text-xs text-muted-foreground">
-                Approved/paid expenses
+                Awaiting payment
               </p>
             </CardContent>
           </Card>
@@ -485,9 +487,24 @@ const OrganizationAdmin = () => {
                             </span>
                           </div>
                           <p className="text-sm text-muted-foreground mt-2 ml-13">{expense.description}</p>
+                          {expense.attachments && expense.attachments.length > 0 && (
+                            <div className="flex gap-2 mt-2 ml-13">
+                              {expense.attachments.map((url, idx) => (
+                                <Button 
+                                  key={idx} 
+                                  variant="outline" 
+                                  size="sm"
+                                  onClick={() => window.open(url, '_blank')}
+                                >
+                                  <Receipt className="w-3 h-3 mr-1" />
+                                  Receipt {expense.attachments!.length > 1 ? `${idx + 1}` : ''}
+                                </Button>
+                              ))}
+                            </div>
+                          )}
                         </div>
                         <div className="flex items-center gap-4">
-                          <p className="text-xl font-semibold text-foreground">${expense.amount.toFixed(2)}</p>
+                          <p className="text-xl font-semibold text-foreground">₹{expense.amount.toFixed(2)}</p>
                           {expense.status === "pending" && (
                             <div className="flex gap-2">
                               <Button
@@ -540,17 +557,17 @@ const OrganizationAdmin = () => {
                       <div className="flex items-center justify-between mb-2">
                         <span className="font-semibold text-lg">{category}</span>
                         <span className="text-xl font-bold">
-                          ${((amounts as {approved: number; paid: number}).approved + (amounts as {approved: number; paid: number}).paid).toFixed(2)}
+                          ₹{((amounts as {approved: number; paid: number}).approved + (amounts as {approved: number; paid: number}).paid).toFixed(2)}
                         </span>
                       </div>
                       <div className="grid grid-cols-2 gap-4">
                         <div>
                           <div className="text-xs text-muted-foreground">To be paid</div>
-                          <div className="font-semibold text-warning">${(amounts as {approved: number; paid: number}).approved.toFixed(2)}</div>
+                          <div className="font-semibold text-warning">₹{(amounts as {approved: number; paid: number}).approved.toFixed(2)}</div>
                         </div>
                         <div>
                           <div className="text-xs text-muted-foreground">Paid</div>
-                          <div className="font-semibold text-success">${(amounts as {approved: number; paid: number}).paid.toFixed(2)}</div>
+                          <div className="font-semibold text-success">₹{(amounts as {approved: number; paid: number}).paid.toFixed(2)}</div>
                         </div>
                       </div>
                     </div>
@@ -583,7 +600,7 @@ const OrganizationAdmin = () => {
                           <p className="text-xs text-muted-foreground mt-1">{data.count} expense{data.count !== 1 ? 's' : ''}</p>
                         </div>
                         <div className="text-right">
-                          <p className="text-xl font-bold">${data.total.toFixed(2)}</p>
+                          <p className="text-xl font-bold">₹{data.total.toFixed(2)}</p>
                           <p className="text-sm text-muted-foreground">Total</p>
                         </div>
                       </div>
@@ -626,17 +643,17 @@ const OrganizationAdmin = () => {
                     <TableCell>{employee.email}</TableCell>
                     <TableCell className="text-right">
                       <span className={employee.totalPending > 0 ? "font-bold text-primary" : ""}>
-                        ${employee.totalPending.toFixed(2)}
+                        ₹{employee.totalPending.toFixed(2)}
                       </span>
                     </TableCell>
                     <TableCell className="text-right">
                       <span className={employee.totalToBePaid > 0 ? "font-bold text-primary" : ""}>
-                        ${employee.totalToBePaid.toFixed(2)}
+                        ₹{employee.totalToBePaid.toFixed(2)}
                       </span>
                     </TableCell>
                     <TableCell className="text-right">
                       <span className={employee.totalPaid > 0 ? "font-bold text-primary" : ""}>
-                        ${employee.totalPaid.toFixed(2)}
+                        ₹{employee.totalPaid.toFixed(2)}
                       </span>
                     </TableCell>
                     <TableCell className="text-right">
@@ -680,13 +697,31 @@ const OrganizationAdmin = () => {
                       <CardDescription>{new Date(expense.date).toLocaleDateString()}</CardDescription>
                     </div>
                     <div className="text-right">
-                      <div className="text-2xl font-bold">${expense.amount.toFixed(2)}</div>
+                      <div className="text-2xl font-bold">₹{expense.amount.toFixed(2)}</div>
                       <Badge variant="secondary">{expense.category}</Badge>
                     </div>
                   </div>
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm mb-4">{expense.description}</p>
+                  {expense.attachments && expense.attachments.length > 0 && (
+                    <div className="mb-4">
+                      <Label className="text-xs text-muted-foreground mb-2 block">Receipts</Label>
+                      <div className="flex flex-wrap gap-2">
+                        {expense.attachments.map((url, idx) => (
+                          <Button 
+                            key={idx} 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => window.open(url, '_blank')}
+                          >
+                            <Receipt className="w-3 h-3 mr-1" />
+                            View Receipt {expense.attachments!.length > 1 ? `${idx + 1}` : ''}
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                   <div className="flex gap-2">
                     <Button variant="hero"
                       size="sm"
@@ -726,7 +761,7 @@ const OrganizationAdmin = () => {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {selectedExpense && `${selectedExpense.vendor} - $${selectedExpense.amount.toFixed(2)}`}
+              {selectedExpense && `${selectedExpense.vendor} - ₹${selectedExpense.amount.toFixed(2)}`}
             </DialogTitle>
             <DialogDescription>
               {selectedExpense && (
@@ -735,6 +770,24 @@ const OrganizationAdmin = () => {
                   <p className="text-sm"><span className="font-medium">Category:</span> {selectedExpense.category}</p>
                   <p className="text-sm"><span className="font-medium">Date:</span> {new Date(selectedExpense.date).toLocaleDateString()}</p>
                   <p className="text-sm"><span className="font-medium">Description:</span> {selectedExpense.description}</p>
+                  {selectedExpense.attachments && selectedExpense.attachments.length > 0 && (
+                    <div className="mt-3">
+                      <Label className="text-xs font-medium">Attached Receipts</Label>
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {selectedExpense.attachments.map((url, idx) => (
+                          <Button 
+                            key={idx} 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => window.open(url, '_blank')}
+                          >
+                            <Receipt className="w-3 h-3 mr-1" />
+                            Document {idx + 1}
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </DialogDescription>

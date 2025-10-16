@@ -75,12 +75,30 @@ serve(async (req) => {
     const isPdf = mimeType === "application/pdf";
     console.log(`Processing ${isPdf ? 'PDF' : 'image'} document, mime: ${mimeType}`);
 
-    // Build prompt - updated to handle invoices, bills, and receipts
-    const systemPrompt = "You are an expert OCR agent for receipts, invoices, bills, and payment screenshots. Extract information from the document and return STRICT JSON only with keys: merchant (string - company/vendor name), amount (number - final total amount to be paid), date (YYYY-MM-DD - invoice/transaction date), transaction_id (string - invoice number, order number, or transaction ID), category (one of travel, food, lodging, office, other), payment_method (string - detect payment method: if you see GPay, Google Pay, Paytm, PhonePe, BHIM, or any UPI app name, return 'upi'. For credit cards return 'credit_card', for debit cards return 'debit_card', for cash return 'cash'. Return empty string if unknown). For invoices, use the Grand Total or final amount. Do not include any extra text, only valid JSON.";
+    // Retry helper with exponential backoff
+    const retryWithBackoff = async <T,>(
+      fn: () => Promise<T>,
+      maxRetries: number = 2,
+      delay: number = 1000
+    ): Promise<T> => {
+      for (let i = 0; i < maxRetries; i++) {
+        try {
+          return await fn();
+        } catch (error) {
+          if (i === maxRetries - 1) throw error;
+          const backoffDelay = delay * Math.pow(2, i);
+          console.log(`Retry attempt ${i + 1}/${maxRetries} after ${backoffDelay}ms`);
+          await new Promise(resolve => setTimeout(resolve, backoffDelay));
+        }
+      }
+      throw new Error('Max retries exceeded');
+    };
 
     let extractedText = "";
 
     async function askOpenAI(): Promise<string> {
+      const systemPrompt = "You are an expert OCR agent for receipts, invoices, bills, and payment screenshots. Extract information from the document and return STRICT JSON only with keys: merchant (string - company/vendor name), amount (number - final total amount to be paid), date (YYYY-MM-DD - invoice/transaction date), transaction_id (string - invoice number, order number, or transaction ID), category (one of travel, food, lodging, office, other), payment_method (string - detect payment method: if you see GPay, Google Pay, Paytm, PhonePe, BHIM, or any UPI app name, return 'upi'. For credit cards return 'credit_card', for debit cards return 'debit_card', for cash return 'cash'. Return empty string if unknown). For invoices, use the Grand Total or final amount. Do not include any extra text, only valid JSON.";
+      
       const payload = {
         model: "gpt-5-mini-2025-08-07",
         messages: [
@@ -125,37 +143,38 @@ serve(async (req) => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "google/gemini-2.5-pro",
+          model: "google/gemini-2.5-flash",
           messages: [
             {
               role: "user",
               content: [
                 { 
                   type: "text", 
-                  text: `You are an expert OCR agent. Analyze this ${isPdf ? 'invoice PDF' : 'receipt, bill, or payment screenshot'} carefully and extract the following information in STRICT JSON format only:
+                  text: `You are an expert at reading Indian receipts, invoices, bills, and UPI payment screenshots. 
+Extract ONLY the following fields in strict JSON format:
 
 {
-  "merchant": "vendor/company name",
+  "merchant": "exact vendor/company name",
   "amount": 0.00,
   "date": "YYYY-MM-DD",
-  "transaction_id": "invoice/order/transaction number",
+  "transaction_id": "UPI ref/invoice/order number",
   "category": "travel|food|lodging|office|other",
   "payment_method": "upi|credit_card|debit_card|cash|"
 }
 
-RULES:
-- amount: Extract the FINAL TOTAL amount to be paid (Grand Total for invoices)
-- date: Invoice/transaction date in YYYY-MM-DD format
-- payment_method: Detect UPI apps (GPay, Google Pay, Paytm, PhonePe, BHIM, UPI) as "upi"
-- Return ONLY valid JSON, no extra text
-- If a field cannot be determined, use empty string or 0 for amount` 
+CRITICAL RULES:
+- amount: MUST be a number. Extract the FINAL TOTAL amount (Grand Total for invoices, Total Paid for UPI)
+- date: MUST be YYYY-MM-DD format. Convert any date format to this.
+- payment_method: If you see GPay, Google Pay, PhonePe, Paytm, BHIM, or "UPI" → return "upi"
+- For UPI screenshots: merchant is "To:" field, amount is "Total Paid", transaction_id is "UPI transaction ID"
+- Return ONLY the JSON object, NO explanatory text before or after
+- If uncertain about any field, use empty string "" or 0 for amount
+- Focus on the FINAL amount, ignore subtotals and line items` 
                 },
                 { type: "image_url", image_url: { url: `data:${mimeType};base64,${base64Data}` } },
               ],
             },
           ],
-          temperature: 0.1,
-          max_tokens: 500,
         }),
       });
 
@@ -173,16 +192,18 @@ RULES:
     try {
       if (OPENAI_API_KEY) {
         try {
-          extractedText = await askOpenAI();
+          console.log("Using OpenAI for OCR with retry logic");
+          extractedText = await retryWithBackoff(() => askOpenAI(), 3, 1000);
         } catch (err) {
-          console.error("OpenAI failed, falling back to Lovable AI", err);
-          extractedText = await askLovable();
+          console.error("OpenAI failed after retries, falling back to Lovable AI", err);
+          extractedText = await retryWithBackoff(() => askLovable(), 3, 1000);
         }
       } else {
-        extractedText = await askLovable();
+        console.log("Using Lovable AI for OCR with retry logic");
+        extractedText = await retryWithBackoff(() => askLovable(), 3, 1000);
       }
     } catch (finalErr) {
-      console.error("Both providers failed", finalErr);
+      console.error("Both providers failed after retries", finalErr);
       throw finalErr;
     }
 
