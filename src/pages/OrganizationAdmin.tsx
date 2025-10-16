@@ -7,11 +7,14 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Navigation } from "@/components/ui/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Building2, Users, DollarSign, TrendingUp, CheckCircle, XCircle, Clock, Loader2 } from "lucide-react";
+import { Building2, Users, DollarSign, TrendingUp, CheckCircle, XCircle, Clock, Loader2, Search, Filter, Calendar } from "lucide-react";
 
 interface Employee {
   id: string;
@@ -48,6 +51,14 @@ const OrganizationAdmin = () => {
   const [managerNotes, setManagerNotes] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Filter states
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterCategory, setFilterCategory] = useState<string>("all");
+  const [filterEmployee, setFilterEmployee] = useState<string>("all");
+  const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [filterDateFrom, setFilterDateFrom] = useState("");
+  const [filterDateTo, setFilterDateTo] = useState("");
 
   useEffect(() => {
     if (!user) {
@@ -174,8 +185,25 @@ const OrganizationAdmin = () => {
     }
   };
 
+  // Filter expenses based on all filter criteria
+  const filteredExpenses = allExpenses.filter(exp => {
+    const matchesSearch = searchTerm === "" || 
+      exp.vendor.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      exp.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      exp.employee.full_name.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesCategory = filterCategory === "all" || exp.category === filterCategory;
+    const matchesEmployee = filterEmployee === "all" || exp.employee.email === filterEmployee;
+    const matchesStatus = filterStatus === "all" || exp.status === filterStatus;
+    
+    const matchesDateFrom = !filterDateFrom || new Date(exp.date) >= new Date(filterDateFrom);
+    const matchesDateTo = !filterDateTo || new Date(exp.date) <= new Date(filterDateTo);
+    
+    return matchesSearch && matchesCategory && matchesEmployee && matchesStatus && matchesDateFrom && matchesDateTo;
+  });
+
   // Category breakdown: show both Approved (to be paid) and Paid
-  const categoryStatusBreakdown = allExpenses.reduce((acc, exp) => {
+  const categoryStatusBreakdown = filteredExpenses.reduce((acc, exp) => {
     if (!acc[exp.category]) {
       acc[exp.category] = { approved: 0, paid: 0 };
     }
@@ -184,6 +212,17 @@ const OrganizationAdmin = () => {
     return acc;
   }, {} as Record<string, { approved: number; paid: number }>);
 
+  // Employee breakdown
+  const employeeBreakdown = filteredExpenses.reduce((acc, exp) => {
+    const key = exp.employee.email;
+    if (!acc[key]) {
+      acc[key] = { name: exp.employee.full_name, total: 0, count: 0 };
+    }
+    acc[key].total += exp.amount;
+    acc[key].count += 1;
+    return acc;
+  }, {} as Record<string, { name: string; total: number; count: number }>);
+
   const totalPending = allExpenses
     .filter(exp => exp.status === "pending")
     .reduce((sum, exp) => sum + exp.amount, 0);
@@ -191,6 +230,20 @@ const OrganizationAdmin = () => {
   const totalPaid = allExpenses
     .filter(exp => exp.status === "approved" || exp.status === "paid")
     .reduce((sum, exp) => sum + exp.amount, 0);
+
+  // Get unique categories for filter
+  const categories = Array.from(new Set(allExpenses.map(exp => exp.category)));
+  
+  // Status colors
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "pending": return "bg-warning/20 text-warning border-warning/30";
+      case "approved": return "bg-success/20 text-success border-success/30";
+      case "rejected": return "bg-destructive/20 text-destructive border-destructive/30";
+      case "paid": return "bg-primary/20 text-primary border-primary/30";
+      default: return "bg-muted/20 text-muted-foreground border-muted/30";
+    }
+  };
 
   if (isLoading) {
     return (
@@ -255,34 +308,295 @@ const OrganizationAdmin = () => {
           </Card>
         </div>
 
-        {/* Category Breakdown */}
+        {/* Filters */}
         <Card className="mb-8 shadow-card">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="w-5 h-5" />
-              Spending by Category
+              <Filter className="w-5 h-5" />
+              Filters & Search
             </CardTitle>
-            <CardDescription>To be paid and paid amounts per category</CardDescription>
+            <CardDescription>Filter and search through all expenses</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {Object.entries(categoryStatusBreakdown).map(([category, amounts]) => (
-                <div key={category} className="flex items-center justify-between">
-                  <span className="font-medium">{category}</span>
-                  <div className="text-right">
-                    <div className="text-xs text-muted-foreground">To be paid</div>
-                    <div className="font-semibold">${(amounts as {approved: number; paid: number}).approved.toFixed(2)}</div>
-                    <div className="text-xs text-muted-foreground mt-1">Paid</div>
-                    <div className="font-semibold">${(amounts as {approved: number; paid: number}).paid.toFixed(2)}</div>
-                  </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="search">Search</Label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    id="search"
+                    placeholder="Vendor, description, employee..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10"
+                  />
                 </div>
-              ))}
-              {Object.keys(categoryStatusBreakdown).length === 0 && (
-                <p className="text-muted-foreground text-center py-4">No approved or paid expenses yet</p>
-              )}
+              </div>
+
+              <div className="space-y-2">
+                <Label>Category</Label>
+                <Select value={filterCategory} onValueChange={setFilterCategory}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Categories</SelectItem>
+                    {categories.map(cat => (
+                      <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Employee</Label>
+                <Select value={filterEmployee} onValueChange={setFilterEmployee}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Employees</SelectItem>
+                    {employees.map(emp => (
+                      <SelectItem key={emp.id} value={emp.email}>
+                        {emp.full_name || emp.email}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Status</Label>
+                <Select value={filterStatus} onValueChange={setFilterStatus}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Statuses</SelectItem>
+                    <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="approved">Approved</SelectItem>
+                    <SelectItem value="paid">Paid</SelectItem>
+                    <SelectItem value="rejected">Rejected</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="dateFrom">From Date</Label>
+                <div className="relative">
+                  <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    id="dateFrom"
+                    type="date"
+                    value={filterDateFrom}
+                    onChange={(e) => setFilterDateFrom(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="dateTo">To Date</Label>
+                <div className="relative">
+                  <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    id="dateTo"
+                    type="date"
+                    value={filterDateTo}
+                    onChange={(e) => setFilterDateTo(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+              </div>
             </div>
+
+            {(searchTerm || filterCategory !== "all" || filterEmployee !== "all" || filterStatus !== "all" || filterDateFrom || filterDateTo) && (
+              <div className="mt-4 flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setSearchTerm("");
+                    setFilterCategory("all");
+                    setFilterEmployee("all");
+                    setFilterStatus("all");
+                    setFilterDateFrom("");
+                    setFilterDateTo("");
+                  }}
+                >
+                  Clear Filters
+                </Button>
+                <span className="text-sm text-muted-foreground">
+                  Showing {filteredExpenses.length} of {allExpenses.length} expenses
+                </span>
+              </div>
+            )}
           </CardContent>
         </Card>
+
+        {/* Analytics Tabs */}
+        <Tabs defaultValue="expenses" className="mb-8">
+          <TabsList className="grid w-full grid-cols-3 mb-4">
+            <TabsTrigger value="expenses">All Expenses</TabsTrigger>
+            <TabsTrigger value="categories">By Category</TabsTrigger>
+            <TabsTrigger value="employees">By Employee</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="expenses" className="space-y-4">
+            <Card className="shadow-card">
+              <CardHeader>
+                <CardTitle>Expense Details</CardTitle>
+                <CardDescription>Complete list of all expenses</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {filteredExpenses.length === 0 ? (
+                    <p className="text-center text-muted-foreground py-8">No expenses found</p>
+                  ) : (
+                    filteredExpenses.map((expense) => (
+                      <div
+                        key={expense.id}
+                        className="flex items-center justify-between p-4 rounded-lg border border-border hover:shadow-sm transition-all"
+                      >
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                              <span className="text-sm font-semibold text-primary">
+                                {expense.employee.full_name.split(" ").map((n) => n[0]).join("")}
+                              </span>
+                            </div>
+                            <div>
+                              <p className="font-medium text-foreground">{expense.vendor}</p>
+                              <p className="text-sm text-muted-foreground">
+                                {expense.employee.full_name} • {expense.category}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2 ml-13">
+                            <Badge variant="outline" className={getStatusColor(expense.status)}>
+                              {expense.status === "pending" && <Clock className="w-3 h-3 mr-1" />}
+                              {expense.status === "approved" && <CheckCircle className="w-3 h-3 mr-1" />}
+                              {expense.status === "rejected" && <XCircle className="w-3 h-3 mr-1" />}
+                              {expense.status === "paid" && <DollarSign className="w-3 h-3 mr-1" />}
+                              <span className="capitalize">{expense.status}</span>
+                            </Badge>
+                            <span className="text-xs text-muted-foreground">
+                              {new Date(expense.date).toLocaleDateString()}
+                            </span>
+                          </div>
+                          <p className="text-sm text-muted-foreground mt-2 ml-13">{expense.description}</p>
+                        </div>
+                        <div className="flex items-center gap-4">
+                          <p className="text-xl font-semibold text-foreground">${expense.amount.toFixed(2)}</p>
+                          {expense.status === "pending" && (
+                            <div className="flex gap-2">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="text-destructive hover:bg-destructive/10"
+                                onClick={() => {
+                                  setSelectedExpense(expense);
+                                  setManagerNotes("");
+                                }}
+                              >
+                                <XCircle className="w-4 h-4 mr-1" />
+                                Reject
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="hero"
+                                onClick={() => {
+                                  setSelectedExpense(expense);
+                                  setManagerNotes("");
+                                }}
+                              >
+                                <CheckCircle className="w-4 h-4 mr-1" />
+                                Approve
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="categories">
+            <Card className="shadow-card">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <TrendingUp className="w-5 h-5" />
+                  Spending by Category
+                </CardTitle>
+                <CardDescription>Breakdown of expenses by category</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {Object.entries(categoryStatusBreakdown).map(([category, amounts]) => (
+                    <div key={category} className="p-4 rounded-lg border border-border">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="font-semibold text-lg">{category}</span>
+                        <span className="text-xl font-bold">
+                          ${((amounts as {approved: number; paid: number}).approved + (amounts as {approved: number; paid: number}).paid).toFixed(2)}
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <div className="text-xs text-muted-foreground">To be paid</div>
+                          <div className="font-semibold text-warning">${(amounts as {approved: number; paid: number}).approved.toFixed(2)}</div>
+                        </div>
+                        <div>
+                          <div className="text-xs text-muted-foreground">Paid</div>
+                          <div className="font-semibold text-success">${(amounts as {approved: number; paid: number}).paid.toFixed(2)}</div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  {Object.keys(categoryStatusBreakdown).length === 0 && (
+                    <p className="text-muted-foreground text-center py-4">No expenses to display</p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="employees">
+            <Card className="shadow-card">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Users className="w-5 h-5" />
+                  Spending by Employee
+                </CardTitle>
+                <CardDescription>Breakdown of expenses by employee</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {Object.entries(employeeBreakdown).map(([email, data]) => (
+                    <div key={email} className="p-4 rounded-lg border border-border">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-semibold">{data.name}</p>
+                          <p className="text-sm text-muted-foreground">{email}</p>
+                          <p className="text-xs text-muted-foreground mt-1">{data.count} expense{data.count !== 1 ? 's' : ''}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-xl font-bold">${data.total.toFixed(2)}</p>
+                          <p className="text-sm text-muted-foreground">Total</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  {Object.keys(employeeBreakdown).length === 0 && (
+                    <p className="text-muted-foreground text-center py-4">No expenses to display</p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
 
         {/* Employees Table */}
         <Card className="shadow-card">
@@ -414,7 +728,16 @@ const OrganizationAdmin = () => {
             <DialogTitle>
               {selectedExpense && `${selectedExpense.vendor} - $${selectedExpense.amount.toFixed(2)}`}
             </DialogTitle>
-            <DialogDescription>Add notes (optional) and confirm action</DialogDescription>
+            <DialogDescription>
+              {selectedExpense && (
+                <div className="space-y-1 mt-2">
+                  <p className="text-sm"><span className="font-medium">Employee:</span> {selectedExpense.employee.full_name}</p>
+                  <p className="text-sm"><span className="font-medium">Category:</span> {selectedExpense.category}</p>
+                  <p className="text-sm"><span className="font-medium">Date:</span> {new Date(selectedExpense.date).toLocaleDateString()}</p>
+                  <p className="text-sm"><span className="font-medium">Description:</span> {selectedExpense.description}</p>
+                </div>
+              )}
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
