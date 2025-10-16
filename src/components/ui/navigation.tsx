@@ -4,10 +4,16 @@ import { useAuth } from "@/hooks/useAuth";
 import { LogOut, User } from "lucide-react";
 import { Wallet } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { NotificationBell } from "@/components/NotificationBell";
+import { NotificationDrawer } from "@/components/NotificationDrawer";
+import { useNotifications } from "@/hooks/useNotifications";
+import { useState } from "react";
 
 export const Navigation = () => {
   const { user, signOut, userRole } = useAuth();
   const location = useLocation();
+  const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
+  const [notificationOpen, setNotificationOpen] = useState(false);
   
   // Redirect admin users to /admin instead of employee dashboard
   const homeLink = user ? (userRole === 'admin' ? '/admin' : '/employee') : '/';
@@ -30,6 +36,10 @@ export const Navigation = () => {
                   <User className="w-4 h-4" />
                   <span>{user.email}</span>
                 </div>
+                <NotificationBell 
+                  unreadCount={unreadCount} 
+                  onClick={() => setNotificationOpen(true)} 
+                />
                 <ThemeToggle />
                 <Button variant="ghost" onClick={signOut} className="gap-2">
                   <LogOut className="w-4 h-4" />
@@ -50,6 +60,15 @@ export const Navigation = () => {
           </div>
         </div>
       </div>
+      
+      <NotificationDrawer
+        open={notificationOpen}
+        onOpenChange={setNotificationOpen}
+        notifications={notifications}
+        unreadCount={unreadCount}
+        onMarkAsRead={markAsRead}
+        onMarkAllAsRead={markAllAsRead}
+      />
     </nav>
   );
 };
