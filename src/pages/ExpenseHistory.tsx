@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -25,6 +25,7 @@ interface Expense {
 const ExpenseHistory = () => {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [filteredExpenses, setFilteredExpenses] = useState<Expense[]>([]);
@@ -48,6 +49,21 @@ const ExpenseHistory = () => {
   useEffect(() => {
     filterExpenses();
   }, [expenses, searchQuery, statusFilter, categoryFilter]);
+
+  // Deep-link: scroll & highlight an expense
+  useEffect(() => {
+    const expenseId = searchParams.get('expenseId');
+    if (!expenseId) return;
+    // Wait for list render
+    setTimeout(() => {
+      const el = document.getElementById(`exp-${expenseId}`);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        el.classList.add('ring-2', 'ring-primary');
+        setTimeout(() => el.classList.remove('ring-2', 'ring-primary'), 2000);
+      }
+    }, 0);
+  }, [searchParams, filteredExpenses]);
 
   const fetchExpenses = async () => {
     if (!user) return;
@@ -221,6 +237,7 @@ const ExpenseHistory = () => {
               filteredExpenses.map((expense) => (
                 <div
                   key={expense.id}
+                  id={`exp-${expense.id}`}
                   className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 rounded-lg border border-border hover:shadow-sm transition-shadow gap-3"
                 >
                   <div className="flex-1">

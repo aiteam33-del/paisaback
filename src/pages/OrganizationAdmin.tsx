@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
@@ -71,6 +71,7 @@ const OrganizationAdmin = () => {
   const [selectedExpenses, setSelectedExpenses] = useState<Set<string>>(new Set());
   const [showCharts, setShowCharts] = useState(false);
   const isMobile = useIsMobile();
+  const [searchParams] = useSearchParams();
   
   // Filter states
   const [searchTerm, setSearchTerm] = useState("");
@@ -88,6 +89,26 @@ const OrganizationAdmin = () => {
 
     loadDashboardData();
   }, [user, userRole, navigate]);
+
+  // Deep-link: open expense modal or scroll to join request from query params
+  useEffect(() => {
+    const expenseId = searchParams.get('expenseId');
+    if (expenseId && allExpenses.length > 0) {
+      const exp = allExpenses.find(e => e.id === expenseId);
+      if (exp) setSelectedExpense(exp);
+    }
+    const jrId = searchParams.get('joinRequestId');
+    if (jrId) {
+      setTimeout(() => {
+        const el = document.getElementById(`jr-${jrId}`);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          el.classList.add('ring-2', 'ring-primary');
+          setTimeout(() => el.classList.remove('ring-2', 'ring-primary'), 2000);
+        }
+      }, 0);
+    }
+  }, [searchParams, allExpenses, joinRequests]);
 
   const loadDashboardData = async () => {
     if (!user) return;
@@ -638,6 +659,7 @@ const OrganizationAdmin = () => {
                 {joinRequests.map((request) => (
                   <div 
                     key={request.id}
+                    id={`jr-${request.id}`}
                     className="flex items-center justify-between p-4 rounded-lg border border-border hover:shadow-sm transition-shadow"
                   >
                     <div className="flex-1">

@@ -60,34 +60,27 @@ export const NotificationDrawer = ({
   const handleNotificationClick = (notification: Notification) => {
     console.log('Notification clicked:', notification);
     
-    // Mark as read first
     if (!notification.read) {
       onMarkAsRead(notification.id);
     }
 
-    // Navigate based on notification type
     try {
       switch (notification.type) {
         case 'expense_submitted':
-          // Admin viewing submitted expense
-          console.log('Navigating to admin dashboard');
-          navigate('/admin');
+          // Admin: open the specific expense in a modal on /admin
+          navigate(notification.related_id ? `/admin?expenseId=${notification.related_id}` : '/admin');
           break;
         case 'expense_approved':
         case 'expense_rejected':
-          // Employee viewing their expense status
-          console.log('Navigating to expense history');
-          navigate('/employee/history');
+          // Employee: focus the specific expense in history
+          navigate(notification.related_id ? `/employee/history?expenseId=${notification.related_id}` : '/employee/history');
           break;
         case 'join_request':
-          // Admin viewing join request
-          console.log('Navigating to admin dashboard for join request');
-          navigate('/admin');
+          // Admin: focus the specific join request card
+          navigate(notification.related_id ? `/admin?joinRequestId=${notification.related_id}` : '/admin');
           break;
         case 'join_approved':
         case 'join_rejected':
-          // Employee can stay on current page or go to dashboard
-          console.log('Navigating to employee dashboard');
           navigate('/employee');
           break;
         default:
@@ -97,7 +90,6 @@ export const NotificationDrawer = ({
       console.error('Navigation error:', error);
     }
 
-    // Close drawer after navigation
     onOpenChange(false);
   };
 
