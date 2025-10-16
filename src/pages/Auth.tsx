@@ -164,7 +164,7 @@ const Auth = () => {
 
           const orgName = organizations.find(o => o.id === selectedOrgId)?.name;
           toast.success(`Join request sent to ${orgName}. You'll be notified when approved.`);
-          navigate("/employee");
+          navigate("/pending-request");
         }
       }
     } catch (error: any) {

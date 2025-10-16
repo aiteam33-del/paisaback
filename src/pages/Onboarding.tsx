@@ -30,34 +30,47 @@ const Onboarding = () => {
     checkUserOrganization();
   }, [user, navigate]);
 
-  const checkUserOrganization = async () => {
-    if (!user) return;
+    const checkUserOrganization = async () => {
+      if (!user) return;
 
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("organization_id")
-      .eq("id", user.id)
-      .single();
-
-    if (profile?.organization_id) {
-      // User already has an organization, redirect to appropriate dashboard
-      const { data: roleData } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", user.id)
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("organization_id")
+        .eq("id", user.id)
         .single();
 
-      const role = roleData?.role || "employee";
-      
-      if (role === "admin") {
-        navigate("/admin");
-      } else if (role === "manager" || role === "finance") {
-        navigate("/organization");
-      } else {
-        navigate("/employee");
+      if (profile?.organization_id) {
+        // User already has an organization, redirect to appropriate dashboard
+        const { data: roleData } = await supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", user.id)
+          .single();
+
+        const role = roleData?.role || "employee";
+        
+        if (role === "admin") {
+          navigate("/admin");
+        } else if (role === "manager" || role === "finance") {
+          navigate("/organization");
+        } else {
+          navigate("/employee");
+        }
+        return;
       }
-    }
-  };
+
+      // No org: if there's a pending join request, show pending page
+      const { data: pending } = await supabase
+        .from("join_requests")
+        .select("id")
+        .eq("employee_id", user.id)
+        .eq("status", "pending")
+        .maybeSingle();
+
+      if (pending) {
+        navigate("/pending-request");
+      }
+    };
 
   const loadOrganizations = async () => {
     setLoadingOrgs(true);
@@ -160,7 +173,7 @@ const Onboarding = () => {
 
       const orgName = organizations.find(o => o.id === selectedOrgId)?.name;
       toast.success(`Join request sent to ${orgName}. You'll be notified when approved.`);
-      navigate("/employee");
+      navigate("/pending-request");
     } catch (error: any) {
       toast.error(error.message || "Failed to send join request");
     } finally {

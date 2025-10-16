@@ -126,8 +126,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             .maybeSingle();
 
           if (pending) {
-            toast.info("Join request pending approval. You can browse but actions are disabled.");
-            navigate("/employee");
+            toast.info("Join request pending approval.");
+            navigate("/pending-request");
             return;
           }
 
