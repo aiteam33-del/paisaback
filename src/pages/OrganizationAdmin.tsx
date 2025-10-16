@@ -39,12 +39,25 @@ interface Expense {
   };
 }
 
+interface JoinRequest {
+  id: string;
+  employee_id: string;
+  org_id: string;
+  status: string;
+  created_at: string;
+  employee: {
+    full_name: string;
+    email: string;
+  };
+}
+
 const OrganizationAdmin = () => {
   const { user, userRole } = useAuth();
   const navigate = useNavigate();
   const [organization, setOrganization] = useState<any>(null);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [allExpenses, setAllExpenses] = useState<Expense[]>([]);
+  const [joinRequests, setJoinRequests] = useState<JoinRequest[]>([]);
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
   const [employeeExpenses, setEmployeeExpenses] = useState<Expense[]>([]);
   const [selectedExpense, setSelectedExpense] = useState<Expense | null>(null);
@@ -83,6 +96,24 @@ const OrganizationAdmin = () => {
 
       if (orgData) {
         setOrganization(orgData);
+
+        // Get pending join requests
+        const { data: joinRequestsData } = await supabase
+          .from("join_requests")
+          .select(`
+            *,
+            employee:profiles!join_requests_employee_id_fkey(full_name, email)
+          `)
+          .eq("org_id", orgData.id)
+          .eq("status", "pending")
+          .order("created_at", { ascending: false });
+
+        if (joinRequestsData) {
+          setJoinRequests(joinRequestsData.map(req => ({
+            ...req,
+            employee: req.employee || { full_name: "Unknown", email: "unknown" }
+          })));
+        }
 
         // Get all employees in organization
         const { data: employeesData } = await supabase
@@ -154,6 +185,33 @@ const OrganizationAdmin = () => {
 
   const handleEmployeeClick = (employeeId: string) => {
     navigate(`/admin/employee/${employeeId}`);
+  };
+
+  const handleJoinRequestAction = async (requestId: string, action: 'approve' | 'reject') => {
+    setIsSubmitting(true);
+    try {
+      const functionName = action === 'approve' ? 'approve_join_request' : 'reject_join_request';
+      const { data, error } = await supabase.rpc(functionName, { request_id: requestId });
+
+      if (error) throw error;
+
+      if (data) {
+        toast.success(`Join request ${action}d successfully`);
+        // Remove from local state
+        setJoinRequests(prev => prev.filter(req => req.id !== requestId));
+        // Reload data to reflect new employee if approved
+        if (action === 'approve') {
+          loadDashboardData();
+        }
+      } else {
+        toast.error(`Failed to ${action} request`);
+      }
+    } catch (error: any) {
+      console.error(`Error ${action}ing request:`, error);
+      toast.error(`Failed to ${action} join request`);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleExpenseAction = async (expenseId: string, newStatus: "approved" | "rejected") => {
@@ -263,8 +321,8 @@ const OrganizationAdmin = () => {
           <p className="text-lg text-muted-foreground">Admin Dashboard</p>
         </div>
 
-        {/* KPI Cards */}
-        <div className="grid md:grid-cols-3 gap-6 mb-8">
+         {/* KPI Cards */}
+        <div className="grid md:grid-cols-4 gap-6 mb-8">
            <Card className="shadow-card">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Pending</CardTitle>
@@ -300,6 +358,19 @@ const OrganizationAdmin = () => {
               <div className="text-2xl font-bold">{employees.length}</div>
               <p className="text-xs text-muted-foreground">
                 Active team members
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="shadow-card bg-gradient-primary text-primary-foreground">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Join Requests</CardTitle>
+              <Users className="h-4 w-4" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{joinRequests.length}</div>
+              <p className="text-xs text-primary-foreground/80">
+                Pending approval
               </p>
             </CardContent>
           </Card>
@@ -526,6 +597,68 @@ const OrganizationAdmin = () => {
             </div>
           </CardContent>
         </Card>
+
+        {/* Pending Join Requests Section */}
+        {joinRequests.length > 0 && (
+          <Card className="shadow-card mb-8 border-primary/20">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Users className="w-5 h-5 text-primary" />
+                Pending Join Requests
+                <Badge variant="default" className="ml-2">{joinRequests.length}</Badge>
+              </CardTitle>
+              <CardDescription>Review and approve employees requesting to join your organization</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {joinRequests.map((request) => (
+                  <div 
+                    key={request.id}
+                    className="flex items-center justify-between p-4 rounded-lg border border-border hover:shadow-sm transition-shadow"
+                  >
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-1">
+                        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                          <span className="text-sm font-semibold text-primary">
+                            {request.employee.full_name.split(" ").map((n) => n[0]).join("")}
+                          </span>
+                        </div>
+                        <div>
+                          <p className="font-medium text-foreground">{request.employee.full_name}</p>
+                          <p className="text-sm text-muted-foreground">{request.employee.email}</p>
+                        </div>
+                      </div>
+                      <p className="text-xs text-muted-foreground ml-13">
+                        Requested {new Date(request.created_at).toLocaleDateString()} at {new Date(request.created_at).toLocaleTimeString()}
+                      </p>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="text-destructive hover:bg-destructive/10"
+                        onClick={() => handleJoinRequestAction(request.id, 'reject')}
+                        disabled={isSubmitting}
+                      >
+                        <XCircle className="w-4 h-4 mr-1" />
+                        Reject
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="hero"
+                        onClick={() => handleJoinRequestAction(request.id, 'approve')}
+                        disabled={isSubmitting}
+                      >
+                        <CheckCircle className="w-4 h-4 mr-1" />
+                        Approve
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Employees Table */}
         <Card className="shadow-card">
