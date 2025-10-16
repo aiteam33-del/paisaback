@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Notification } from '@/hooks/useNotifications';
 import { formatDistanceToNow } from 'date-fns';
+import { useNavigate } from 'react-router-dom';
 import { 
   CheckCheck, 
   FileText, 
@@ -51,6 +52,42 @@ export const NotificationDrawer = ({
   onMarkAsRead,
   onMarkAllAsRead,
 }: NotificationDrawerProps) => {
+  const navigate = useNavigate();
+
+  const handleNotificationClick = (notification: Notification) => {
+    // Mark as read
+    if (!notification.read) {
+      onMarkAsRead(notification.id);
+    }
+
+    // Navigate based on notification type
+    switch (notification.type) {
+      case 'expense_submitted':
+        // Admin viewing submitted expense
+        if (notification.related_id) {
+          navigate('/admin');
+        }
+        break;
+      case 'expense_approved':
+      case 'expense_rejected':
+        // Employee viewing their expense status
+        navigate('/employee/history');
+        break;
+      case 'join_request':
+        // Admin viewing join request
+        navigate('/admin');
+        break;
+      case 'join_approved':
+      case 'join_rejected':
+        // Employee can stay on current page or go to dashboard
+        navigate('/employee');
+        break;
+    }
+
+    // Close drawer after navigation
+    onOpenChange(false);
+  };
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="w-full sm:max-w-md">
@@ -87,7 +124,7 @@ export const NotificationDrawer = ({
                       ? 'bg-background hover:bg-accent/50'
                       : 'bg-accent/30 hover:bg-accent/50'
                   }`}
-                  onClick={() => !notification.read && onMarkAsRead(notification.id)}
+                  onClick={() => handleNotificationClick(notification)}
                 >
                   <div className="flex gap-3">
                     <div className="flex-shrink-0 mt-1">
