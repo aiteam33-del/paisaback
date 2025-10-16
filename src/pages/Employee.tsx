@@ -53,6 +53,8 @@ const Employee = () => {
   const [customScheduleDate, setCustomScheduleDate] = useState<Date>();
   const [customScheduleTime, setCustomScheduleTime] = useState<string>("09:00");
   const [isUpdatingFrequency, setIsUpdatingFrequency] = useState(false);
+  const [orgId, setOrgId] = useState<string | null>(null);
+  const [joinPending, setJoinPending] = useState<boolean>(false);
   
   // Form fields
   const [vendor, setVendor] = useState("");
@@ -88,13 +90,26 @@ const Employee = () => {
     
     const { data } = await supabase
       .from("profiles")
-      .select("full_name, email_frequency, last_email_sent, next_email_at")
+      .select("full_name, email_frequency, last_email_sent, next_email_at, organization_id")
       .eq("id", user.id)
       .maybeSingle();
     
     if (data) {
       if (data.full_name) setUserName(data.full_name);
       if (data.email_frequency) setEmailFrequency(data.email_frequency);
+      setOrgId(data.organization_id ?? null);
+
+      if (!data.organization_id) {
+        const { data: jr } = await supabase
+          .from("join_requests")
+          .select("id")
+          .eq("employee_id", user.id)
+          .eq("status", "pending")
+          .maybeSingle();
+        setJoinPending(!!jr);
+      } else {
+        setJoinPending(false);
+      }
       
       // For custom schedules, use next_email_at instead of last_email_sent
       const timeToUse = data.email_frequency === 'custom' && data.next_email_at 
@@ -674,6 +689,7 @@ const processOCR = async (file: File) => {
   const approvedAmount = approvedExpenses.reduce((sum, exp) => sum + (Number(exp.amount) || 0), 0);
   const pendingAmount = pendingExpenses.reduce((sum, exp) => sum + (Number(exp.amount) || 0), 0);
   const totalAmount = approvedAmount + pendingAmount;
+  const disabledByPending = !orgId || joinPending;
 
   return (
     <div className="min-h-screen bg-gradient-subtle">

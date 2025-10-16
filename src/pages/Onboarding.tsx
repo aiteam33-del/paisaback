@@ -160,7 +160,7 @@ const Onboarding = () => {
 
       const orgName = organizations.find(o => o.id === selectedOrgId)?.name;
       toast.success(`Join request sent to ${orgName}. You'll be notified when approved.`);
-      navigate("/onboarding");
+      navigate("/employee");
     } catch (error: any) {
       toast.error(error.message || "Failed to send join request");
     } finally {

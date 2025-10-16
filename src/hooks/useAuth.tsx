@@ -117,7 +117,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           .single();
 
         if (!profile?.organization_id) {
-          // No organization, redirect to onboarding
+          // No organization - check if a pending join request exists
+          const { data: pending } = await supabase
+            .from("join_requests")
+            .select("id")
+            .eq("employee_id", data.user.id)
+            .eq("status", "pending")
+            .maybeSingle();
+
+          if (pending) {
+            toast.info("Join request pending approval. You can browse but actions are disabled.");
+            navigate("/employee");
+            return;
+          }
+
           toast.success("Welcome! Let's get you set up.");
           navigate("/onboarding");
           return;
