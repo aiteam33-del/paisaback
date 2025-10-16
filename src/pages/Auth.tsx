@@ -160,10 +160,15 @@ const Auth = () => {
         navigate("/admin");
       }
     } catch (error: any) {
-      if (error.message.includes("duplicate")) {
-        toast.error("An organization with this name already exists or email is already registered");
+      const msg = (error?.message || '').toLowerCase();
+      const details = (error?.details || '').toLowerCase();
+
+      if (msg.includes('already registered') || msg.includes('user already registered') || msg.includes('email')) {
+        toast.error('Email is already registered');
+      } else if (error?.code === '23505' && (details.includes('(name)') || msg.includes('organizations_name_key') || msg.includes('unique'))) {
+        toast.error('An organization with this name already exists');
       } else {
-        toast.error(error.message || "Failed to create account");
+        toast.error(error?.message || 'Failed to create account');
       }
     } finally {
       setIsLoading(false);

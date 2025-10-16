@@ -33,6 +33,7 @@ const Onboarding = () => {
     const checkUserOrganization = async () => {
       if (!user) return;
 
+      // 1) Check if profile already linked to an org
       const { data: profile } = await supabase
         .from("profiles")
         .select("organization_id")
@@ -59,7 +60,27 @@ const Onboarding = () => {
         return;
       }
 
-      // No org: if there's a pending join request, show pending page
+      // 2) If profile is not linked, check if the user already owns an org (from a previous successful create)
+      const { data: ownedOrg } = await supabase
+        .from("organizations")
+        .select("id")
+        .eq("admin_user_id", user.id)
+        .maybeSingle();
+
+      if (ownedOrg?.id) {
+        // Auto-link profile to the owned org to recover from partial failures
+        const { error: linkErr } = await supabase
+          .from("profiles")
+          .update({ organization_id: ownedOrg.id })
+          .eq("id", user.id);
+
+        if (!linkErr) {
+          navigate("/admin");
+          return;
+        }
+      }
+
+      // 3) No org: if there's a pending join request, show pending page
       const { data: pending } = await supabase
         .from("join_requests")
         .select("id")
@@ -113,11 +134,17 @@ const Onboarding = () => {
         .single();
 
       if (orgError) {
-        // Handle unique constraint violation
-        if (orgError.code === '23505' || orgError.message.toLowerCase().includes('duplicate') || orgError.message.toLowerCase().includes('unique')) {
+        // Provide precise feedback based on the violated constraint
+        const msg = (orgError.message || '').toLowerCase();
+        const details = (orgError.details || '').toLowerCase();
+
+        if (
+          orgError.code === '23505' && (details.includes('(name)') || msg.includes('organizations_name_key') || msg.includes('unique'))
+        ) {
           toast.error(`An organization with this name already exists. Please choose a different name.`);
         } else {
-          toast.error(orgError.message || "Failed to create organization");
+          console.error('Organization creation error:', orgError);
+          toast.error(orgError.message || 'Failed to create organization');
         }
         setIsLoading(false);
         return;
