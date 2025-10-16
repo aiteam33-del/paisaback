@@ -15,12 +15,28 @@ interface ExpenseChartProps {
   height?: number;
 }
 
-const COLORS = {
-  travel: "hsl(var(--chart-1))",
-  food: "hsl(var(--chart-2))",
-  lodging: "hsl(var(--chart-3))",
-  office: "hsl(var(--chart-4))",
-  other: "hsl(var(--chart-5))",
+const CHART_COLORS = [
+  "hsl(var(--chart-1))",
+  "hsl(var(--chart-2))",
+  "hsl(var(--chart-3))",
+  "hsl(var(--chart-4))",
+  "hsl(var(--chart-5))",
+];
+
+const getColorForCategory = (category: string, index: number): string => {
+  // Map common categories to specific colors
+  const colorMap: Record<string, string> = {
+    travel: CHART_COLORS[0],
+    food: CHART_COLORS[1],
+    lodging: CHART_COLORS[2],
+    office: CHART_COLORS[3],
+    pending: "hsl(var(--warning))",
+    approved: "hsl(var(--success))",
+    paid: "hsl(var(--primary))",
+    rejected: "hsl(var(--destructive))",
+  };
+  
+  return colorMap[category.toLowerCase()] || CHART_COLORS[index % CHART_COLORS.length];
 };
 
 export const ExpenseChart = ({ data, type = "pie", title, height = 250 }: ExpenseChartProps) => {
@@ -59,7 +75,7 @@ export const ExpenseChart = ({ data, type = "pie", title, height = 250 }: Expens
                 dataKey="amount"
               >
                 {data.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={COLORS[entry.category as keyof typeof COLORS] || COLORS.other} />
+                  <Cell key={`cell-${index}`} fill={getColorForCategory(entry.category, index)} />
                 ))}
               </Pie>
               <Tooltip formatter={(value: number) => `₹${value.toFixed(2)}`} />
