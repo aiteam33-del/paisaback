@@ -4,7 +4,8 @@ import { Navigation } from "@/components/ui/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2, TrendingUp, DollarSign, Receipt, CheckCircle, XCircle, Clock, BarChart3, ArrowUp, ArrowDown, ArrowLeft } from "lucide-react";
+import { Loader2, TrendingUp, DollarSign, Receipt, CheckCircle, XCircle, Clock, ArrowUp, ArrowDown, ArrowLeft } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { StatCard } from "@/components/StatCard";
 import { AnalyticsFilters } from "@/components/AnalyticsFilters";
 import { ExpenseChart } from "@/components/ExpenseChart";
@@ -218,193 +219,186 @@ const ExpenseAnalytics = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-analytics">
+    <div className="min-h-screen bg-background">
       <Navigation />
       
-      <main className="container mx-auto px-4 pt-24 pb-16 max-w-7xl">
-        {/* Back Button */}
-        <div className="mb-6 animate-fade-in">
-          <Button
-            variant="outline"
-            onClick={() => navigate(isAdmin ? "/admin" : "/employee")}
-            className="group hover:bg-primary/10 border-border/50"
-          >
-            <ArrowLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform" />
-            Back to Dashboard
-          </Button>
-        </div>
-
-        {/* Hero Header with Gradient */}
-        <div className="mb-8 relative">
-          <div className="absolute inset-0 bg-gradient-hero opacity-5 blur-3xl rounded-3xl"></div>
-          <div className="relative">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="p-3 rounded-xl bg-gradient-primary shadow-lg">
-                <BarChart3 className="w-8 h-8 text-primary-foreground" />
-              </div>
-              <h1 className="text-4xl md:text-5xl font-bold bg-gradient-hero bg-clip-text text-transparent">
+      <main className="container mx-auto px-6 pt-24 pb-16 max-w-7xl">
+        {/* Header Section */}
+        <div className="mb-8 animate-fade-in">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h1 className="text-3xl font-bold text-foreground mb-2">
                 {isAdmin ? "Organization Analytics" : "Expense Analytics"}
               </h1>
+              <p className="text-muted-foreground">
+                Insights into your spending patterns and trends
+              </p>
             </div>
-            <p className="text-lg text-muted-foreground ml-16">
-              Insights into your spending patterns and trends
-            </p>
+            <Button
+              variant="outline"
+              onClick={() => navigate(isAdmin ? "/admin" : "/employee")}
+              className="group"
+            >
+              <ArrowLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform" />
+              Back to Dashboard
+            </Button>
           </div>
+
+          {/* Filters */}
+          <AnalyticsFilters
+            dateRange={dateRange}
+            onDateRangeChange={setDateRange}
+            category={category}
+            onCategoryChange={setCategory}
+            categories={categories}
+            status={status}
+            onStatusChange={setStatus}
+            onExport={handleExport}
+            onRefresh={loadExpenses}
+          />
         </div>
 
         <div className="space-y-6">
-          {/* Filters */}
-          <div className="animate-fade-in">
-            <AnalyticsFilters
-              dateRange={dateRange}
-              onDateRangeChange={setDateRange}
-              category={category}
-              onCategoryChange={setCategory}
-              categories={categories}
-              status={status}
-              onStatusChange={setStatus}
-              onExport={handleExport}
-              onRefresh={loadExpenses}
+          {/* Top KPI Cards - Cleaner Design */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 animate-fade-in" style={{ animationDelay: '0.1s' }}>
+            <div className="bg-card rounded-2xl p-6 shadow-sm border border-border hover:shadow-md transition-all duration-300">
+              <div className="flex items-start justify-between mb-4">
+                <div className="p-2.5 rounded-xl bg-primary/10">
+                  <DollarSign className="w-5 h-5 text-primary" />
+                </div>
+              </div>
+              <p className="text-sm text-muted-foreground mb-1">Total Expenses</p>
+              <p className="text-3xl font-bold text-foreground">₹{totalAmount.toFixed(2)}</p>
+            </div>
+
+            <div className="bg-card rounded-2xl p-6 shadow-sm border border-border hover:shadow-md transition-all duration-300">
+              <div className="flex items-start justify-between mb-4">
+                <div className="p-2.5 rounded-xl bg-primary/10">
+                  <Receipt className="w-5 h-5 text-primary" />
+                </div>
+              </div>
+              <p className="text-sm text-muted-foreground mb-1">Total Count</p>
+              <p className="text-3xl font-bold text-foreground">{filteredExpenses.length}</p>
+            </div>
+
+            <div className="bg-card rounded-2xl p-6 shadow-sm border border-border hover:shadow-md transition-all duration-300">
+              <div className="flex items-start justify-between mb-4">
+                <div className="p-2.5 rounded-xl bg-primary/10">
+                  <TrendingUp className="w-5 h-5 text-primary" />
+                </div>
+              </div>
+              <p className="text-sm text-muted-foreground mb-1">Average Expense</p>
+              <p className="text-3xl font-bold text-foreground">₹{avgAmount.toFixed(2)}</p>
+            </div>
+
+            <div className="bg-card rounded-2xl p-6 shadow-sm border border-border hover:shadow-md transition-all duration-300">
+              <div className="flex items-start justify-between mb-4">
+                <div className="p-2.5 rounded-xl bg-success/10">
+                  <CheckCircle className="w-5 h-5 text-success" />
+                </div>
+                <div className={cn(
+                  "flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full",
+                  Number(approvalRate) >= 80 ? "bg-success/10 text-success" : "bg-warning/10 text-warning"
+                )}>
+                  {Number(approvalRate) >= 80 ? (
+                    <ArrowUp className="w-3 h-3" />
+                  ) : (
+                    <ArrowDown className="w-3 h-3" />
+                  )}
+                  {approvalRate}%
+                </div>
+              </div>
+              <p className="text-sm text-muted-foreground mb-1">Approval Rate</p>
+              <p className="text-3xl font-bold text-foreground">{approvalRate}%</p>
+            </div>
+          </div>
+
+          {/* Status Breakdown - Smaller Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 animate-fade-in" style={{ animationDelay: '0.2s' }}>
+            <div className="bg-card rounded-xl p-4 shadow-sm border border-border hover:shadow-md transition-all duration-200">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-warning/10">
+                  <Clock className="w-4 h-4 text-warning" />
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Pending</p>
+                  <p className="text-xl font-bold text-foreground">₹{pendingAmount.toFixed(2)}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-card rounded-xl p-4 shadow-sm border border-border hover:shadow-md transition-all duration-200">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-success/10">
+                  <CheckCircle className="w-4 h-4 text-success" />
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Approved</p>
+                  <p className="text-xl font-bold text-foreground">₹{approvedAmount.toFixed(2)}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-card rounded-xl p-4 shadow-sm border border-border hover:shadow-md transition-all duration-200">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-primary/10">
+                  <CheckCircle className="w-4 h-4 text-primary" />
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Paid</p>
+                  <p className="text-xl font-bold text-foreground">₹{paidAmount.toFixed(2)}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-card rounded-xl p-4 shadow-sm border border-border hover:shadow-md transition-all duration-200">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-destructive/10">
+                  <XCircle className="w-4 h-4 text-destructive" />
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Rejected</p>
+                  <p className="text-xl font-bold text-foreground">₹{rejectedAmount.toFixed(2)}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Charts Section */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-fade-in" style={{ animationDelay: '0.3s' }}>
+            <ExpenseChart
+              data={categoryData}
+              type="pie"
+              title="Spending by Category"
+            />
+            <ExpenseChart
+              data={statusData}
+              type="pie"
+              title="Expenses by Status"
             />
           </div>
 
-          {/* KPI Cards with Gradients */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 animate-fade-in" style={{ animationDelay: '0.1s' }}>
-            <div className="group hover:-translate-y-1 transition-all duration-300">
-              <div className="bg-gradient-chart rounded-xl p-6 shadow-lg hover:shadow-xl border border-border/50 backdrop-blur-sm">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="p-3 rounded-lg bg-gradient-primary shadow-md">
-                    <DollarSign className="w-6 h-6 text-primary-foreground" />
-                  </div>
-                  <ArrowUp className="w-5 h-5 text-success opacity-0 group-hover:opacity-100 transition-opacity" />
-                </div>
-                <p className="text-sm font-medium text-muted-foreground mb-1">Total Expenses</p>
-                <p className="text-3xl font-bold text-foreground">₹{totalAmount.toFixed(2)}</p>
-              </div>
-            </div>
-
-            <div className="group hover:-translate-y-1 transition-all duration-300" style={{ animationDelay: '0.15s' }}>
-              <div className="bg-gradient-chart rounded-xl p-6 shadow-lg hover:shadow-xl border border-border/50 backdrop-blur-sm">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="p-3 rounded-lg bg-gradient-hero shadow-md">
-                    <TrendingUp className="w-6 h-6 text-primary-foreground" />
-                  </div>
-                </div>
-                <p className="text-sm font-medium text-muted-foreground mb-1">Average Expense</p>
-                <p className="text-3xl font-bold text-foreground">₹{avgAmount.toFixed(2)}</p>
-              </div>
-            </div>
-
-            <div className="group hover:-translate-y-1 transition-all duration-300" style={{ animationDelay: '0.2s' }}>
-              <div className="bg-gradient-chart rounded-xl p-6 shadow-lg hover:shadow-xl border border-border/50 backdrop-blur-sm">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="p-3 rounded-lg bg-chart-3 shadow-md">
-                    <Receipt className="w-6 h-6 text-white" />
-                  </div>
-                </div>
-                <p className="text-sm font-medium text-muted-foreground mb-1">Total Count</p>
-                <p className="text-3xl font-bold text-foreground">{filteredExpenses.length}</p>
-              </div>
-            </div>
-
-            <div className="group hover:-translate-y-1 transition-all duration-300" style={{ animationDelay: '0.25s' }}>
-              <div className="bg-gradient-chart rounded-xl p-6 shadow-lg hover:shadow-xl border border-border/50 backdrop-blur-sm">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="p-3 rounded-lg bg-success shadow-md">
-                    <CheckCircle className="w-6 h-6 text-white" />
-                  </div>
-                  {Number(approvalRate) >= 80 ? (
-                    <ArrowUp className="w-5 h-5 text-success" />
-                  ) : (
-                    <ArrowDown className="w-5 h-5 text-warning" />
-                  )}
-                </div>
-                <p className="text-sm font-medium text-muted-foreground mb-1">Approval Rate</p>
-                <p className="text-3xl font-bold text-foreground">{approvalRate}%</p>
-              </div>
-            </div>
+          <div className="grid grid-cols-1 gap-6 animate-fade-in" style={{ animationDelay: '0.4s' }}>
+            <ExpenseChart
+              data={monthlyData}
+              type="bar"
+              title="Monthly Spending Trend"
+              height={300}
+            />
           </div>
 
-          {/* Status Overview Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 animate-fade-in" style={{ animationDelay: '0.3s' }}>
-            <div className="bg-gradient-card rounded-xl p-6 shadow-lg border border-warning/20 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-              <div className="flex items-center gap-3 mb-3">
-                <Clock className="w-5 h-5 text-warning" />
-                <p className="text-sm font-semibold text-muted-foreground">Pending</p>
-              </div>
-              <p className="text-2xl font-bold text-foreground">₹{pendingAmount.toFixed(2)}</p>
-            </div>
-
-            <div className="bg-gradient-card rounded-xl p-6 shadow-lg border border-success/20 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-              <div className="flex items-center gap-3 mb-3">
-                <CheckCircle className="w-5 h-5 text-success" />
-                <p className="text-sm font-semibold text-muted-foreground">Approved</p>
-              </div>
-              <p className="text-2xl font-bold text-foreground">₹{approvedAmount.toFixed(2)}</p>
-            </div>
-
-            <div className="bg-gradient-card rounded-xl p-6 shadow-lg border border-primary/20 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-              <div className="flex items-center gap-3 mb-3">
-                <CheckCircle className="w-5 h-5 text-primary" />
-                <p className="text-sm font-semibold text-muted-foreground">Paid</p>
-              </div>
-              <p className="text-2xl font-bold text-foreground">₹{paidAmount.toFixed(2)}</p>
-            </div>
-
-            <div className="bg-gradient-card rounded-xl p-6 shadow-lg border border-destructive/20 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-              <div className="flex items-center gap-3 mb-3">
-                <XCircle className="w-5 h-5 text-destructive" />
-                <p className="text-sm font-semibold text-muted-foreground">Rejected</p>
-              </div>
-              <p className="text-2xl font-bold text-foreground">₹{rejectedAmount.toFixed(2)}</p>
-            </div>
-          </div>
-
-          {/* Charts Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-fade-in" style={{ animationDelay: '0.4s' }}>
-            <div className="hover:-translate-y-1 transition-all duration-300">
-              <ExpenseChart
-                data={categoryData}
-                type="pie"
-                title="Spending by Category"
-              />
-            </div>
-            <div className="hover:-translate-y-1 transition-all duration-300">
-              <ExpenseChart
-                data={statusData}
-                type="pie"
-                title="Expenses by Status"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 gap-6 animate-fade-in" style={{ animationDelay: '0.5s' }}>
-            <div className="hover:-translate-y-1 transition-all duration-300">
-              <ExpenseChart
-                data={monthlyData}
-                type="bar"
-                title="Monthly Spending Trend"
-                height={300}
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-fade-in" style={{ animationDelay: '0.6s' }}>
-            <div className="hover:-translate-y-1 transition-all duration-300">
-              <ExpenseChart
-                data={topVendors}
-                type="bar"
-                title="Top 10 Vendors"
-              />
-            </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-fade-in" style={{ animationDelay: '0.5s' }}>
+            <ExpenseChart
+              data={topVendors}
+              type="bar"
+              title="Top 10 Vendors"
+            />
             {paymentMethodData.length > 0 && (
-              <div className="hover:-translate-y-1 transition-all duration-300">
-                <ExpenseChart
-                  data={paymentMethodData}
-                  type="pie"
-                  title="Payment Methods"
-                />
-              </div>
+              <ExpenseChart
+                data={paymentMethodData}
+                type="pie"
+                title="Payment Methods"
+              />
             )}
           </div>
         </div>
