@@ -44,7 +44,7 @@ const ExpenseAnalytics = () => {
     loadExpenses();
   }, [user, navigate]);
 
-  // Refresh data when page becomes visible
+  // Refresh data on page visibility/focus and via realtime updates
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
@@ -59,11 +59,25 @@ const ExpenseAnalytics = () => {
     document.addEventListener('visibilitychange', handleVisibilityChange);
     window.addEventListener('focus', handleFocus);
 
+    // Realtime subscription to expenses table
+    const channel = supabase
+      .channel('realtime-expenses')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'expenses' },
+        () => {
+          // Re-fetch whenever an expense is inserted/updated/deleted
+          loadExpenses();
+        }
+      )
+      .subscribe();
+
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('focus', handleFocus);
+      supabase.removeChannel(channel);
     };
-  }, [user]);
+  }, [user, isAdmin]);
 
   const loadExpenses = async () => {
     if (!user) return;
