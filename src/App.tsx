@@ -15,6 +15,7 @@ import OrganizationAdmin from "./pages/OrganizationAdmin";
 import EmployeeExpenseView from "./pages/EmployeeExpenseView";
 import PendingRequest from "./pages/PendingRequest";
 import RejectedRequest from "./pages/RejectedRequest";
+import ExpenseAnalytics from "./pages/ExpenseAnalytics";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -32,9 +33,11 @@ const App = () => (
               <Route path="/auth" element={<Auth />} />
               <Route path="/employee" element={<Employee />} />
               <Route path="/employee/history" element={<ExpenseHistory />} />
+              <Route path="/employee/analytics" element={<ExpenseAnalytics />} />
               <Route path="/expense-summary" element={<ExpenseSummary />} />
               <Route path="/organization" element={<Organization />} />
               <Route path="/admin" element={<OrganizationAdmin />} />
+              <Route path="/admin/analytics" element={<ExpenseAnalytics />} />
               <Route path="/admin/employee/:employeeId" element={<EmployeeExpenseView />} />
               <Route path="/pending-request" element={<PendingRequest />} />
               <Route path="/rejected-request" element={<RejectedRequest />} />

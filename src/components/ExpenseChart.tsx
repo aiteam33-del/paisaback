@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
+import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line, AreaChart, Area } from "recharts";
 
 interface ExpenseData {
   category: string;
@@ -10,8 +10,9 @@ interface ExpenseData {
 
 interface ExpenseChartProps {
   data: ExpenseData[];
-  type?: "pie" | "bar";
+  type?: "pie" | "bar" | "line" | "area";
   title: string;
+  height?: number;
 }
 
 const COLORS = {
@@ -22,7 +23,7 @@ const COLORS = {
   other: "hsl(var(--chart-5))",
 };
 
-export const ExpenseChart = ({ data, type = "pie", title }: ExpenseChartProps) => {
+export const ExpenseChart = ({ data, type = "pie", title, height = 250 }: ExpenseChartProps) => {
   if (!data || data.length === 0) {
     return (
       <Card>
@@ -44,7 +45,7 @@ export const ExpenseChart = ({ data, type = "pie", title }: ExpenseChartProps) =
         <CardTitle className="text-base">{title}</CardTitle>
       </CardHeader>
       <CardContent>
-        <ResponsiveContainer width="100%" height={250}>
+        <ResponsiveContainer width="100%" height={height}>
           {type === "pie" ? (
             <PieChart>
               <Pie
@@ -64,6 +65,24 @@ export const ExpenseChart = ({ data, type = "pie", title }: ExpenseChartProps) =
               <Tooltip formatter={(value: number) => `₹${value.toFixed(2)}`} />
               <Legend />
             </PieChart>
+          ) : type === "line" ? (
+            <LineChart data={data}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="category" />
+              <YAxis />
+              <Tooltip formatter={(value: number) => `₹${value.toFixed(2)}`} />
+              <Legend />
+              <Line type="monotone" dataKey="amount" stroke="hsl(var(--primary))" strokeWidth={2} />
+            </LineChart>
+          ) : type === "area" ? (
+            <AreaChart data={data}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="category" />
+              <YAxis />
+              <Tooltip formatter={(value: number) => `₹${value.toFixed(2)}`} />
+              <Legend />
+              <Area type="monotone" dataKey="amount" stroke="hsl(var(--primary))" fill="hsl(var(--primary))" fillOpacity={0.6} />
+            </AreaChart>
           ) : (
             <BarChart data={data}>
               <CartesianGrid strokeDasharray="3 3" />

@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { Navigation } from "@/components/ui/navigation";
-import { Upload, Receipt, Clock, CheckCircle2, XCircle, Loader2, X, Camera, ChevronRight, Mail, Calendar as CalendarIcon, Settings, RefreshCw } from "lucide-react";
+import { Upload, Receipt, Clock, CheckCircle2, XCircle, Loader2, X, Camera, ChevronRight, Mail, Calendar as CalendarIcon, Settings, RefreshCw, BarChart } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
@@ -873,18 +873,40 @@ const processOCR = async (file: File) => {
       
       <main className="container mx-auto px-4 pt-24 pb-16 max-w-7xl">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground mb-2">
-            {userName ? `Welcome, ${userName}` : "Employee Dashboard"}
-          </h1>
-          <div className="flex flex-wrap items-center gap-3">
-            {orgName ? (
-              <Badge variant="outline">Organization: {orgName}</Badge>
-            ) : joinPending ? (
-              <Badge variant="outline">Join request pending: {pendingOrgName || 'Your organization'}</Badge>
-            ) : (
-              <Badge variant="outline">Not part of an organization</Badge>
-            )}
-            <p className="text-muted-foreground">Submit and track your expense claims</p>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+            <div>
+              <h1 className="text-3xl font-bold text-foreground mb-2">
+                {userName ? `Welcome, ${userName}` : "Employee Dashboard"}
+              </h1>
+              <div className="flex flex-wrap items-center gap-3">
+                {orgName ? (
+                  <Badge variant="outline">Organization: {orgName}</Badge>
+                ) : joinPending ? (
+                  <Badge variant="outline">Join request pending: {pendingOrgName || 'Your organization'}</Badge>
+                ) : (
+                  <Badge variant="outline">Not part of an organization</Badge>
+                )}
+                <p className="text-muted-foreground">Submit and track your expense claims</p>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate("/employee/history")}
+              >
+                <Receipt className="w-4 h-4 mr-2" />
+                History
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate("/employee/analytics")}
+              >
+                <BarChart className="w-4 h-4 mr-2" />
+                Analytics
+              </Button>
+            </div>
           </div>
         </div>
 

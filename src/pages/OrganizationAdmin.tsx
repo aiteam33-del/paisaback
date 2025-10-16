@@ -359,11 +359,22 @@ const OrganizationAdmin = () => {
       
       <main className="container mx-auto px-4 pt-24 pb-16 max-w-7xl">
         <div className="mb-8">
-          <div className="flex items-center gap-3 mb-2">
-            <Building2 className="w-8 h-8 text-primary" />
-            <h1 className="text-4xl font-bold text-foreground">{organization?.name || "Organization"}</h1>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-3 mb-2">
+                <Building2 className="w-8 h-8 text-primary" />
+                <h1 className="text-4xl font-bold text-foreground">{organization?.name || "Organization"}</h1>
+              </div>
+              <p className="text-lg text-muted-foreground">Admin Dashboard</p>
+            </div>
+            <Button
+              variant="outline"
+              onClick={() => navigate("/admin/analytics")}
+            >
+              <BarChart className="w-4 h-4 mr-2" />
+              View Analytics
+            </Button>
           </div>
-          <p className="text-lg text-muted-foreground">Admin Dashboard</p>
         </div>
 
          {/* KPI Cards */}
