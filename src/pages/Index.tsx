@@ -6,20 +6,50 @@ import { Navigation } from "@/components/ui/navigation";
 import { Receipt, Sparkles, TrendingUp, Shield, Zap, CheckCircle2, ArrowRight } from "lucide-react";
 import heroImage from "@/assets/hero-image-modern.png";
 import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 
 const Index = () => {
   const navigate = useNavigate();
   const { user, userRole } = useAuth();
 
   useEffect(() => {
-    if (user && userRole) {
-      // Redirect logged-in users to their appropriate dashboard
-      if (userRole === 'employee') {
-        navigate('/employee');
-      } else if (userRole === 'manager' || userRole === 'finance' || userRole === 'admin') {
-        navigate('/organization');
+    const route = async () => {
+      if (!user) return;
+
+      // Check org membership
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("organization_id")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      if (!profile?.organization_id) {
+        // No org yet → if pending request exists, go to pending page; else onboarding
+        const { data: pending } = await supabase
+          .from("join_requests")
+          .select("id")
+          .eq("employee_id", user.id)
+          .eq("status", "pending")
+          .maybeSingle();
+
+        if (pending) {
+          navigate('/pending-request');
+          return;
+        }
+        navigate('/onboarding');
+        return;
       }
-    }
+
+      // Has org → route by role
+      if (userRole) {
+        if (userRole === 'admin' || userRole === 'manager' || userRole === 'finance') {
+          navigate('/organization');
+          return;
+        }
+        navigate('/employee');
+      }
+    };
+    route();
   }, [user, userRole, navigate]);
   const features = [
     {

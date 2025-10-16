@@ -129,6 +129,15 @@ const Auth = () => {
       if (authError) throw authError;
 
       if (authData.user) {
+        // Ensure profile exists with the provided name and email
+        const { error: profileUpsertError } = await supabase
+          .from("profiles")
+          .upsert(
+            { id: authData.user.id, email: orgSignUpEmail, full_name: orgSignUpName },
+            { onConflict: "id" }
+          );
+        if (profileUpsertError) throw profileUpsertError;
+
         if (orgMode === "create") {
           // Create organization
           const { data: org, error: orgError } = await supabase

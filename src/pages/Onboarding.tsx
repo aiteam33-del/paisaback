@@ -160,6 +160,7 @@ const Onboarding = () => {
       if (checkError) throw checkError;
       if (existing) {
         toast.info("You already have a pending request for this organization.");
+        navigate("/pending-request");
         setIsLoading(false);
         return;
       }
