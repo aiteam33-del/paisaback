@@ -12,6 +12,7 @@ import { Navigation } from "@/components/ui/navigation";
 import { Upload, Receipt, Clock, CheckCircle2, XCircle, Loader2, X, Camera, ChevronRight, Mail, Calendar as CalendarIcon, Settings, RefreshCw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
@@ -805,9 +806,9 @@ const processOCR = async (file: File) => {
                       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                         {uploadedFiles.map((file, index) => (
                           <div key={index} className="relative border rounded-lg overflow-hidden group hover:border-primary transition-colors shadow-sm">
-                            <div className="aspect-square bg-muted flex items-center justify-center">
+                            <AspectRatio ratio={1} className="bg-muted">
                               <PreviewThumbnail file={file} />
-                            </div>
+                            </AspectRatio>
                             <div className="p-2 bg-card/50 backdrop-blur-sm flex items-center justify-between gap-2 border-t">
                               <span className="text-xs truncate flex-1" title={file.name}>
                                 {file.name}
