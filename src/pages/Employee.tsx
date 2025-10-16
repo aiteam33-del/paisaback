@@ -21,6 +21,7 @@ import { FileDropzone } from "@/components/FileDropzone";
 import { OCRProgressIndicator } from "@/components/OCRProgressIndicator";
 import { SmartDatePicker } from "@/components/SmartDatePicker";
 import { CategorySuggester } from "@/components/CategorySuggester";
+import { PreviewThumbnail } from "@/components/PreviewThumbnail";
 
 interface Expense {
   id: string;
@@ -802,52 +803,28 @@ const processOCR = async (file: File) => {
                     <div className="space-y-2">
                       <p className="text-sm font-medium">Selected files:</p>
                       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                        {uploadedFiles.map((file, index) => {
-                          const isImage = file.type.startsWith('image/');
-                          const isPDF = file.type === 'application/pdf';
-                          const previewUrl = isImage ? URL.createObjectURL(file) : null;
-
-                          return (
-                            <div key={index} className="relative border rounded-lg overflow-hidden group hover:border-primary transition-colors shadow-sm">
-                              {/* Preview Image/PDF Icon */}
-                              <div className="aspect-square bg-muted flex items-center justify-center">
-                                {isImage && previewUrl ? (
-                                  <img 
-                                    src={previewUrl}
-                                    alt={file.name}
-                                    className="w-full h-full object-cover"
-                                    onLoad={() => URL.revokeObjectURL(previewUrl)}
-                                  />
-                                ) : isPDF ? (
-                                  <div className="flex flex-col items-center gap-1">
-                                    <Receipt className="w-10 h-10 text-muted-foreground" />
-                                    <span className="text-sm font-medium text-muted-foreground">PDF</span>
-                                  </div>
-                                ) : (
-                                  <Receipt className="w-10 h-10 text-muted-foreground" />
-                                )}
-                              </div>
-                              
-                              {/* File name and remove button */}
-                              <div className="p-2 bg-card/50 backdrop-blur-sm flex items-center justify-between gap-2 border-t">
-                                <span className="text-xs truncate flex-1" title={file.name}>
-                                  {file.name}
-                                </span>
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => removeFile(index)}
-                                  className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-destructive/20"
-                                >
-                                  <X className="w-3 h-3" />
-                                </Button>
-                              </div>
+                        {uploadedFiles.map((file, index) => (
+                          <div key={index} className="relative border rounded-lg overflow-hidden group hover:border-primary transition-colors shadow-sm">
+                            <div className="aspect-square bg-muted flex items-center justify-center">
+                              <PreviewThumbnail file={file} />
                             </div>
-                          );
-                        })}
+                            <div className="p-2 bg-card/50 backdrop-blur-sm flex items-center justify-between gap-2 border-t">
+                              <span className="text-xs truncate flex-1" title={file.name}>
+                                {file.name}
+                              </span>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => removeFile(index)}
+                                className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-destructive/20"
+                              >
+                                <X className="w-3 h-3" />
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                    </div>
                   )}
 
                   {uploadProgress > 0 && uploadProgress < 100 && (
