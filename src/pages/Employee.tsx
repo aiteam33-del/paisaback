@@ -825,6 +825,7 @@ const processOCR = async (file: File) => {
                           </div>
                         ))}
                       </div>
+                    </div>
                   )}
 
                   {uploadProgress > 0 && uploadProgress < 100 && (
