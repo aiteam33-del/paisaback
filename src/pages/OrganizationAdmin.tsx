@@ -13,7 +13,11 @@ import { Navigation } from "@/components/ui/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Building2, Users, DollarSign, CheckCircle, XCircle, Clock, Loader2, Search, Filter, Calendar, Receipt } from "lucide-react";
+import { Building2, Users, DollarSign, CheckCircle, XCircle, Clock, Loader2, Search, Filter, Calendar, Receipt, BarChart } from "lucide-react";
+import { ExpenseChart } from "@/components/ExpenseChart";
+import { MobileExpenseCard } from "@/components/MobileExpenseCard";
+import { BatchActionBar } from "@/components/BatchActionBar";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface Employee {
   id: string;
@@ -64,6 +68,9 @@ const OrganizationAdmin = () => {
   const [managerNotes, setManagerNotes] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedExpenses, setSelectedExpenses] = useState<Set<string>>(new Set());
+  const [showCharts, setShowCharts] = useState(false);
+  const isMobile = useIsMobile();
   
   // Filter states
   const [searchTerm, setSearchTerm] = useState("");

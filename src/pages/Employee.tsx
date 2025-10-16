@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { Navigation } from "@/components/ui/navigation";
-import { Upload, Receipt, Clock, CheckCircle2, XCircle, Loader2, X, Camera, ChevronRight, Mail, Calendar as CalendarIcon, Settings } from "lucide-react";
+import { Upload, Receipt, Clock, CheckCircle2, XCircle, Loader2, X, Camera, ChevronRight, Mail, Calendar as CalendarIcon, Settings, RefreshCw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { useAuth } from "@/hooks/useAuth";
@@ -17,6 +17,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { FileDropzone } from "@/components/FileDropzone";
+import { OCRProgressIndicator } from "@/components/OCRProgressIndicator";
+import { SmartDatePicker } from "@/components/SmartDatePicker";
+import { CategorySuggester } from "@/components/CategorySuggester";
 
 interface Expense {
   id: string;
@@ -41,6 +45,9 @@ const Employee = () => {
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
   const [uploadedUrls, setUploadedUrls] = useState<string[]>([]);
   const [isProcessingOCR, setIsProcessingOCR] = useState(false);
+  const [ocrStage, setOcrStage] = useState<"idle" | "uploading" | "analyzing" | "extracting" | "complete" | "error">("idle");
+  const [ocrProgress, setOcrProgress] = useState(0);
+  const [ocrError, setOcrError] = useState<string>("");
   const [extractedFields, setExtractedFields] = useState<{ amount?: number; date?: string; merchant?: string; transaction_id?: string; category?: string; payment_method?: string } | null>(null);
   const [ocrText, setOcrText] = useState<string>("");
   const [isSendingEmail, setIsSendingEmail] = useState(false);
@@ -337,7 +344,12 @@ const processOCR = async (file: File) => {
     setExtractedFields(null);
     setOcrText("");
     setIsProcessingOCR(true);
+    setOcrStage("uploading");
+    setOcrProgress(20);
+    setOcrError("");
+    
     toast.info("Extracting information from receipt...");
+    
     try {
       let fileForAI = file;
       if (file.type === 'application/pdf') {
@@ -346,6 +358,9 @@ const processOCR = async (file: File) => {
       }
 
       // Client-side OCR for verification (raw text)
+      setOcrStage("analyzing");
+      setOcrProgress(40);
+      
       try {
         const imageUrl = URL.createObjectURL(fileForAI);
         const Tesseract = await import('tesseract.js');
@@ -359,6 +374,9 @@ const processOCR = async (file: File) => {
       }
 
       // Upload temporary file (image for AI extraction)
+      setOcrStage("extracting");
+      setOcrProgress(60);
+      
       const fileExt = fileForAI.name.split('.').pop();
       const tempFileName = `${user?.id}/temp-${Date.now()}.${fileExt}`;
 
@@ -368,6 +386,8 @@ const processOCR = async (file: File) => {
 
       if (uploadError) throw uploadError;
 
+      setOcrProgress(80);
+      
       // Call OCR function with bucket and path instead of public URL
       const { data: ocrData, error: ocrError } = await supabase.functions.invoke('extract-receipt-ocr', {
         body: { bucket: 'receipts', path: tempFileName }
@@ -375,6 +395,8 @@ const processOCR = async (file: File) => {
 
       if (ocrError) throw ocrError;
 
+      setOcrProgress(90);
+      
       // Populate form fields with extracted data
       if (ocrData.merchant) setVendor(ocrData.merchant);
       else if (ocrData.vendor) setVendor(ocrData.vendor);
@@ -382,6 +404,7 @@ const processOCR = async (file: File) => {
       if (ocrData.date) setDate(ocrData.date);
       if (ocrData.category) setCategory(ocrData.category);
       if (ocrData.payment_method) setModeOfPayment(ocrData.payment_method);
+      
       setExtractedFields({
         merchant: ocrData.merchant || ocrData.vendor,
         amount: ocrData.amount,
@@ -390,12 +413,17 @@ const processOCR = async (file: File) => {
         transaction_id: ocrData.transaction_id,
         payment_method: ocrData.payment_method,
       });
+      
+      setOcrStage("complete");
+      setOcrProgress(100);
       toast.success("Information extracted! Verify below.");
       
       // Clean up temporary file
       await supabase.storage.from('receipts').remove([tempFileName]);
     } catch (error: any) {
       console.error("OCR Error:", error);
+      setOcrStage("error");
+      setOcrError(error.message || "Failed to extract information. Please fill manually.");
       toast.error(error.message || "Failed to extract information. Please fill manually.");
     } finally {
       setIsProcessingOCR(false);

@@ -6,10 +6,11 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Navigation } from "@/components/ui/navigation";
-import { Building2, Users, LogIn, ArrowLeft, Loader2 } from "lucide-react";
+import { Building2, Users, LogIn, ArrowLeft, Loader2, Sparkles } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { AnimatedCard } from "@/components/AnimatedCard";
 
 type AuthStep = 'entry' | 'general_login' | 'org_signup' | 'employee_signup';
 
