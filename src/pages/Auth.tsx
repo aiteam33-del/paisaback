@@ -155,17 +155,16 @@ const Auth = () => {
           toast.success(`Organization "${orgName}" created successfully!`);
           navigate("/admin");
         } else {
-          // Join existing organization
-          const { error: profileError } = await supabase
-            .from("profiles")
-            .update({ organization_id: selectedOrgId })
-            .eq("id", authData.user.id);
+          // Join existing organization via join request
+          const { error: insertError } = await supabase
+            .from("join_requests")
+            .insert({ employee_id: authData.user.id, org_id: selectedOrgId });
 
-          if (profileError) throw profileError;
+          if (insertError) throw insertError;
 
           const orgName = organizations.find(o => o.id === selectedOrgId)?.name;
-          toast.success(`Successfully joined ${orgName}!`);
-          navigate("/employee");
+          toast.success(`Join request sent to ${orgName}. You'll be notified when approved.`);
+          navigate("/onboarding");
         }
       }
     } catch (error: any) {

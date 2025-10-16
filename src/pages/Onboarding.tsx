@@ -135,19 +135,34 @@ const Onboarding = () => {
 
     setIsLoading(true);
     try {
-      // Update user's profile with organization
-      const { error: profileError } = await supabase
-        .from("profiles")
-        .update({ organization_id: selectedOrgId })
-        .eq("id", user.id);
+      // Prevent duplicate pending requests
+      const { data: existing, error: checkError } = await supabase
+        .from("join_requests")
+        .select("id, status")
+        .eq("employee_id", user.id)
+        .eq("org_id", selectedOrgId)
+        .eq("status", "pending")
+        .maybeSingle();
 
-      if (profileError) throw profileError;
+      if (checkError) throw checkError;
+      if (existing) {
+        toast.info("You already have a pending request for this organization.");
+        setIsLoading(false);
+        return;
+      }
+
+      // Create join request (status defaults to 'pending')
+      const { error: insertError } = await supabase
+        .from("join_requests")
+        .insert({ employee_id: user.id, org_id: selectedOrgId });
+
+      if (insertError) throw insertError;
 
       const orgName = organizations.find(o => o.id === selectedOrgId)?.name;
-      toast.success(`Successfully joined ${orgName}!`);
-      navigate("/employee");
+      toast.success(`Join request sent to ${orgName}. You'll be notified when approved.`);
+      navigate("/onboarding");
     } catch (error: any) {
-      toast.error(error.message || "Failed to join organization");
+      toast.error(error.message || "Failed to send join request");
     } finally {
       setIsLoading(false);
     }
@@ -254,7 +269,7 @@ const Onboarding = () => {
               </Button>
               <CardTitle className="text-2xl">Join an Organization</CardTitle>
               <CardDescription>
-                Select your organization from the list
+                Select your organization and send a join request to the admin
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -292,10 +307,10 @@ const Onboarding = () => {
                   {isLoading ? (
                     <>
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Joining...
+                      Sending...
                     </>
                   ) : (
-                    "Join Organization"
+                    "Send Join Request"
                   )}
                 </Button>
               </form>
