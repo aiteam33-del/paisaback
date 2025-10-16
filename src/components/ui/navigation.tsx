@@ -12,7 +12,7 @@ import { useState } from "react";
 export const Navigation = () => {
   const { user, signOut, userRole } = useAuth();
   const location = useLocation();
-  const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
+  const { notifications, unreadCount, markAsRead, markAllAsRead, deleteNotification } = useNotifications();
   const [notificationOpen, setNotificationOpen] = useState(false);
   
   // Redirect admin users to /admin instead of employee dashboard
@@ -68,6 +68,7 @@ export const Navigation = () => {
         unreadCount={unreadCount}
         onMarkAsRead={markAsRead}
         onMarkAllAsRead={markAllAsRead}
+        onDeleteNotification={deleteNotification}
       />
     </nav>
   );

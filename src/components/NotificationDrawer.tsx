@@ -13,7 +13,8 @@ import {
   UserPlus, 
   UserCheck, 
   UserX,
-  Bell
+  Bell,
+  Trash2
 } from 'lucide-react';
 
 interface NotificationDrawerProps {
@@ -23,6 +24,7 @@ interface NotificationDrawerProps {
   unreadCount: number;
   onMarkAsRead: (id: string) => void;
   onMarkAllAsRead: () => void;
+  onDeleteNotification: (id: string) => void;
 }
 
 const getNotificationIcon = (type: string) => {
@@ -51,41 +53,57 @@ export const NotificationDrawer = ({
   unreadCount,
   onMarkAsRead,
   onMarkAllAsRead,
+  onDeleteNotification,
 }: NotificationDrawerProps) => {
   const navigate = useNavigate();
 
   const handleNotificationClick = (notification: Notification) => {
-    // Mark as read
+    console.log('Notification clicked:', notification);
+    
+    // Mark as read first
     if (!notification.read) {
       onMarkAsRead(notification.id);
     }
 
     // Navigate based on notification type
-    switch (notification.type) {
-      case 'expense_submitted':
-        // Admin viewing submitted expense
-        if (notification.related_id) {
+    try {
+      switch (notification.type) {
+        case 'expense_submitted':
+          // Admin viewing submitted expense
+          console.log('Navigating to admin dashboard');
           navigate('/admin');
-        }
-        break;
-      case 'expense_approved':
-      case 'expense_rejected':
-        // Employee viewing their expense status
-        navigate('/employee/history');
-        break;
-      case 'join_request':
-        // Admin viewing join request
-        navigate('/admin');
-        break;
-      case 'join_approved':
-      case 'join_rejected':
-        // Employee can stay on current page or go to dashboard
-        navigate('/employee');
-        break;
+          break;
+        case 'expense_approved':
+        case 'expense_rejected':
+          // Employee viewing their expense status
+          console.log('Navigating to expense history');
+          navigate('/employee/history');
+          break;
+        case 'join_request':
+          // Admin viewing join request
+          console.log('Navigating to admin dashboard for join request');
+          navigate('/admin');
+          break;
+        case 'join_approved':
+        case 'join_rejected':
+          // Employee can stay on current page or go to dashboard
+          console.log('Navigating to employee dashboard');
+          navigate('/employee');
+          break;
+        default:
+          console.log('Unknown notification type:', notification.type);
+      }
+    } catch (error) {
+      console.error('Navigation error:', error);
     }
 
     // Close drawer after navigation
     onOpenChange(false);
+  };
+
+  const handleDeleteNotification = (e: React.MouseEvent, notificationId: string) => {
+    e.stopPropagation(); // Prevent triggering the click handler
+    onDeleteNotification(notificationId);
   };
 
   return (
@@ -133,9 +151,19 @@ export const NotificationDrawer = ({
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-2">
                         <p className="font-semibold text-sm">{notification.title}</p>
-                        {!notification.read && (
-                          <Badge variant="default" className="h-2 w-2 p-0 rounded-full" />
-                        )}
+                        <div className="flex items-center gap-2">
+                          {!notification.read && (
+                            <Badge variant="default" className="h-2 w-2 p-0 rounded-full" />
+                          )}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 w-6 p-0 hover:bg-destructive hover:text-destructive-foreground"
+                            onClick={(e) => handleDeleteNotification(e, notification.id)}
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
                       </div>
                       <p className="text-sm text-muted-foreground mt-1">
                         {notification.message}
