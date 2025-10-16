@@ -44,6 +44,27 @@ const ExpenseAnalytics = () => {
     loadExpenses();
   }, [user, navigate]);
 
+  // Refresh data when page becomes visible
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        loadExpenses();
+      }
+    };
+
+    const handleFocus = () => {
+      loadExpenses();
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [user]);
+
   const loadExpenses = async () => {
     if (!user) return;
 
