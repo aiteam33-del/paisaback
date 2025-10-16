@@ -64,6 +64,7 @@ const Employee = () => {
   const [isUpdatingFrequency, setIsUpdatingFrequency] = useState(false);
   const [orgId, setOrgId] = useState<string | null>(null);
   const [orgName, setOrgName] = useState<string>("");
+  const [pendingOrgName, setPendingOrgName] = useState<string>("");
   const [joinPending, setJoinPending] = useState<boolean>(false);
   const [lastActivityTime, setLastActivityTime] = useState(Date.now());
   
@@ -215,13 +216,24 @@ const Employee = () => {
       if (!data.organization_id) {
         const { data: jr } = await supabase
           .from("join_requests")
-          .select("id")
+          .select("id, org_id")
           .eq("employee_id", user.id)
           .eq("status", "pending")
           .maybeSingle();
         setJoinPending(!!jr);
+        if (jr?.org_id) {
+          const { data: orgData } = await supabase
+            .from("organizations")
+            .select("name")
+            .eq("id", jr.org_id)
+            .maybeSingle();
+          if (orgData) setPendingOrgName(orgData.name);
+        } else {
+          setPendingOrgName("");
+        }
       } else {
         setJoinPending(false);
+        setPendingOrgName("");
       }
       
       // For custom schedules, use next_email_at instead of last_email_sent
@@ -864,13 +876,14 @@ const processOCR = async (file: File) => {
           <h1 className="text-3xl font-bold text-foreground mb-2">
             {userName ? `Welcome, ${userName}` : "Employee Dashboard"}
           </h1>
-          <div className="flex items-center gap-2">
-            {orgName && (
-              <p className="text-muted-foreground">
-                {orgName}
-              </p>
+          <div className="flex flex-wrap items-center gap-3">
+            {orgName ? (
+              <Badge variant="outline">Organization: {orgName}</Badge>
+            ) : joinPending ? (
+              <Badge variant="outline">Join request pending: {pendingOrgName || 'Your organization'}</Badge>
+            ) : (
+              <Badge variant="outline">Not part of an organization</Badge>
             )}
-            {orgName && <span className="text-muted-foreground">•</span>}
             <p className="text-muted-foreground">Submit and track your expense claims</p>
           </div>
         </div>
