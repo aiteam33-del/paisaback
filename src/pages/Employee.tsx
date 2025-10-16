@@ -64,6 +64,7 @@ const Employee = () => {
   const [isUpdatingFrequency, setIsUpdatingFrequency] = useState(false);
   const [orgId, setOrgId] = useState<string | null>(null);
   const [joinPending, setJoinPending] = useState<boolean>(false);
+  const [lastActivityTime, setLastActivityTime] = useState(Date.now());
   
   // Form fields
   const [vendor, setVendor] = useState("");
@@ -72,6 +73,52 @@ const Employee = () => {
   const [description, setDescription] = useState("");
   const [modeOfPayment, setModeOfPayment] = useState("");
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+
+  // Helper function to ensure valid session before operations
+  const ensureValidSession = async () => {
+    try {
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError || !session) {
+        toast.error("Session expired. Please log in again.");
+        navigate("/auth");
+        return false;
+      }
+
+      // Check if session is about to expire (less than 5 minutes remaining)
+      const expiresAt = session.expires_at ? session.expires_at * 1000 : 0;
+      const now = Date.now();
+      const timeUntilExpiry = expiresAt - now;
+      const fiveMinutes = 5 * 60 * 1000;
+
+      if (timeUntilExpiry < fiveMinutes) {
+        console.log("Session expiring soon, refreshing...");
+        const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+        
+        if (refreshError) {
+          console.error("Failed to refresh session:", refreshError);
+          toast.error("Session expired. Please log in again.");
+          navigate("/auth");
+          return false;
+        }
+
+        if (!refreshData.session) {
+          toast.error("Failed to refresh session. Please log in again.");
+          navigate("/auth");
+          return false;
+        }
+
+        toast.success("Session refreshed automatically", { duration: 2000 });
+      }
+
+      return true;
+    } catch (error) {
+      console.error("Session validation error:", error);
+      toast.error("Session error. Please log in again.");
+      navigate("/auth");
+      return false;
+    }
+  };
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -85,6 +132,51 @@ const Employee = () => {
       navigate('/admin');
     }
   }, [userRole, navigate]);
+
+  // Periodic session health check (every 5 minutes)
+  useEffect(() => {
+    const checkInterval = setInterval(async () => {
+      if (!user) return;
+
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const expiresAt = session.expires_at ? session.expires_at * 1000 : 0;
+      const now = Date.now();
+      const timeUntilExpiry = expiresAt - now;
+      const tenMinutes = 10 * 60 * 1000;
+
+      // Proactively refresh if less than 10 minutes remaining
+      if (timeUntilExpiry < tenMinutes && timeUntilExpiry > 0) {
+        console.log("Proactively refreshing session in background");
+        const { error } = await supabase.auth.refreshSession();
+        if (!error) {
+          console.log("Background session refresh successful");
+        }
+      }
+    }, 5 * 60 * 1000); // Check every 5 minutes
+
+    return () => clearInterval(checkInterval);
+  }, [user]);
+
+  // Track user activity
+  useEffect(() => {
+    const handleActivity = () => {
+      setLastActivityTime(Date.now());
+    };
+
+    window.addEventListener('mousemove', handleActivity);
+    window.addEventListener('keydown', handleActivity);
+    window.addEventListener('click', handleActivity);
+    window.addEventListener('scroll', handleActivity);
+
+    return () => {
+      window.removeEventListener('mousemove', handleActivity);
+      window.removeEventListener('keydown', handleActivity);
+      window.removeEventListener('click', handleActivity);
+      window.removeEventListener('scroll', handleActivity);
+    };
+  }, []);
 
   useEffect(() => {
     if (user) {
@@ -353,6 +445,15 @@ const processOCR = async (file: File) => {
     toast.info("Extracting information from receipt...");
     
     try {
+      // Ensure valid session before processing
+      const sessionValid = await ensureValidSession();
+      if (!sessionValid) {
+        setOcrStage("error");
+        setOcrError("Session expired. Please log in again.");
+        setIsProcessingOCR(false);
+        return;
+      }
+
       let fileForAI = file;
       if (file.type === 'application/pdf') {
         console.log('processOCR: converting PDF first page to PNG for OCR');
@@ -436,8 +537,14 @@ const processOCR = async (file: File) => {
     setUploadedFiles(prev => prev.filter((_, i) => i !== index));
   };
 
-  const uploadFiles = async () => {
+  const uploadFiles = async (retryCount = 0): Promise<string[]> => {
     if (!user || uploadedFiles.length === 0) return [];
+
+    // Ensure valid session before upload
+    const sessionValid = await ensureValidSession();
+    if (!sessionValid) {
+      return [];
+    }
 
     const urls: string[] = [];
     setUploadProgress(0);
@@ -447,26 +554,49 @@ const processOCR = async (file: File) => {
       const fileExt = file.name.split('.').pop();
       const fileName = `${user.id}/${Date.now()}-${Math.random()}.${fileExt}`;
 
-      const { error: uploadError, data } = await supabase.storage
-        .from('receipts')
-        .upload(fileName, file, { contentType: file.type });
+      try {
+        const { error: uploadError, data } = await supabase.storage
+          .from('receipts')
+          .upload(fileName, file, { contentType: file.type });
 
-      if (uploadError) {
-        toast.error(`Failed to upload ${file.name}`);
+        if (uploadError) {
+          // Check for auth-specific errors
+          const isAuthError = uploadError.message?.toLowerCase().includes('jwt') || 
+                             uploadError.message?.toLowerCase().includes('token') ||
+                             uploadError.message?.toLowerCase().includes('expired') ||
+                             uploadError.message?.toLowerCase().includes('unauthorized');
+
+          if (isAuthError && retryCount === 0) {
+            console.log("Auth error during upload, refreshing session and retrying...");
+            toast.info("Refreshing session, retrying upload...");
+            
+            const { error: refreshError } = await supabase.auth.refreshSession();
+            if (!refreshError) {
+              // Retry the upload once
+              return await uploadFiles(1);
+            }
+          }
+
+          toast.error(`Failed to upload ${file.name}: ${uploadError.message}`);
+          continue;
+        }
+
+        const { data: signedData, error: signedErr } = await supabase.storage
+          .from('receipts')
+          .createSignedUrl(fileName, 60 * 60 * 24 * 7); // 7 days
+
+        if (signedErr) {
+          toast.error(`Failed to get secure URL for ${file.name}`);
+          continue;
+        }
+
+        urls.push(signedData.signedUrl);
+        setUploadProgress(((i + 1) / uploadedFiles.length) * 100);
+      } catch (error: any) {
+        console.error("Upload error:", error);
+        toast.error(`Error uploading ${file.name}`);
         continue;
       }
-
-      const { data: signedData, error: signedErr } = await supabase.storage
-        .from('receipts')
-        .createSignedUrl(fileName, 60 * 60 * 24 * 7); // 7 days
-
-      if (signedErr) {
-        toast.error(`Failed to get secure URL for ${file.name}`);
-        continue;
-      }
-
-      urls.push(signedData.signedUrl);
-      setUploadProgress(((i + 1) / uploadedFiles.length) * 100);
     }
 
     return urls;
@@ -488,18 +618,10 @@ const processOCR = async (file: File) => {
     setIsLoading(true);
 
     try {
-      // Ensure we have a fresh session
-      // Try to proactively refresh in case the access token expired
-      const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
-      if (refreshError) {
-        console.warn("refreshSession error", refreshError.message);
-      }
-
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      
-      if (sessionError || !session) {
-        toast.error("Session expired. Please log in again.");
-        navigate("/auth");
+      // Ensure valid session before submission
+      const sessionValid = await ensureValidSession();
+      if (!sessionValid) {
+        setIsLoading(false);
         return;
       }
 
