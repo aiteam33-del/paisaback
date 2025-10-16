@@ -9,12 +9,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Navigation } from "@/components/ui/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Building2, Users, DollarSign, TrendingUp, CheckCircle, XCircle, Clock, Loader2, Search, Filter, Calendar, Receipt } from "lucide-react";
+import { Building2, Users, DollarSign, CheckCircle, XCircle, Clock, Loader2, Search, Filter, Calendar, Receipt } from "lucide-react";
 
 interface Employee {
   id: string;
@@ -432,184 +431,101 @@ const OrganizationAdmin = () => {
           </CardContent>
         </Card>
 
-        {/* Analytics Tabs */}
-        <Tabs defaultValue="expenses" className="mb-8">
-          <TabsList className="grid w-full grid-cols-3 mb-4">
-            <TabsTrigger value="expenses">All Expenses</TabsTrigger>
-            <TabsTrigger value="categories">By Category</TabsTrigger>
-            <TabsTrigger value="employees">By Employee</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="expenses" className="space-y-4">
-            <Card className="shadow-card">
-              <CardHeader>
-                <CardTitle>Expense Details</CardTitle>
-                <CardDescription>Complete list of all expenses</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {filteredExpenses.length === 0 ? (
-                    <p className="text-center text-muted-foreground py-8">No expenses found</p>
-                  ) : (
-                    filteredExpenses.map((expense) => (
-                      <div
-                        key={expense.id}
-                        className="flex items-center justify-between p-4 rounded-lg border border-border hover:shadow-sm transition-all"
-                      >
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-2">
-                            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                              <span className="text-sm font-semibold text-primary">
-                                {expense.employee.full_name.split(" ").map((n) => n[0]).join("")}
-                              </span>
-                            </div>
-                            <div>
-                              <p className="font-medium text-foreground">{expense.vendor}</p>
-                              <p className="text-sm text-muted-foreground">
-                                {expense.employee.full_name} • {expense.category}
-                              </p>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2 ml-13">
-                            <Badge variant="outline" className={getStatusColor(expense.status)}>
-                              {expense.status === "pending" && <Clock className="w-3 h-3 mr-1" />}
-                              {expense.status === "approved" && <CheckCircle className="w-3 h-3 mr-1" />}
-                              {expense.status === "rejected" && <XCircle className="w-3 h-3 mr-1" />}
-                              {expense.status === "paid" && <DollarSign className="w-3 h-3 mr-1" />}
-                              <span className="capitalize">{expense.status}</span>
-                            </Badge>
-                            <span className="text-xs text-muted-foreground">
-                              {new Date(expense.date).toLocaleDateString()}
-                            </span>
-                          </div>
-                          <p className="text-sm text-muted-foreground mt-2 ml-13">{expense.description}</p>
-                          {expense.attachments && expense.attachments.length > 0 && (
-                            <div className="flex gap-2 mt-2 ml-13">
-                              {expense.attachments.map((url, idx) => (
-                                <Button 
-                                  key={idx} 
-                                  variant="outline" 
-                                  size="sm"
-                                  onClick={() => window.open(url, '_blank')}
-                                >
-                                  <Receipt className="w-3 h-3 mr-1" />
-                                  Receipt {expense.attachments!.length > 1 ? `${idx + 1}` : ''}
-                                </Button>
-                              ))}
-                            </div>
-                          )}
+        {/* Expenses List - single view (tabs removed) */}
+        <Card className="shadow-card">
+          <CardHeader>
+            <CardTitle>Expense Details</CardTitle>
+            <CardDescription>Complete list of all expenses</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {filteredExpenses.length === 0 ? (
+                <p className="text-center text-muted-foreground py-8">No expenses found</p>
+              ) : (
+                filteredExpenses.map((expense) => (
+                  <div
+                    key={expense.id}
+                    className="flex items-center justify-between p-4 rounded-lg border border-border hover:shadow-sm transition-all"
+                  >
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-2">
+                        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                          <span className="text-sm font-semibold text-primary">
+                            {expense.employee.full_name.split(" ").map((n) => n[0]).join("")}
+                          </span>
                         </div>
-                        <div className="flex items-center gap-4">
-                          <p className="text-xl font-semibold text-foreground">₹{expense.amount.toFixed(2)}</p>
-                          {expense.status === "pending" && (
-                            <div className="flex gap-2">
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="text-destructive hover:bg-destructive/10"
-                                onClick={() => {
-                                  setSelectedExpense(expense);
-                                  setManagerNotes("");
-                                }}
-                              >
-                                <XCircle className="w-4 h-4 mr-1" />
-                                Reject
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="hero"
-                                onClick={() => {
-                                  setSelectedExpense(expense);
-                                  setManagerNotes("");
-                                }}
-                              >
-                                <CheckCircle className="w-4 h-4 mr-1" />
-                                Approve
-                              </Button>
-                            </div>
-                          )}
+                        <div>
+                          <p className="font-medium text-foreground">{expense.vendor}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {expense.employee.full_name} • {expense.category}
+                          </p>
                         </div>
                       </div>
-                    ))
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="categories">
-            <Card className="shadow-card">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <TrendingUp className="w-5 h-5" />
-                  Spending by Category
-                </CardTitle>
-                <CardDescription>Breakdown of expenses by category</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {Object.entries(categoryStatusBreakdown).map(([category, amounts]) => (
-                    <div key={category} className="p-4 rounded-lg border border-border">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="font-semibold text-lg">{category}</span>
-                        <span className="text-xl font-bold">
-                          ₹{((amounts as {approved: number; paid: number}).approved + (amounts as {approved: number; paid: number}).paid).toFixed(2)}
+                      <div className="flex items-center gap-2 ml-13">
+                        <Badge variant="outline" className={getStatusColor(expense.status)}>
+                          {expense.status === "pending" && <Clock className="w-3 h-3 mr-1" />}
+                          {expense.status === "approved" && <CheckCircle className="w-3 h-3 mr-1" />}
+                          {expense.status === "rejected" && <XCircle className="w-3 h-3 mr-1" />}
+                          {expense.status === "paid" && <DollarSign className="w-3 h-3 mr-1" />}
+                          <span className="capitalize">{expense.status}</span>
+                        </Badge>
+                        <span className="text-xs text-muted-foreground">
+                          {new Date(expense.date).toLocaleDateString()}
                         </span>
                       </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <div className="text-xs text-muted-foreground">To be paid</div>
-                          <div className="font-semibold text-warning">₹{(amounts as {approved: number; paid: number}).approved.toFixed(2)}</div>
+                      <p className="text-sm text-muted-foreground mt-2 ml-13">{expense.description}</p>
+                      {expense.attachments && expense.attachments.length > 0 && (
+                        <div className="flex gap-2 mt-2 ml-13">
+                          {expense.attachments.map((url, idx) => (
+                            <Button 
+                              key={idx} 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => window.open(url, '_blank')}
+                            >
+                              <Receipt className="w-3 h-3 mr-1" />
+                              Receipt {expense.attachments!.length > 1 ? `${idx + 1}` : ''}
+                            </Button>
+                          ))}
                         </div>
-                        <div>
-                          <div className="text-xs text-muted-foreground">Paid</div>
-                          <div className="font-semibold text-success">₹{(amounts as {approved: number; paid: number}).paid.toFixed(2)}</div>
-                        </div>
-                      </div>
+                      )}
                     </div>
-                  ))}
-                  {Object.keys(categoryStatusBreakdown).length === 0 && (
-                    <p className="text-muted-foreground text-center py-4">No expenses to display</p>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="employees">
-            <Card className="shadow-card">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Users className="w-5 h-5" />
-                  Spending by Employee
-                </CardTitle>
-                <CardDescription>Breakdown of expenses by employee</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {Object.entries(employeeBreakdown).map(([email, data]) => (
-                    <div key={email} className="p-4 rounded-lg border border-border">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="font-semibold">{data.name}</p>
-                          <p className="text-sm text-muted-foreground">{email}</p>
-                          <p className="text-xs text-muted-foreground mt-1">{data.count} expense{data.count !== 1 ? 's' : ''}</p>
+                    <div className="flex items-center gap-4">
+                      <p className="text-xl font-semibold text-foreground">₹{expense.amount.toFixed(2)}</p>
+                      {expense.status === "pending" && (
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="text-destructive hover:bg-destructive/10"
+                            onClick={() => {
+                              setSelectedExpense(expense);
+                              setManagerNotes("");
+                            }}
+                          >
+                            <XCircle className="w-4 h-4 mr-1" />
+                            Reject
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="hero"
+                            onClick={() => {
+                              setSelectedExpense(expense);
+                              setManagerNotes("");
+                            }}
+                          >
+                            <CheckCircle className="w-4 h-4 mr-1" />
+                            Approve
+                          </Button>
                         </div>
-                        <div className="text-right">
-                          <p className="text-xl font-bold">₹{data.total.toFixed(2)}</p>
-                          <p className="text-sm text-muted-foreground">Total</p>
-                        </div>
-                      </div>
+                      )}
                     </div>
-                  ))}
-                  {Object.keys(employeeBreakdown).length === 0 && (
-                    <p className="text-muted-foreground text-center py-4">No expenses to display</p>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+                  </div>
+                ))
+              )}
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Employees Table */}
         <Card className="shadow-card">
