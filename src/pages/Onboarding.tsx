@@ -102,20 +102,7 @@ const Onboarding = () => {
 
     setIsLoading(true);
     try {
-      // Check for existing organization with same name (case-insensitive)
-      const { data: existing } = await supabase
-        .from("organizations")
-        .select("id, name")
-        .ilike("name", trimmedName)
-        .maybeSingle();
-
-      if (existing) {
-        toast.error(`An organization named "${existing.name}" already exists. Please choose a different name.`);
-        setIsLoading(false);
-        return;
-      }
-
-      // Create organization
+      // Create organization - let database handle uniqueness
       const { data: org, error: orgError } = await supabase
         .from("organizations")
         .insert({
@@ -130,7 +117,7 @@ const Onboarding = () => {
         if (orgError.code === '23505' || orgError.message.toLowerCase().includes('duplicate') || orgError.message.toLowerCase().includes('unique')) {
           toast.error(`An organization with this name already exists. Please choose a different name.`);
         } else {
-          throw orgError;
+          toast.error(orgError.message || "Failed to create organization");
         }
         setIsLoading(false);
         return;
@@ -142,9 +129,12 @@ const Onboarding = () => {
         .update({ organization_id: org.id })
         .eq("id", user.id);
 
-      if (profileError) throw profileError;
-
-      // Role granted by DB trigger; nothing to do here
+      if (profileError) {
+        console.error("Profile update error:", profileError);
+        toast.error("Organization created but failed to link to your profile");
+        setIsLoading(false);
+        return;
+      }
 
       toast.success(`Organization "${trimmedName}" created successfully!`);
       navigate("/admin");
