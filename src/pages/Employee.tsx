@@ -797,26 +797,55 @@ const processOCR = async (file: File) => {
                     />
                   </div>
 
-                  {/* Preview uploaded files */}
+                  {/* Preview uploaded files with thumbnails */}
                   {uploadedFiles.length > 0 && (
                     <div className="space-y-2">
                       <p className="text-sm font-medium">Selected files:</p>
-                      <div className="grid grid-cols-2 gap-2">
-                        {uploadedFiles.map((file, index) => (
-                          <div key={index} className="relative border rounded-lg p-2 flex items-center gap-2">
-                            <Receipt className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                            <span className="text-xs truncate flex-1">{file.name}</span>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => removeFile(index)}
-                              className="h-6 w-6 p-0"
-                            >
-                              <X className="w-3 h-3" />
-                            </Button>
-                          </div>
-                        ))}
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                        {uploadedFiles.map((file, index) => {
+                          const isImage = file.type.startsWith('image/');
+                          const isPDF = file.type === 'application/pdf';
+                          const previewUrl = isImage ? URL.createObjectURL(file) : null;
+
+                          return (
+                            <div key={index} className="relative border rounded-lg overflow-hidden group hover:border-primary transition-colors">
+                              {/* Preview Image/PDF Icon */}
+                              <div className="aspect-video bg-muted flex items-center justify-center">
+                                {isImage && previewUrl ? (
+                                  <img 
+                                    src={previewUrl}
+                                    alt={file.name}
+                                    className="w-full h-full object-cover"
+                                    onLoad={() => URL.revokeObjectURL(previewUrl)}
+                                  />
+                                ) : isPDF ? (
+                                  <div className="flex flex-col items-center gap-1">
+                                    <Receipt className="w-8 h-8 text-muted-foreground" />
+                                    <span className="text-xs text-muted-foreground">PDF</span>
+                                  </div>
+                                ) : (
+                                  <Receipt className="w-8 h-8 text-muted-foreground" />
+                                )}
+                              </div>
+                              
+                              {/* File name and remove button */}
+                              <div className="p-2 bg-card flex items-center justify-between gap-2">
+                                <span className="text-xs truncate flex-1" title={file.name}>
+                                  {file.name}
+                                </span>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => removeFile(index)}
+                                  className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                                >
+                                  <X className="w-3 h-3" />
+                                </Button>
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
                   )}
@@ -830,11 +859,32 @@ const processOCR = async (file: File) => {
                     </div>
                   )}
 
-                  {isProcessingOCR && (
-                    <div className="flex items-center gap-2 text-sm text-primary">
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      <span>Extracting information from receipt...</span>
-                    </div>
+                  {/* OCR Progress Indicator */}
+                  {ocrStage !== "idle" && (
+                    <OCRProgressIndicator 
+                      stage={ocrStage}
+                      progress={ocrProgress}
+                      error={ocrError}
+                    />
+                  )}
+
+                  {/* Retry OCR button on error */}
+                  {ocrStage === "error" && uploadedFiles.length > 0 && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        const firstImage = uploadedFiles.find(f => f.type.startsWith('image/'));
+                        const firstPdf = uploadedFiles.find(f => f.type === 'application/pdf');
+                        const targetFile = firstImage || firstPdf;
+                        if (targetFile) processOCR(targetFile);
+                      }}
+                      className="w-full"
+                    >
+                      <RefreshCw className="w-4 h-4 mr-2" />
+                      Retry OCR
+                    </Button>
                   )}
 
                   {extractedFields && (
