@@ -24,7 +24,7 @@ const Index = () => {
         .maybeSingle();
 
       if (!profile?.organization_id) {
-        // No org yet → if pending request exists, go to pending page; else onboarding
+        // No org yet → if pending request exists, go to pending page; else auth
         const { data: pending } = await supabase
           .from("join_requests")
           .select("id")
@@ -36,7 +36,7 @@ const Index = () => {
           navigate('/pending-request');
           return;
         }
-        navigate('/onboarding');
+        navigate('/auth');
         return;
       }
 

@@ -109,7 +109,7 @@ export default function PendingRequest() {
     }
     
     toast.success("Request cancelled");
-    navigate("/onboarding");
+    navigate("/auth");
   };
 
   if (loading) {

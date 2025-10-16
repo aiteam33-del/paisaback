@@ -50,7 +50,7 @@ export default function RejectedRequest() {
   }, [user, navigate]);
 
   const handleApplyToNew = () => {
-    navigate("/onboarding");
+    navigate("/auth");
   };
 
   const handleContactSupport = () => {

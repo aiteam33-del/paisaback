@@ -7,7 +7,6 @@ import { AuthProvider } from "./hooks/useAuth";
 import { ThemeProvider } from "@/components/theme-provider";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
-import Onboarding from "./pages/Onboarding";
 import Employee from "./pages/Employee";
 import ExpenseHistory from "./pages/ExpenseHistory";
 import ExpenseSummary from "./pages/ExpenseSummary";
@@ -31,7 +30,6 @@ const App = () => (
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/auth" element={<Auth />} />
-              <Route path="/onboarding" element={<Onboarding />} />
               <Route path="/employee" element={<Employee />} />
               <Route path="/employee/history" element={<ExpenseHistory />} />
               <Route path="/expense-summary" element={<ExpenseSummary />} />

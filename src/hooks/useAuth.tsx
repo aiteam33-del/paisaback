@@ -83,8 +83,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       
       if (data.user) {
         toast.success("Account created successfully!");
-        // Redirect to onboarding to choose create/join organization
-        navigate("/onboarding");
+        // User can now log in from auth page
+        navigate("/auth");
       }
     } catch (error: any) {
       toast.error(error.message || "Failed to sign up");
@@ -127,8 +127,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             return;
           }
 
-          toast.success("Welcome! Let's get you set up.");
-          navigate("/onboarding");
+          toast.success("Welcome! Please create or join an organization.");
+          navigate("/auth");
           return;
         }
 

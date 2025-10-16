@@ -59,9 +59,7 @@ const Auth = () => {
           .eq("id", user.id)
           .single();
 
-        if (!profile?.organization_id) {
-          navigate("/onboarding");
-        } else {
+        if (profile?.organization_id) {
           navigate("/employee");
         }
       }
