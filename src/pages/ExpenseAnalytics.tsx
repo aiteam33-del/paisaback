@@ -4,10 +4,11 @@ import { Navigation } from "@/components/ui/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2, TrendingUp, DollarSign, Receipt, CheckCircle, XCircle, Clock, BarChart3, ArrowUp, ArrowDown } from "lucide-react";
+import { Loader2, TrendingUp, DollarSign, Receipt, CheckCircle, XCircle, Clock, BarChart3, ArrowUp, ArrowDown, ArrowLeft } from "lucide-react";
 import { StatCard } from "@/components/StatCard";
 import { AnalyticsFilters } from "@/components/AnalyticsFilters";
 import { ExpenseChart } from "@/components/ExpenseChart";
+import { Button } from "@/components/ui/button";
 import { startOfDay, subDays, isAfter } from "date-fns";
 
 interface Expense {
@@ -221,6 +222,18 @@ const ExpenseAnalytics = () => {
       <Navigation />
       
       <main className="container mx-auto px-4 pt-24 pb-16 max-w-7xl">
+        {/* Back Button */}
+        <div className="mb-6 animate-fade-in">
+          <Button
+            variant="outline"
+            onClick={() => navigate(isAdmin ? "/admin" : "/employee")}
+            className="group hover:bg-primary/10 border-border/50"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform" />
+            Back to Dashboard
+          </Button>
+        </div>
+
         {/* Hero Header with Gradient */}
         <div className="mb-8 relative">
           <div className="absolute inset-0 bg-gradient-hero opacity-5 blur-3xl rounded-3xl"></div>
