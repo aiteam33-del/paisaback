@@ -168,7 +168,7 @@ const OrganizationAdmin = () => {
       await loadDashboardData();
     } catch (error: any) {
       console.error("Expense update failed:", error);
-      toast.error(`Failed to ${newStatus} expense`);
+      toast.error(error?.message ?? `Failed to ${newStatus} expense`);
     } finally {
       setIsSubmitting(false);
     }
@@ -204,7 +204,7 @@ const OrganizationAdmin = () => {
     <div className="min-h-screen bg-gradient-subtle">
       <Navigation />
       
-      <main className="container mx-auto px-4 pt-24 pb-16">
+      <main className="container mx-auto px-4 pt-24 pb-16 max-w-7xl">
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-2">
             <Building2 className="w-8 h-8 text-primary" />
@@ -215,7 +215,7 @@ const OrganizationAdmin = () => {
 
         {/* KPI Cards */}
         <div className="grid md:grid-cols-3 gap-6 mb-8">
-          <Card>
+           <Card className="shadow-card">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Pending</CardTitle>
               <Clock className="h-4 w-4 text-muted-foreground" />
@@ -228,7 +228,7 @@ const OrganizationAdmin = () => {
             </CardContent>
           </Card>
 
-          <Card>
+           <Card className="shadow-card">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Paid</CardTitle>
               <DollarSign className="h-4 w-4 text-muted-foreground" />
@@ -241,7 +241,7 @@ const OrganizationAdmin = () => {
             </CardContent>
           </Card>
 
-          <Card>
+           <Card className="shadow-card">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Employees</CardTitle>
               <Users className="h-4 w-4 text-muted-foreground" />
@@ -256,7 +256,7 @@ const OrganizationAdmin = () => {
         </div>
 
         {/* Category Breakdown */}
-        <Card className="mb-8">
+        <Card className="mb-8 shadow-card">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <TrendingUp className="w-5 h-5" />
@@ -285,7 +285,7 @@ const OrganizationAdmin = () => {
         </Card>
 
         {/* Employees Table */}
-        <Card>
+        <Card className="shadow-card">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Users className="w-5 h-5" />
@@ -358,7 +358,7 @@ const OrganizationAdmin = () => {
           </DialogHeader>
           <div className="space-y-4">
             {employeeExpenses.map((expense) => (
-              <Card key={expense.id}>
+              <Card key={expense.id} className="shadow-card">
                 <CardHeader>
                   <div className="flex justify-between items-start">
                     <div>
@@ -374,13 +374,13 @@ const OrganizationAdmin = () => {
                 <CardContent>
                   <p className="text-sm mb-4">{expense.description}</p>
                   <div className="flex gap-2">
-                    <Button
+                    <Button variant="hero"
                       size="sm"
                       onClick={() => {
                         setSelectedExpense(expense);
                         setManagerNotes("");
                       }}
-                      className="bg-green-600 hover:bg-green-700"
+                      
                     >
                       <CheckCircle className="w-4 h-4 mr-1" />
                       Approve
@@ -428,8 +428,8 @@ const OrganizationAdmin = () => {
               />
             </div>
             <div className="flex gap-2">
-              <Button
-                className="flex-1 bg-green-600 hover:bg-green-700"
+               <Button variant="hero"
+                className="flex-1"
                 onClick={() => selectedExpense && handleExpenseAction(selectedExpense.id, "approved")}
                 disabled={isSubmitting}
               >
