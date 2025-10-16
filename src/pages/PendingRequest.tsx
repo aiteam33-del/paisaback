@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { toast } from "sonner";
 
 const PendingRequest = () => {
   const navigate = useNavigate();
@@ -17,23 +18,28 @@ const PendingRequest = () => {
     document.title = "Request Sent – PAISABACK";
   }, []);
 
+  // Load request + profile details
   useEffect(() => {
     const load = async () => {
       if (!user) return;
 
-      // Load profile for name/email
       const { data: profile } = await supabase
         .from("profiles")
-        .select("full_name, email")
+        .select("full_name, email, organization_id")
         .eq("id", user.id)
         .maybeSingle();
+
+      if (profile?.organization_id) {
+        navigate('/employee');
+        return;
+      }
+
       setFullName(profile?.full_name || "");
       setEmail(profile?.email || user.email || "");
 
-      // Find the latest pending request and its organization
       const { data: jr } = await supabase
         .from("join_requests")
-        .select("org_id, created_at")
+        .select("org_id, created_at, status")
         .eq("employee_id", user.id)
         .eq("status", "pending")
         .order("created_at", { ascending: false })
@@ -50,7 +56,45 @@ const PendingRequest = () => {
       }
     };
     load();
-  }, [user]);
+  }, [user, navigate]);
+
+  // Realtime + polling to auto-redirect when approved
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel(`profile-approval-${user.id}`)
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'profiles', filter: `id=eq.${user.id}` },
+        (payload: any) => {
+          const orgId = (payload.new && (payload.new as any).organization_id) || null;
+          if (orgId) {
+            toast.success('You have been approved. Welcome!');
+            navigate('/employee');
+          }
+        }
+      )
+      .subscribe();
+
+    const timer = setInterval(async () => {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('organization_id')
+        .eq('id', user.id)
+        .maybeSingle();
+      if (profile?.organization_id) {
+        clearInterval(timer);
+        try { supabase.removeChannel(channel); } catch (_) {}
+        navigate('/employee');
+      }
+    }, 5000);
+
+    return () => {
+      clearInterval(timer);
+      try { supabase.removeChannel(channel); } catch (_) {}
+    };
+  }, [user, navigate]);
 
   return (
     <div className="min-h-screen bg-gradient-subtle">
@@ -65,8 +109,8 @@ const PendingRequest = () => {
           </CardHeader>
           <CardContent className="space-y-5">
             <div>
-              <p className="text-muted-foreground">
-                {fullName ? `${fullName}` : ""}
+              <p className="text-muted-foreground font-medium">
+                {fullName || email}
               </p>
               <p className="text-muted-foreground">{email}</p>
             </div>
