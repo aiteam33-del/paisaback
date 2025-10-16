@@ -2,7 +2,6 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Download, RefreshCw } from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface AnalyticsFiltersProps {
   dateRange: string;
@@ -30,29 +29,27 @@ export const AnalyticsFilters = ({
   onRefresh
 }: AnalyticsFiltersProps) => {
   return (
-    <Card className="shadow-card">
-      <CardHeader>
-        <div className="flex items-center justify-between">
+    <div className="bg-gradient-card rounded-xl shadow-lg border border-border/50 backdrop-blur-sm overflow-hidden">
+      <div className="p-6">
+        <div className="flex items-center justify-between mb-4">
           <div>
-            <CardTitle className="text-base">Filters</CardTitle>
-            <CardDescription>Customize your analytics view</CardDescription>
+            <h3 className="text-base font-semibold text-foreground">Filters</h3>
+            <p className="text-sm text-muted-foreground">Customize your analytics view</p>
           </div>
           <div className="flex gap-2">
             {onRefresh && (
-              <Button variant="outline" size="sm" onClick={onRefresh}>
+              <Button variant="outline" size="sm" onClick={onRefresh} className="hover:bg-primary/10">
                 <RefreshCw className="h-4 w-4" />
               </Button>
             )}
             {onExport && (
-              <Button variant="outline" size="sm" onClick={onExport}>
+              <Button variant="outline" size="sm" onClick={onExport} className="hover:bg-primary/10">
                 <Download className="h-4 w-4 mr-2" />
                 Export
               </Button>
             )}
           </div>
         </div>
-      </CardHeader>
-      <CardContent>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="space-y-2">
             <Label>Date Range</Label>
@@ -104,7 +101,7 @@ export const AnalyticsFilters = ({
             </div>
           )}
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 };

@@ -1,5 +1,4 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line, AreaChart, Area } from "recharts";
+import { ResponsiveContainer, Legend, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line, AreaChart, Area, PieChart, Pie, Cell } from "recharts";
 
 interface ExpenseData {
   category: string;
@@ -42,25 +41,21 @@ const getColorForCategory = (category: string, index: number): string => {
 export const ExpenseChart = ({ data, type = "pie", title, height = 250 }: ExpenseChartProps) => {
   if (!data || data.length === 0) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">{title}</CardTitle>
-        </CardHeader>
-        <CardContent>
+      <div className="bg-gradient-card rounded-xl shadow-lg border border-border/50 backdrop-blur-sm">
+        <div className="p-6">
+          <h3 className="text-base font-semibold text-foreground mb-2">{title}</h3>
           <p className="text-sm text-muted-foreground text-center py-8">
             No data available
           </p>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     );
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-base">{title}</CardTitle>
-      </CardHeader>
-      <CardContent>
+    <div className="bg-gradient-card rounded-xl shadow-lg border border-border/50 backdrop-blur-sm overflow-hidden hover:shadow-xl transition-all duration-300">
+      <div className="p-6">
+        <h3 className="text-base font-semibold text-foreground mb-4">{title}</h3>
         <ResponsiveContainer width="100%" height={height}>
           {type === "pie" ? (
             <PieChart>
@@ -78,38 +73,108 @@ export const ExpenseChart = ({ data, type = "pie", title, height = 250 }: Expens
                   <Cell key={`cell-${index}`} fill={getColorForCategory(entry.category, index)} />
                 ))}
               </Pie>
-              <Tooltip formatter={(value: number) => `₹${value.toFixed(2)}`} />
+              <Tooltip 
+                formatter={(value: number) => `₹${value.toFixed(2)}`}
+                contentStyle={{
+                  backgroundColor: 'hsl(var(--card))',
+                  border: '1px solid hsl(var(--border))',
+                  borderRadius: '8px',
+                  boxShadow: 'var(--shadow-lg)'
+                }}
+              />
               <Legend />
             </PieChart>
           ) : type === "line" ? (
             <LineChart data={data}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="category" />
-              <YAxis />
-              <Tooltip formatter={(value: number) => `₹${value.toFixed(2)}`} />
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
+              <XAxis 
+                dataKey="category" 
+                stroke="hsl(var(--muted-foreground))"
+                fontSize={12}
+              />
+              <YAxis 
+                stroke="hsl(var(--muted-foreground))"
+                fontSize={12}
+              />
+              <Tooltip 
+                formatter={(value: number) => `₹${value.toFixed(2)}`}
+                contentStyle={{
+                  backgroundColor: 'hsl(var(--card))',
+                  border: '1px solid hsl(var(--border))',
+                  borderRadius: '8px',
+                  boxShadow: 'var(--shadow-lg)'
+                }}
+              />
               <Legend />
-              <Line type="monotone" dataKey="amount" stroke="hsl(var(--primary))" strokeWidth={2} />
+              <Line 
+                type="monotone" 
+                dataKey="amount" 
+                stroke="hsl(var(--primary))" 
+                strokeWidth={3}
+                dot={{ fill: 'hsl(var(--primary))', r: 4 }}
+                activeDot={{ r: 6 }}
+              />
             </LineChart>
           ) : type === "area" ? (
             <AreaChart data={data}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="category" />
-              <YAxis />
-              <Tooltip formatter={(value: number) => `₹${value.toFixed(2)}`} />
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
+              <XAxis 
+                dataKey="category" 
+                stroke="hsl(var(--muted-foreground))"
+                fontSize={12}
+              />
+              <YAxis 
+                stroke="hsl(var(--muted-foreground))"
+                fontSize={12}
+              />
+              <Tooltip 
+                formatter={(value: number) => `₹${value.toFixed(2)}`}
+                contentStyle={{
+                  backgroundColor: 'hsl(var(--card))',
+                  border: '1px solid hsl(var(--border))',
+                  borderRadius: '8px',
+                  boxShadow: 'var(--shadow-lg)'
+                }}
+              />
               <Legend />
-              <Area type="monotone" dataKey="amount" stroke="hsl(var(--primary))" fill="hsl(var(--primary))" fillOpacity={0.6} />
+              <Area 
+                type="monotone" 
+                dataKey="amount" 
+                stroke="hsl(var(--primary))" 
+                fill="hsl(var(--primary))" 
+                fillOpacity={0.3}
+              />
             </AreaChart>
           ) : (
             <BarChart data={data}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="category" />
-              <YAxis />
-              <Tooltip formatter={(value: number) => `₹${value.toFixed(2)}`} />
-              <Bar dataKey="amount" fill="hsl(var(--primary))" />
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
+              <XAxis 
+                dataKey="category" 
+                stroke="hsl(var(--muted-foreground))"
+                fontSize={12}
+              />
+              <YAxis 
+                stroke="hsl(var(--muted-foreground))"
+                fontSize={12}
+              />
+              <Tooltip 
+                formatter={(value: number) => `₹${value.toFixed(2)}`}
+                contentStyle={{
+                  backgroundColor: 'hsl(var(--card))',
+                  border: '1px solid hsl(var(--border))',
+                  borderRadius: '8px',
+                  boxShadow: 'var(--shadow-lg)'
+                }}
+              />
+              <Bar 
+                dataKey="amount" 
+                fill="hsl(var(--primary))" 
+                radius={[8, 8, 0, 0]}
+              />
             </BarChart>
           )}
         </ResponsiveContainer>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 };

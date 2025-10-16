@@ -53,6 +53,14 @@ All colors MUST be HSL.
     --gradient-accent: linear-gradient(135deg, hsl(42 100% 62%) 0%, hsl(42 100% 55%) 100%);
     --gradient-subtle: linear-gradient(180deg, hsl(0 0% 100%) 0%, hsl(160 25% 98%) 100%);
     --gradient-card: linear-gradient(145deg, hsl(0 0% 100%) 0%, hsl(160 20% 99%) 100%);
+    --gradient-analytics: linear-gradient(135deg, hsl(161 70% 96%) 0%, hsl(217 70% 96%) 100%);
+    --gradient-chart: linear-gradient(135deg, hsl(0 0% 100%) 0%, hsl(160 15% 99%) 50%, hsl(217 15% 99%) 100%);
+    
+    --chart-1: 161 85% 38%;
+    --chart-2: 217 91% 60%;
+    --chart-3: 282 83% 58%;
+    --chart-4: 42 100% 62%;
+    --chart-5: 340 82% 52%;
     
     --shadow-sm: 0 1px 2px 0 hsl(161 30% 15% / 0.05);
     --shadow-md: 0 4px 6px -1px hsl(161 30% 15% / 0.08), 0 2px 4px -2px hsl(161 30% 15% / 0.05);
@@ -117,6 +125,14 @@ All colors MUST be HSL.
     --gradient-accent: linear-gradient(135deg, hsl(42 100% 70%) 0%, hsl(42 100% 60%) 100%);
     --gradient-subtle: linear-gradient(180deg, hsl(161 30% 10%) 0%, hsl(161 25% 12%) 100%);
     --gradient-card: linear-gradient(145deg, hsl(161 25% 12%) 0%, hsl(161 20% 14%) 100%);
+    --gradient-analytics: linear-gradient(135deg, hsl(161 25% 14%) 0%, hsl(217 25% 14%) 100%);
+    --gradient-chart: linear-gradient(135deg, hsl(161 25% 12%) 0%, hsl(161 20% 14%) 50%, hsl(217 20% 14%) 100%);
+    
+    --chart-1: 161 70% 45%;
+    --chart-2: 217 80% 55%;
+    --chart-3: 282 70% 60%;
+    --chart-4: 42 100% 65%;
+    --chart-5: 340 75% 55%;
     
     --shadow-sm: 0 1px 2px 0 hsl(0 0% 0% / 0.3);
     --shadow-md: 0 4px 6px -1px hsl(0 0% 0% / 0.4), 0 2px 4px -2px hsl(0 0% 0% / 0.3);
