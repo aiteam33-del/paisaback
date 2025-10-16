@@ -166,7 +166,10 @@ const OrganizationAdmin = () => {
           } as Employee;
         });
 
-        setEmployees(employeesWithTotals);
+        // Sort by highest pending first
+        const sortedEmployees = [...employeesWithTotals].sort((a, b) => b.totalPending - a.totalPending);
+
+        setEmployees(sortedEmployees);
         
         // Create employee lookup for transforming expenses
         const allEmployees = [...(employeesData || []), { id: user.id, full_name: "", email: "" }];
