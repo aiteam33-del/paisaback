@@ -136,46 +136,59 @@ serve(async (req) => {
       const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
       if (!LOVABLE_API_KEY) throw new Error("lovable_key_missing");
 
+      const body: any = {
+        model: "google/gemini-2.5-flash",
+        messages: [
+          {
+            role: "user",
+            content: [
+              {
+                type: "text",
+                text:
+                  `You are an expert at reading Indian receipts, invoices, bills, and UPI payment screenshots. Extract structured data using the provided tool strictly.`,
+              },
+              { type: "image_url", image_url: { url: `data:${mimeType};base64,${base64Data}` } },
+            ],
+          },
+        ],
+        tools: [
+          {
+            type: "function",
+            function: {
+              name: "extract_receipt_fields",
+              description: "Extract key fields from a receipt/invoice/screenshot",
+              parameters: {
+                type: "object",
+                properties: {
+                  merchant: { type: "string", description: "Exact vendor/company or payee name" },
+                  amount: { type: "number", description: "Final total amount paid/charge (no commas)" },
+                  date: { type: "string", description: "Date in YYYY-MM-DD" },
+                  transaction_id: { type: "string", description: "Invoice/order/UPI transaction id" },
+                  category: {
+                    type: "string",
+                    enum: ["travel", "food", "lodging", "office", "other"],
+                  },
+                  payment_method: {
+                    type: "string",
+                    enum: ["upi", "credit_card", "debit_card", "cash", ""],
+                  },
+                },
+                required: ["amount", "date"],
+                additionalProperties: false,
+              },
+            },
+          },
+        ],
+        tool_choice: { type: "function", function: { name: "extract_receipt_fields" } },
+      };
+
       const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
         headers: {
           Authorization: `Bearer ${LOVABLE_API_KEY}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          model: "google/gemini-2.5-flash",
-          messages: [
-            {
-              role: "user",
-              content: [
-                { 
-                  type: "text", 
-                  text: `You are an expert at reading Indian receipts, invoices, bills, and UPI payment screenshots. 
-Extract ONLY the following fields in strict JSON format:
-
-{
-  "merchant": "exact vendor/company name",
-  "amount": 0.00,
-  "date": "YYYY-MM-DD",
-  "transaction_id": "UPI ref/invoice/order number",
-  "category": "travel|food|lodging|office|other",
-  "payment_method": "upi|credit_card|debit_card|cash|"
-}
-
-CRITICAL RULES:
-- amount: MUST be a number. Extract the FINAL TOTAL amount (Grand Total for invoices, Total Paid for UPI)
-- date: MUST be YYYY-MM-DD format. Convert any date format to this.
-- payment_method: If you see GPay, Google Pay, PhonePe, Paytm, BHIM, or "UPI" → return "upi"
-- For UPI screenshots: merchant is "To:" field, amount is "Total Paid", transaction_id is "UPI transaction ID"
-- Return ONLY the JSON object, NO explanatory text before or after
-- If uncertain about any field, use empty string "" or 0 for amount
-- Focus on the FINAL amount, ignore subtotals and line items` 
-                },
-                { type: "image_url", image_url: { url: `data:${mimeType};base64,${base64Data}` } },
-              ],
-            },
-          ],
-        }),
+        body: JSON.stringify(body),
       });
 
       if (!response.ok) {
@@ -184,26 +197,37 @@ CRITICAL RULES:
         throw new Error(`lovable_${response.status}`);
       }
       const data = await response.json();
-      const content = data.choices?.[0]?.message?.content || "";
-      console.log("Lovable AI response:", content);
+
+      const msg = data.choices?.[0]?.message;
+      const toolArgs = msg?.tool_calls?.[0]?.function?.arguments;
+      if (toolArgs) {
+        console.log("Lovable tool args:", toolArgs);
+        return typeof toolArgs === "string" ? toolArgs : JSON.stringify(toolArgs);
+      }
+
+      const content = msg?.content || "";
+      console.log("Lovable AI content fallback length:", content.length);
       return content;
     }
 
     try {
-      if (OPENAI_API_KEY) {
-        try {
-          console.log("Using OpenAI for OCR with retry logic");
+      const hasJson = (s: string) => typeof s === "string" && s.includes("{") && s.includes("}");
+
+      console.log("Using Lovable AI for OCR with retry logic (preferred)");
+      extractedText = await retryWithBackoff(() => askLovable(), 3, 1000);
+
+      if (!hasJson(extractedText)) {
+        console.warn("Lovable returned empty/invalid JSON, attempting OpenAI fallback");
+        if (OPENAI_API_KEY) {
           extractedText = await retryWithBackoff(() => askOpenAI(), 3, 1000);
-        } catch (err) {
-          console.error("OpenAI failed after retries, falling back to Lovable AI", err);
-          extractedText = await retryWithBackoff(() => askLovable(), 3, 1000);
         }
-      } else {
-        console.log("Using Lovable AI for OCR with retry logic");
-        extractedText = await retryWithBackoff(() => askLovable(), 3, 1000);
+      }
+
+      if (!hasJson(extractedText)) {
+        throw new Error("OCR model returned no JSON after all attempts");
       }
     } catch (finalErr) {
-      console.error("Both providers failed after retries", finalErr);
+      console.error("All OCR providers failed after retries", finalErr);
       throw finalErr;
     }
 
