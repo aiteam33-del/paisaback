@@ -92,7 +92,8 @@ const Onboarding = () => {
   const handleCreateOrganization = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!orgName.trim()) {
+    const trimmedName = orgName.trim();
+    if (!trimmedName) {
       toast.error("Please enter an organization name");
       return;
     }
@@ -101,17 +102,39 @@ const Onboarding = () => {
 
     setIsLoading(true);
     try {
+      // Check for existing organization with same name (case-insensitive)
+      const { data: existing } = await supabase
+        .from("organizations")
+        .select("id, name")
+        .ilike("name", trimmedName)
+        .maybeSingle();
+
+      if (existing) {
+        toast.error(`An organization named "${existing.name}" already exists. Please choose a different name.`);
+        setIsLoading(false);
+        return;
+      }
+
       // Create organization
       const { data: org, error: orgError } = await supabase
         .from("organizations")
         .insert({
-          name: orgName.trim(),
+          name: trimmedName,
           admin_user_id: user.id
         })
         .select()
         .single();
 
-      if (orgError) throw orgError;
+      if (orgError) {
+        // Handle unique constraint violation
+        if (orgError.code === '23505' || orgError.message.toLowerCase().includes('duplicate') || orgError.message.toLowerCase().includes('unique')) {
+          toast.error(`An organization with this name already exists. Please choose a different name.`);
+        } else {
+          throw orgError;
+        }
+        setIsLoading(false);
+        return;
+      }
 
       // Update user's profile with organization
       const { error: profileError } = await supabase
@@ -123,14 +146,11 @@ const Onboarding = () => {
 
       // Role granted by DB trigger; nothing to do here
 
-      toast.success(`Organization "${orgName}" created successfully!`);
+      toast.success(`Organization "${trimmedName}" created successfully!`);
       navigate("/admin");
     } catch (error: any) {
-      if (error.message.includes("duplicate")) {
-        toast.error("An organization with this name already exists");
-      } else {
-        toast.error(error.message || "Failed to create organization");
-      }
+      console.error("Organization creation error:", error);
+      toast.error(error.message || "Failed to create organization");
     } finally {
       setIsLoading(false);
     }
