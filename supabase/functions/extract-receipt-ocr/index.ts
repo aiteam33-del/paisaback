@@ -125,17 +125,37 @@ serve(async (req) => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "google/gemini-2.5-flash",
+          model: "google/gemini-2.5-pro",
           messages: [
-            { role: "system", content: systemPrompt },
             {
               role: "user",
               content: [
-                { type: "text", text: `Extract fields from this ${isPdf ? 'invoice PDF' : 'receipt or bill'}. Focus on the final total amount to be paid. If it's an invoice, use the Grand Total value.` },
+                { 
+                  type: "text", 
+                  text: `You are an expert OCR agent. Analyze this ${isPdf ? 'invoice PDF' : 'receipt, bill, or payment screenshot'} carefully and extract the following information in STRICT JSON format only:
+
+{
+  "merchant": "vendor/company name",
+  "amount": 0.00,
+  "date": "YYYY-MM-DD",
+  "transaction_id": "invoice/order/transaction number",
+  "category": "travel|food|lodging|office|other",
+  "payment_method": "upi|credit_card|debit_card|cash|"
+}
+
+RULES:
+- amount: Extract the FINAL TOTAL amount to be paid (Grand Total for invoices)
+- date: Invoice/transaction date in YYYY-MM-DD format
+- payment_method: Detect UPI apps (GPay, Google Pay, Paytm, PhonePe, BHIM, UPI) as "upi"
+- Return ONLY valid JSON, no extra text
+- If a field cannot be determined, use empty string or 0 for amount` 
+                },
                 { type: "image_url", image_url: { url: `data:${mimeType};base64,${base64Data}` } },
               ],
             },
           ],
+          temperature: 0.1,
+          max_tokens: 500,
         }),
       });
 
@@ -145,7 +165,9 @@ serve(async (req) => {
         throw new Error(`lovable_${response.status}`);
       }
       const data = await response.json();
-      return data.choices?.[0]?.message?.content || "";
+      const content = data.choices?.[0]?.message?.content || "";
+      console.log("Lovable AI response:", content);
+      return content;
     }
 
     try {
