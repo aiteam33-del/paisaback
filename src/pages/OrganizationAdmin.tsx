@@ -153,12 +153,8 @@ const OrganizationAdmin = () => {
     }
   };
 
-  const handleEmployeeClick = (employee: Employee) => {
-    setSelectedEmployee(employee);
-    const expenses = allExpenses.filter(exp => 
-      exp.employee.email === employee.email && exp.status === "pending"
-    );
-    setEmployeeExpenses(expenses);
+  const handleEmployeeClick = (employeeId: string) => {
+    navigate(`/admin/employee/${employeeId}`);
   };
 
   const handleExpenseAction = async (expenseId: string, newStatus: "approved" | "rejected") => {
@@ -659,10 +655,9 @@ const OrganizationAdmin = () => {
                     <TableCell className="text-right">
                       <Button
                         size="sm"
-                        onClick={() => handleEmployeeClick(employee)}
-                        disabled={employee.totalPending === 0}
+                        onClick={() => handleEmployeeClick(employee.id)}
                       >
-                        Review
+                        View Expenses
                       </Button>
                     </TableCell>
                   </TableRow>

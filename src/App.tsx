@@ -13,6 +13,7 @@ import ExpenseHistory from "./pages/ExpenseHistory";
 import ExpenseSummary from "./pages/ExpenseSummary";
 import Organization from "./pages/Organization";
 import OrganizationAdmin from "./pages/OrganizationAdmin";
+import EmployeeExpenseView from "./pages/EmployeeExpenseView";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -34,6 +35,7 @@ const App = () => (
               <Route path="/expense-summary" element={<ExpenseSummary />} />
               <Route path="/organization" element={<Organization />} />
               <Route path="/admin" element={<OrganizationAdmin />} />
+              <Route path="/admin/employee/:employeeId" element={<EmployeeExpenseView />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
