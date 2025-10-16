@@ -808,9 +808,9 @@ const processOCR = async (file: File) => {
                           const previewUrl = isImage ? URL.createObjectURL(file) : null;
 
                           return (
-                            <div key={index} className="relative border rounded-lg overflow-hidden group hover:border-primary transition-colors">
+                            <div key={index} className="relative border rounded-lg overflow-hidden group hover:border-primary transition-colors shadow-sm">
                               {/* Preview Image/PDF Icon */}
-                              <div className="aspect-video bg-muted flex items-center justify-center">
+                              <div className="aspect-square bg-muted flex items-center justify-center">
                                 {isImage && previewUrl ? (
                                   <img 
                                     src={previewUrl}
@@ -820,16 +820,16 @@ const processOCR = async (file: File) => {
                                   />
                                 ) : isPDF ? (
                                   <div className="flex flex-col items-center gap-1">
-                                    <Receipt className="w-8 h-8 text-muted-foreground" />
-                                    <span className="text-xs text-muted-foreground">PDF</span>
+                                    <Receipt className="w-10 h-10 text-muted-foreground" />
+                                    <span className="text-sm font-medium text-muted-foreground">PDF</span>
                                   </div>
                                 ) : (
-                                  <Receipt className="w-8 h-8 text-muted-foreground" />
+                                  <Receipt className="w-10 h-10 text-muted-foreground" />
                                 )}
                               </div>
                               
                               {/* File name and remove button */}
-                              <div className="p-2 bg-card flex items-center justify-between gap-2">
+                              <div className="p-2 bg-card/50 backdrop-blur-sm flex items-center justify-between gap-2 border-t">
                                 <span className="text-xs truncate flex-1" title={file.name}>
                                   {file.name}
                                 </span>
@@ -838,7 +838,7 @@ const processOCR = async (file: File) => {
                                   variant="ghost"
                                   size="sm"
                                   onClick={() => removeFile(index)}
-                                  className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                                  className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-destructive/20"
                                 >
                                   <X className="w-3 h-3" />
                                 </Button>
