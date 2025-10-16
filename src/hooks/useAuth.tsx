@@ -33,13 +33,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (session?.user) {
           // Fetch user role after auth state changes
           setTimeout(async () => {
-            const { data: roleData } = await supabase
-              .from("user_roles")
-              .select("role")
-              .eq("user_id", session.user.id)
-              .single();
-            
-            setUserRole(roleData?.role || "employee");
+          // Use RPC function to get highest role (handles multiple roles)
+          const { data: roleData } = await supabase
+            .rpc("get_user_highest_role", { _user_id: session.user.id });
+          
+          setUserRole(roleData || "employee");
           }, 0);
         } else {
           setUserRole(null);
@@ -54,13 +52,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       
       if (session?.user) {
         setTimeout(async () => {
+          // Use RPC function to get highest role (handles multiple roles)
           const { data: roleData } = await supabase
-            .from("user_roles")
-            .select("role")
-            .eq("user_id", session.user.id)
-            .single();
+            .rpc("get_user_highest_role", { _user_id: session.user.id });
           
-          setUserRole(roleData?.role || "employee");
+          setUserRole(roleData || "employee");
           setLoading(false);
         }, 0);
       } else {
@@ -138,14 +134,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
         toast.success("Logged in successfully!");
         
-        // Fetch user role and redirect
+        // Fetch user role and redirect using RPC function
         const { data: roleData } = await supabase
-          .from("user_roles")
-          .select("role")
-          .eq("user_id", data.user.id)
-          .single();
+          .rpc("get_user_highest_role", { _user_id: data.user.id });
 
-        const role = roleData?.role || "employee";
+        const role = roleData || "employee";
 
         if (role === "admin") {
           navigate("/admin");

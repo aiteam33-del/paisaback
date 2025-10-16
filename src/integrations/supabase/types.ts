@@ -41,6 +41,8 @@ export type Database = {
       expenses: {
         Row: {
           amount: number
+          approved_at: string | null
+          approved_by: string | null
           attachments: string[] | null
           category: string
           created_at: string
@@ -50,7 +52,12 @@ export type Database = {
           id: string
           manager_notes: string | null
           mode_of_payment: string | null
+          ocr_confidence: number | null
+          ocr_error: string | null
           ocr_extracted_fields: Json | null
+          ocr_retry_count: number | null
+          rejected_at: string | null
+          rejected_by: string | null
           status: string | null
           updated_at: string
           user_id: string
@@ -58,6 +65,8 @@ export type Database = {
         }
         Insert: {
           amount: number
+          approved_at?: string | null
+          approved_by?: string | null
           attachments?: string[] | null
           category: string
           created_at?: string
@@ -67,7 +76,12 @@ export type Database = {
           id?: string
           manager_notes?: string | null
           mode_of_payment?: string | null
+          ocr_confidence?: number | null
+          ocr_error?: string | null
           ocr_extracted_fields?: Json | null
+          ocr_retry_count?: number | null
+          rejected_at?: string | null
+          rejected_by?: string | null
           status?: string | null
           updated_at?: string
           user_id: string
@@ -75,6 +89,8 @@ export type Database = {
         }
         Update: {
           amount?: number
+          approved_at?: string | null
+          approved_by?: string | null
           attachments?: string[] | null
           category?: string
           created_at?: string
@@ -84,13 +100,33 @@ export type Database = {
           id?: string
           manager_notes?: string | null
           mode_of_payment?: string | null
+          ocr_confidence?: number | null
+          ocr_error?: string | null
           ocr_extracted_fields?: Json | null
+          ocr_retry_count?: number | null
+          rejected_at?: string | null
+          rejected_by?: string | null
           status?: string | null
           updated_at?: string
           user_id?: string
           vendor?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "expenses_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expenses_rejected_by_fkey"
+            columns: ["rejected_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       join_requests: {
         Row: {
@@ -98,6 +134,9 @@ export type Database = {
           employee_id: string
           id: string
           org_id: string
+          rejected_at: string | null
+          rejected_by: string | null
+          rejection_reason: string | null
           status: string
           updated_at: string
         }
@@ -106,6 +145,9 @@ export type Database = {
           employee_id: string
           id?: string
           org_id: string
+          rejected_at?: string | null
+          rejected_by?: string | null
+          rejection_reason?: string | null
           status?: string
           updated_at?: string
         }
@@ -114,6 +156,9 @@ export type Database = {
           employee_id?: string
           id?: string
           org_id?: string
+          rejected_at?: string | null
+          rejected_by?: string | null
+          rejection_reason?: string | null
           status?: string
           updated_at?: string
         }
@@ -130,6 +175,13 @@ export type Database = {
             columns: ["org_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "join_requests_rejected_by_fkey"
+            columns: ["rejected_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -238,6 +290,10 @@ export type Database = {
         Args: { request_id: string }
         Returns: boolean
       }
+      get_user_highest_role: {
+        Args: { _user_id: string }
+        Returns: Database["public"]["Enums"]["app_role"]
+      }
       get_users_due_for_email: {
         Args: { frequency_type: string }
         Returns: {
@@ -263,7 +319,7 @@ export type Database = {
         Returns: boolean
       }
       reject_join_request: {
-        Args: { request_id: string }
+        Args: { reason?: string; request_id: string } | { request_id: string }
         Returns: boolean
       }
     }
