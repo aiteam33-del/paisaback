@@ -97,22 +97,36 @@ const OrganizationAdmin = () => {
       if (orgData) {
         setOrganization(orgData);
 
-        // Get pending join requests
-        const { data: joinRequestsData } = await supabase
+        // Get pending join requests with employee details
+        const { data: joinRequestsData, error: jrError } = await supabase
           .from("join_requests")
-          .select(`
-            *,
-            employee:profiles!join_requests_employee_id_fkey(full_name, email)
-          `)
+          .select("*")
           .eq("org_id", orgData.id)
           .eq("status", "pending")
           .order("created_at", { ascending: false });
 
-        if (joinRequestsData) {
+        if (jrError) {
+          console.error("Error loading join requests:", jrError);
+        }
+
+        if (joinRequestsData && joinRequestsData.length > 0) {
+          // Fetch employee profiles separately
+          const employeeIds = joinRequestsData.map(req => req.employee_id);
+          const { data: employeeProfiles } = await supabase
+            .from("profiles")
+            .select("id, full_name, email")
+            .in("id", employeeIds);
+
+          const profileMap = new Map(
+            (employeeProfiles || []).map(p => [p.id, { full_name: p.full_name || "Unknown", email: p.email }])
+          );
+
           setJoinRequests(joinRequestsData.map(req => ({
             ...req,
-            employee: req.employee || { full_name: "Unknown", email: "unknown" }
+            employee: profileMap.get(req.employee_id) || { full_name: "Unknown", email: "unknown" }
           })));
+        } else {
+          setJoinRequests([]);
         }
 
         // Get all employees in organization
