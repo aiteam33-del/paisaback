@@ -4,7 +4,7 @@ import { Navigation } from "@/components/ui/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2, TrendingUp, DollarSign, Receipt, CheckCircle, XCircle, Clock, ArrowUp, ArrowDown, ArrowLeft } from "lucide-react";
+import { Loader2, TrendingUp, DollarSign, Receipt, CheckCircle, XCircle, Clock, ArrowUp, ArrowDown, ArrowLeft, BarChart3 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { StatCard } from "@/components/StatCard";
 import { AnalyticsFilters } from "@/components/AnalyticsFilters";
@@ -299,44 +299,48 @@ const ExpenseAnalytics = () => {
         <div className="space-y-6">
           {/* Top KPI Cards - Cleaner Design */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 animate-fade-in" style={{ animationDelay: '0.1s' }}>
-            <div className="bg-card rounded-2xl p-6 shadow-sm border border-border hover:shadow-md transition-all duration-300">
-              <div className="flex items-start justify-between mb-4">
-                <div className="p-2.5 rounded-xl bg-primary/10">
-                  <DollarSign className="w-5 h-5 text-primary" />
+            <div className="relative overflow-hidden bg-gradient-card rounded-3xl p-6 shadow-[var(--shadow-card)] border border-border/30 hover:shadow-[var(--shadow-lg)] transition-all duration-300 group">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-primary opacity-5 rounded-full blur-3xl group-hover:opacity-10 transition-opacity"></div>
+              <div className="flex items-start justify-between mb-4 relative z-10">
+                <div className="p-3 rounded-xl bg-gradient-primary shadow-md">
+                  <DollarSign className="w-5 h-5 text-primary-foreground" />
                 </div>
               </div>
-              <p className="text-sm text-muted-foreground mb-1">Total Expenses</p>
-              <p className="text-3xl font-bold text-foreground">₹{totalAmount.toFixed(2)}</p>
+              <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-2 relative z-10">Total Expenses</p>
+              <p className="text-3xl font-bold text-foreground relative z-10">₹{totalAmount.toFixed(2)}</p>
             </div>
 
-            <div className="bg-card rounded-2xl p-6 shadow-sm border border-border hover:shadow-md transition-all duration-300">
-              <div className="flex items-start justify-between mb-4">
-                <div className="p-2.5 rounded-xl bg-primary/10">
-                  <Receipt className="w-5 h-5 text-primary" />
+            <div className="relative overflow-hidden bg-gradient-card rounded-3xl p-6 shadow-[var(--shadow-card)] border border-border/30 hover:shadow-[var(--shadow-lg)] transition-all duration-300 group">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-secondary/20 rounded-full blur-3xl group-hover:opacity-100 opacity-80 transition-opacity"></div>
+              <div className="flex items-start justify-between mb-4 relative z-10">
+                <div className="p-3 rounded-xl bg-secondary/15 shadow-md">
+                  <Receipt className="w-5 h-5 text-secondary" />
                 </div>
               </div>
-              <p className="text-sm text-muted-foreground mb-1">Total Count</p>
-              <p className="text-3xl font-bold text-foreground">{filteredExpenses.length}</p>
+              <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-2 relative z-10">Total Count</p>
+              <p className="text-3xl font-bold text-foreground relative z-10">{filteredExpenses.length}</p>
             </div>
 
-            <div className="bg-card rounded-2xl p-6 shadow-sm border border-border hover:shadow-md transition-all duration-300">
-              <div className="flex items-start justify-between mb-4">
-                <div className="p-2.5 rounded-xl bg-primary/10">
-                  <TrendingUp className="w-5 h-5 text-primary" />
+            <div className="relative overflow-hidden bg-gradient-card rounded-3xl p-6 shadow-[var(--shadow-card)] border border-border/30 hover:shadow-[var(--shadow-lg)] transition-all duration-300 group">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-accent/20 rounded-full blur-3xl group-hover:opacity-100 opacity-80 transition-opacity"></div>
+              <div className="flex items-start justify-between mb-4 relative z-10">
+                <div className="p-3 rounded-xl bg-accent/15 shadow-md">
+                  <TrendingUp className="w-5 h-5 text-accent-foreground" />
                 </div>
               </div>
-              <p className="text-sm text-muted-foreground mb-1">Average Expense</p>
-              <p className="text-3xl font-bold text-foreground">₹{avgAmount.toFixed(2)}</p>
+              <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-2 relative z-10">Average Expense</p>
+              <p className="text-3xl font-bold text-foreground relative z-10">₹{avgAmount.toFixed(2)}</p>
             </div>
 
-            <div className="bg-card rounded-2xl p-6 shadow-sm border border-border hover:shadow-md transition-all duration-300">
-              <div className="flex items-start justify-between mb-4">
-                <div className="p-2.5 rounded-xl bg-success/10">
-                  <CheckCircle className="w-5 h-5 text-success" />
+            <div className="relative overflow-hidden bg-gradient-card rounded-3xl p-6 shadow-[var(--shadow-card)] border border-border/30 hover:shadow-[var(--shadow-lg)] transition-all duration-300 group">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-trust/20 rounded-full blur-3xl group-hover:opacity-100 opacity-80 transition-opacity"></div>
+              <div className="flex items-start justify-between mb-4 relative z-10">
+                <div className="p-3 rounded-xl bg-trust/15 shadow-md">
+                  <BarChart3 className="w-5 h-5 text-trust" />
                 </div>
                 <div className={cn(
-                  "flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full",
-                  Number(approvalRate) >= 80 ? "bg-success/10 text-success" : "bg-warning/10 text-warning"
+                  "flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-full backdrop-blur-sm shadow-sm",
+                  Number(approvalRate) >= 80 ? "bg-success/20 text-success" : "bg-warning/20 text-warning"
                 )}>
                   {Number(approvalRate) >= 80 ? (
                     <ArrowUp className="w-3 h-3" />
@@ -346,57 +350,61 @@ const ExpenseAnalytics = () => {
                   {approvalRate}%
                 </div>
               </div>
-              <p className="text-sm text-muted-foreground mb-1">Approval Rate</p>
-              <p className="text-3xl font-bold text-foreground">{approvalRate}%</p>
+              <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-2 relative z-10">Approval Rate</p>
+              <p className="text-3xl font-bold text-foreground relative z-10">{approvalRate}%</p>
             </div>
           </div>
 
           {/* Status Breakdown - Smaller Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 animate-fade-in" style={{ animationDelay: '0.2s' }}>
-            <div className="bg-card rounded-xl p-4 shadow-sm border border-border hover:shadow-md transition-all duration-200">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-warning/10">
-                  <Clock className="w-4 h-4 text-warning" />
+            <div className="relative overflow-hidden bg-gradient-card rounded-2xl p-5 shadow-[var(--shadow-card)] border border-border/30 hover:shadow-[var(--shadow-lg)] transition-all duration-300 group">
+              <div className="absolute top-0 right-0 w-24 h-24 bg-warning/20 rounded-full blur-2xl group-hover:blur-3xl transition-all"></div>
+              <div className="flex items-center gap-3 relative z-10">
+                <div className="p-3 rounded-xl bg-warning/15 shadow-sm">
+                  <Clock className="w-5 h-5 text-warning" />
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">Pending</p>
-                  <p className="text-xl font-bold text-foreground">₹{pendingAmount.toFixed(2)}</p>
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-0.5">Pending</p>
+                  <p className="text-2xl font-bold text-foreground">₹{pendingAmount.toFixed(2)}</p>
                 </div>
               </div>
             </div>
 
-            <div className="bg-card rounded-xl p-4 shadow-sm border border-border hover:shadow-md transition-all duration-200">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-success/10">
-                  <CheckCircle className="w-4 h-4 text-success" />
+            <div className="relative overflow-hidden bg-gradient-card rounded-2xl p-5 shadow-[var(--shadow-card)] border border-border/30 hover:shadow-[var(--shadow-lg)] transition-all duration-300 group">
+              <div className="absolute top-0 right-0 w-24 h-24 bg-success/20 rounded-full blur-2xl group-hover:blur-3xl transition-all"></div>
+              <div className="flex items-center gap-3 relative z-10">
+                <div className="p-3 rounded-xl bg-success/15 shadow-sm">
+                  <CheckCircle className="w-5 h-5 text-success" />
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">Approved</p>
-                  <p className="text-xl font-bold text-foreground">₹{approvedAmount.toFixed(2)}</p>
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-0.5">Approved</p>
+                  <p className="text-2xl font-bold text-foreground">₹{approvedAmount.toFixed(2)}</p>
                 </div>
               </div>
             </div>
 
-            <div className="bg-card rounded-xl p-4 shadow-sm border border-border hover:shadow-md transition-all duration-200">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-primary/10">
-                  <CheckCircle className="w-4 h-4 text-primary" />
+            <div className="relative overflow-hidden bg-gradient-card rounded-2xl p-5 shadow-[var(--shadow-card)] border border-border/30 hover:shadow-[var(--shadow-lg)] transition-all duration-300 group">
+              <div className="absolute top-0 right-0 w-24 h-24 bg-primary/20 rounded-full blur-2xl group-hover:blur-3xl transition-all"></div>
+              <div className="flex items-center gap-3 relative z-10">
+                <div className="p-3 rounded-xl bg-primary/15 shadow-sm">
+                  <CheckCircle className="w-5 h-5 text-primary" />
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">Paid</p>
-                  <p className="text-xl font-bold text-foreground">₹{paidAmount.toFixed(2)}</p>
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-0.5">Paid</p>
+                  <p className="text-2xl font-bold text-foreground">₹{paidAmount.toFixed(2)}</p>
                 </div>
               </div>
             </div>
 
-            <div className="bg-card rounded-xl p-4 shadow-sm border border-border hover:shadow-md transition-all duration-200">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-destructive/10">
-                  <XCircle className="w-4 h-4 text-destructive" />
+            <div className="relative overflow-hidden bg-gradient-card rounded-2xl p-5 shadow-[var(--shadow-card)] border border-border/30 hover:shadow-[var(--shadow-lg)] transition-all duration-300 group">
+              <div className="absolute top-0 right-0 w-24 h-24 bg-destructive/20 rounded-full blur-2xl group-hover:blur-3xl transition-all"></div>
+              <div className="flex items-center gap-3 relative z-10">
+                <div className="p-3 rounded-xl bg-destructive/15 shadow-sm">
+                  <XCircle className="w-5 h-5 text-destructive" />
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">Rejected</p>
-                  <p className="text-xl font-bold text-foreground">₹{rejectedAmount.toFixed(2)}</p>
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-0.5">Rejected</p>
+                  <p className="text-2xl font-bold text-foreground">₹{rejectedAmount.toFixed(2)}</p>
                 </div>
               </div>
             </div>
