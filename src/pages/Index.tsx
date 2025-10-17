@@ -1,9 +1,9 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Navigation } from "@/components/ui/navigation";
-import { Receipt, Camera, CheckCircle2, TrendingUp, Users, Banknote, BarChart3, Clock, Shield, ArrowRight, AlertCircle, FileX, DollarSign } from "lucide-react";
+import { Receipt, Camera, CheckCircle2, TrendingUp, Users, Banknote, BarChart3, Clock, Shield, ArrowRight, AlertCircle, FileX, DollarSign, Upload, Sparkles, Wallet } from "lucide-react";
 import heroImage from "@/assets/hero-image-modern.png";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,6 +11,38 @@ import { supabase } from "@/integrations/supabase/client";
 const Index = () => {
   const navigate = useNavigate();
   const { user, userRole } = useAuth();
+  const [activeStep, setActiveStep] = useState(0);
+
+  const demoSteps = [
+    {
+      icon: Upload,
+      title: "Upload Receipt",
+      description: "Snap a photo or upload your expense receipt instantly",
+      color: "from-blue-500 to-cyan-500",
+      delay: 0,
+    },
+    {
+      icon: Sparkles,
+      title: "AI Analysis",
+      description: "Our AI extracts amount, vendor, date, and auto-categorizes",
+      color: "from-purple-500 to-pink-500",
+      delay: 200,
+    },
+    {
+      icon: Wallet,
+      title: "Get Reimbursed",
+      description: "Approval in one click, money back in your account fast",
+      color: "from-green-500 to-emerald-500",
+      delay: 400,
+    },
+  ];
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setActiveStep((prev) => (prev + 1) % demoSteps.length);
+    }, 3000);
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     const route = async () => {
@@ -172,6 +204,168 @@ const Index = () => {
                 alt="PAISABACK automated expense management dashboard"
                 className="relative rounded-2xl shadow-xl w-full"
               />
+            </div>
+          </div>
+        </section>
+
+        {/* Interactive Demo Section */}
+        <section className="container mx-auto px-4 py-20 md:py-28">
+          <div className="max-w-6xl mx-auto">
+            <div className="text-center mb-16 space-y-4">
+              <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-foreground">
+                See PAISABACK in Action
+              </h2>
+              <p className="text-lg md:text-xl text-muted-foreground">
+                Three simple steps to stress-free reimbursements
+              </p>
+            </div>
+
+            {/* Desktop View - Horizontal Flow */}
+            <div className="hidden md:block">
+              <div className="relative">
+                {/* Connection Lines */}
+                <div className="absolute top-24 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-border to-transparent"></div>
+                
+                <div className="grid md:grid-cols-3 gap-8 relative">
+                  {demoSteps.map((step, index) => {
+                    const Icon = step.icon;
+                    const isActive = activeStep === index;
+                    return (
+                      <div
+                        key={index}
+                        className={`relative transition-all duration-500 ${
+                          isActive ? 'scale-105' : 'scale-95 opacity-70'
+                        }`}
+                        style={{ transitionDelay: `${step.delay}ms` }}
+                      >
+                        <Card className={`bg-gradient-card border-2 ${
+                          isActive ? 'border-primary shadow-2xl' : 'border-border/50 shadow-card'
+                        } transition-all duration-500 hover:shadow-xl overflow-hidden`}>
+                          <CardContent className="pt-8 pb-8 space-y-6 relative">
+                            {/* Step Number */}
+                            <div className="absolute top-4 right-4">
+                              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
+                                isActive ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+                              }`}>
+                                {index + 1}
+                              </div>
+                            </div>
+
+                            {/* Animated Icon */}
+                            <div className="relative mx-auto w-32 h-32 flex items-center justify-center">
+                              <div className={`absolute inset-0 bg-gradient-to-br ${step.color} rounded-3xl blur-2xl opacity-30 ${
+                                isActive ? 'animate-pulse' : ''
+                              }`}></div>
+                              <div className={`relative w-24 h-24 rounded-2xl bg-gradient-to-br ${step.color} flex items-center justify-center shadow-xl ${
+                                isActive ? 'animate-scale-in' : ''
+                              }`}>
+                                <Icon className="w-12 h-12 text-white" />
+                              </div>
+                            </div>
+
+                            {/* Content */}
+                            <div className="text-center space-y-3">
+                              <h3 className="text-2xl font-bold">{step.title}</h3>
+                              <p className="text-muted-foreground leading-relaxed">
+                                {step.description}
+                              </p>
+                            </div>
+
+                            {/* Progress Indicator */}
+                            <div className="w-full bg-muted rounded-full h-1 overflow-hidden">
+                              <div 
+                                className={`h-full bg-gradient-to-r ${step.color} transition-all duration-3000 ${
+                                  isActive ? 'w-full' : 'w-0'
+                                }`}
+                              ></div>
+                            </div>
+                          </CardContent>
+                        </Card>
+
+                        {/* Arrow Between Steps */}
+                        {index < demoSteps.length - 1 && (
+                          <div className="absolute top-1/2 -right-4 transform -translate-y-1/2 z-10">
+                            <ArrowRight className={`w-8 h-8 ${
+                              isActive ? 'text-primary animate-pulse' : 'text-muted-foreground'
+                            }`} />
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Step Indicators */}
+              <div className="flex justify-center gap-3 mt-12">
+                {demoSteps.map((_, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setActiveStep(index)}
+                    className={`transition-all duration-300 rounded-full ${
+                      activeStep === index 
+                        ? 'w-12 h-3 bg-primary' 
+                        : 'w-3 h-3 bg-muted hover:bg-muted-foreground/50'
+                    }`}
+                    aria-label={`Go to step ${index + 1}`}
+                  />
+                ))}
+              </div>
+            </div>
+
+            {/* Mobile View - Vertical Stack */}
+            <div className="md:hidden space-y-6">
+              {demoSteps.map((step, index) => {
+                const Icon = step.icon;
+                const isActive = activeStep === index;
+                return (
+                  <Card 
+                    key={index}
+                    className={`bg-gradient-card border-2 ${
+                      isActive ? 'border-primary shadow-2xl scale-105' : 'border-border/50 shadow-card scale-95'
+                    } transition-all duration-500`}
+                  >
+                    <CardContent className="pt-6 pb-6 space-y-4">
+                      <div className="flex items-center gap-4">
+                        <div className={`w-16 h-16 rounded-xl bg-gradient-to-br ${step.color} flex items-center justify-center shadow-lg flex-shrink-0`}>
+                          <Icon className="w-8 h-8 text-white" />
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="text-xl font-bold mb-1">{step.title}</h3>
+                          <p className="text-sm text-muted-foreground">{step.description}</p>
+                        </div>
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 ${
+                          isActive ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+                        }`}>
+                          {index + 1}
+                        </div>
+                      </div>
+                      <div className="w-full bg-muted rounded-full h-1 overflow-hidden">
+                        <div 
+                          className={`h-full bg-gradient-to-r ${step.color} transition-all duration-3000 ${
+                            isActive ? 'w-full' : 'w-0'
+                          }`}
+                        ></div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+              
+              <div className="flex justify-center gap-2 pt-4">
+                {demoSteps.map((_, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setActiveStep(index)}
+                    className={`transition-all duration-300 rounded-full ${
+                      activeStep === index 
+                        ? 'w-10 h-2.5 bg-primary' 
+                        : 'w-2.5 h-2.5 bg-muted'
+                    }`}
+                    aria-label={`Go to step ${index + 1}`}
+                  />
+                ))}
+              </div>
             </div>
           </div>
         </section>
