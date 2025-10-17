@@ -161,9 +161,12 @@ export const ExpenseChart = ({ data, type = "pie", title, height = 250 }: Expens
             />
             <Bar 
               dataKey="amount" 
-              fill="hsl(var(--primary))" 
               radius={[8, 8, 0, 0]}
-            />
+            >
+              {data.map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={getColorForCategory(entry.category, index)} />
+              ))}
+            </Bar>
           </BarChart>
         )}
       </ResponsiveContainer>

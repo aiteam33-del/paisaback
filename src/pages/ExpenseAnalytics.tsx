@@ -194,7 +194,10 @@ const ExpenseAnalytics = () => {
   // Payment method breakdown
   const paymentMethodData = Object.entries(
     filteredExpenses.reduce((acc, exp) => {
-      const method = exp.mode_of_payment || "Other";
+      if (!exp.mode_of_payment || exp.mode_of_payment.trim() === '') {
+        return acc; // Skip null, undefined, or empty payment methods
+      }
+      const method = exp.mode_of_payment;
       acc[method] = (acc[method] || 0) + Number(exp.amount);
       return acc;
     }, {} as Record<string, number>)
@@ -202,7 +205,7 @@ const ExpenseAnalytics = () => {
     category: method,
     name: method,
     amount,
-    count: filteredExpenses.filter(e => (e.mode_of_payment || "Other") === method).length
+    count: filteredExpenses.filter(e => e.mode_of_payment === method).length
   }));
 
   // Top vendors
