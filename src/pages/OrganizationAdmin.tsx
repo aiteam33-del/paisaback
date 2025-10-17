@@ -236,20 +236,16 @@ const OrganizationAdmin = () => {
     setIsSubmitting(true);
     try {
       const functionName = action === 'approve' ? 'approve_join_request' : 'reject_join_request';
-      const { data, error } = await supabase.rpc(functionName, { request_id: requestId });
+      const { error } = await supabase.rpc(functionName, { request_id: requestId });
 
       if (error) throw error;
 
-      if (data) {
-        toast.success(`Join request ${action}d successfully`);
-        // Remove from local state
-        setJoinRequests(prev => prev.filter(req => req.id !== requestId));
-        // Reload data to reflect new employee if approved
-        if (action === 'approve') {
-          loadDashboardData();
-        }
-      } else {
-        toast.error(`Failed to ${action} request`);
+      toast.success(`Join request ${action}d successfully`);
+      // Remove from local state
+      setJoinRequests(prev => prev.filter(req => req.id !== requestId));
+      // Reload data to reflect new employee if approved
+      if (action === 'approve') {
+        loadDashboardData();
       }
     } catch (error: any) {
       console.error(`Error ${action}ing request:`, error);
