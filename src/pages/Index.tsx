@@ -394,7 +394,7 @@ const Index = () => {
               <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors font-medium">
                 Terms of Service
               </a>
-              <a href="https://wa.me/919664316377?text=Hi%2C%20i%20wanted%20to%20enquire%20about%20PAISABACK" target="_blank" rel="noopener noreferrer" className="text-sm text-muted-foreground hover:text-foreground transition-colors font-medium">
+              <a href="https://api.whatsapp.com/send/?phone=919664316377&text=Hi%2C+I+wanted+to+enquire+about+PAISABACK&type=phone_number&app_absent=0" target="_blank" rel="noopener noreferrer" className="text-sm text-muted-foreground hover:text-foreground transition-colors font-medium">
                 Contact
               </a>
             </div>
