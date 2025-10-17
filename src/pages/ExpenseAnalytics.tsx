@@ -302,7 +302,7 @@ const ExpenseAnalytics = () => {
             <div className="relative overflow-hidden bg-gradient-card rounded-3xl p-6 shadow-[var(--shadow-card)] border border-border/30 hover:shadow-[var(--shadow-lg)] transition-all duration-300 group">
               <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-primary opacity-5 rounded-full blur-3xl group-hover:opacity-10 transition-opacity"></div>
               <div className="flex items-start justify-between mb-4 relative z-10">
-                <div className="p-3 rounded-xl bg-gradient-primary shadow-md">
+                <div className="p-3 rounded-xl bg-primary shadow-lg">
                   <DollarSign className="w-5 h-5 text-primary-foreground" />
                 </div>
               </div>
@@ -313,8 +313,8 @@ const ExpenseAnalytics = () => {
             <div className="relative overflow-hidden bg-gradient-card rounded-3xl p-6 shadow-[var(--shadow-card)] border border-border/30 hover:shadow-[var(--shadow-lg)] transition-all duration-300 group">
               <div className="absolute top-0 right-0 w-32 h-32 bg-secondary/20 rounded-full blur-3xl group-hover:opacity-100 opacity-80 transition-opacity"></div>
               <div className="flex items-start justify-between mb-4 relative z-10">
-                <div className="p-3 rounded-xl bg-secondary/15 shadow-md">
-                  <Receipt className="w-5 h-5 text-secondary" />
+                <div className="p-3 rounded-xl bg-secondary shadow-lg">
+                  <Receipt className="w-5 h-5 text-secondary-foreground" />
                 </div>
               </div>
               <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-2 relative z-10">Total Count</p>
@@ -324,7 +324,7 @@ const ExpenseAnalytics = () => {
             <div className="relative overflow-hidden bg-gradient-card rounded-3xl p-6 shadow-[var(--shadow-card)] border border-border/30 hover:shadow-[var(--shadow-lg)] transition-all duration-300 group">
               <div className="absolute top-0 right-0 w-32 h-32 bg-accent/20 rounded-full blur-3xl group-hover:opacity-100 opacity-80 transition-opacity"></div>
               <div className="flex items-start justify-between mb-4 relative z-10">
-                <div className="p-3 rounded-xl bg-accent/15 shadow-md">
+                <div className="p-3 rounded-xl bg-accent shadow-lg">
                   <TrendingUp className="w-5 h-5 text-accent-foreground" />
                 </div>
               </div>
@@ -335,8 +335,8 @@ const ExpenseAnalytics = () => {
             <div className="relative overflow-hidden bg-gradient-card rounded-3xl p-6 shadow-[var(--shadow-card)] border border-border/30 hover:shadow-[var(--shadow-lg)] transition-all duration-300 group">
               <div className="absolute top-0 right-0 w-32 h-32 bg-trust/20 rounded-full blur-3xl group-hover:opacity-100 opacity-80 transition-opacity"></div>
               <div className="flex items-start justify-between mb-4 relative z-10">
-                <div className="p-3 rounded-xl bg-trust/15 shadow-md">
-                  <BarChart3 className="w-5 h-5 text-trust" />
+                <div className="p-3 rounded-xl bg-trust shadow-lg">
+                  <BarChart3 className="w-5 h-5 text-trust-foreground" />
                 </div>
                 <div className={cn(
                   "flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-full backdrop-blur-sm shadow-sm",
@@ -360,8 +360,8 @@ const ExpenseAnalytics = () => {
             <div className="relative overflow-hidden bg-gradient-card rounded-2xl p-5 shadow-[var(--shadow-card)] border border-border/30 hover:shadow-[var(--shadow-lg)] transition-all duration-300 group">
               <div className="absolute top-0 right-0 w-24 h-24 bg-warning/20 rounded-full blur-2xl group-hover:blur-3xl transition-all"></div>
               <div className="flex items-center gap-3 relative z-10">
-                <div className="p-3 rounded-xl bg-warning/15 shadow-sm">
-                  <Clock className="w-5 h-5 text-warning" />
+                <div className="p-3 rounded-xl bg-warning shadow-lg">
+                  <Clock className="w-5 h-5 text-white" />
                 </div>
                 <div>
                   <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-0.5">Pending</p>
@@ -373,8 +373,8 @@ const ExpenseAnalytics = () => {
             <div className="relative overflow-hidden bg-gradient-card rounded-2xl p-5 shadow-[var(--shadow-card)] border border-border/30 hover:shadow-[var(--shadow-lg)] transition-all duration-300 group">
               <div className="absolute top-0 right-0 w-24 h-24 bg-success/20 rounded-full blur-2xl group-hover:blur-3xl transition-all"></div>
               <div className="flex items-center gap-3 relative z-10">
-                <div className="p-3 rounded-xl bg-success/15 shadow-sm">
-                  <CheckCircle className="w-5 h-5 text-success" />
+                <div className="p-3 rounded-xl bg-success shadow-lg">
+                  <CheckCircle className="w-5 h-5 text-white" />
                 </div>
                 <div>
                   <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-0.5">Approved</p>
@@ -386,8 +386,8 @@ const ExpenseAnalytics = () => {
             <div className="relative overflow-hidden bg-gradient-card rounded-2xl p-5 shadow-[var(--shadow-card)] border border-border/30 hover:shadow-[var(--shadow-lg)] transition-all duration-300 group">
               <div className="absolute top-0 right-0 w-24 h-24 bg-primary/20 rounded-full blur-2xl group-hover:blur-3xl transition-all"></div>
               <div className="flex items-center gap-3 relative z-10">
-                <div className="p-3 rounded-xl bg-primary/15 shadow-sm">
-                  <CheckCircle className="w-5 h-5 text-primary" />
+                <div className="p-3 rounded-xl bg-primary shadow-lg">
+                  <CheckCircle className="w-5 h-5 text-primary-foreground" />
                 </div>
                 <div>
                   <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-0.5">Paid</p>
@@ -399,8 +399,8 @@ const ExpenseAnalytics = () => {
             <div className="relative overflow-hidden bg-gradient-card rounded-2xl p-5 shadow-[var(--shadow-card)] border border-border/30 hover:shadow-[var(--shadow-lg)] transition-all duration-300 group">
               <div className="absolute top-0 right-0 w-24 h-24 bg-destructive/20 rounded-full blur-2xl group-hover:blur-3xl transition-all"></div>
               <div className="flex items-center gap-3 relative z-10">
-                <div className="p-3 rounded-xl bg-destructive/15 shadow-sm">
-                  <XCircle className="w-5 h-5 text-destructive" />
+                <div className="p-3 rounded-xl bg-destructive shadow-lg">
+                  <XCircle className="w-5 h-5 text-white" />
                 </div>
                 <div>
                   <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-0.5">Rejected</p>
