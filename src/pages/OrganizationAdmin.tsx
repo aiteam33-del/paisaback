@@ -249,7 +249,7 @@ const OrganizationAdmin = () => {
       }
     } catch (error: any) {
       console.error(`Error ${action}ing request:`, error);
-      toast.error(`Failed to ${action} join request`);
+      toast.error(error?.message ? error.message : `Failed to ${action} join request`);
     } finally {
       setIsSubmitting(false);
     }

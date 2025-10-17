@@ -355,7 +355,7 @@ export type Database = {
         Returns: boolean
       }
       reject_join_request: {
-        Args: { reason?: string; request_id: string } | { request_id: string }
+        Args: { reason?: string; request_id: string }
         Returns: boolean
       }
     }
