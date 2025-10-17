@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Navigation } from "@/components/ui/navigation";
-import { Receipt, Sparkles, TrendingUp, Shield, Zap, CheckCircle2, ArrowRight } from "lucide-react";
+import { Receipt, Camera, CheckCircle2, TrendingUp, Users, Banknote, BarChart3, Clock, Shield, ArrowRight, AlertCircle, FileX, DollarSign } from "lucide-react";
 import heroImage from "@/assets/hero-image-modern.png";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -51,42 +51,81 @@ const Index = () => {
     };
     route();
   }, [user, userRole, navigate]);
-  const features = [
+  const problems = [
     {
-      icon: Receipt,
-      title: "Snap, Scan, Done",
-      subtitle: "AI Receipt Capture",
-      description: "Just snap a photo. Our AI instantly extracts amount, vendor, date, and category—no manual typing.",
+      icon: FileX,
+      title: "Lost Expenses",
+      description: "Employees forget to claim small, recurring costs",
     },
     {
-      icon: Sparkles,
-      title: "Automatic Smart Categories",
-      subtitle: "No More Manual Coding",
-      description: "AI intelligently categorizes expenses instantly, saving hours of manual work every month.",
+      icon: DollarSign,
+      title: "Financial Burden",
+      description: "Team members bear unnecessary personal losses",
     },
     {
-      icon: TrendingUp,
-      title: "Real-Time Insights",
-      subtitle: "Spending Analytics Dashboard",
-      description: "Track spending patterns, approval times, and team expenses with beautiful, actionable dashboards.",
+      icon: AlertCircle,
+      title: "Manual Chaos",
+      description: "HR teams chase scattered claims and paperwork",
     },
+  ];
+
+  const solutions = [
     {
-      icon: Shield,
-      title: "Multi-Level Approvals",
-      subtitle: "Compliant & Customizable",
-      description: "Set up custom approval workflows from manager to finance—ensuring full compliance every time.",
-    },
-    {
-      icon: Zap,
-      title: "Lightning Fast Processing",
-      subtitle: "Submit in Seconds",
-      description: "Submit expenses in under 10 seconds. Get approvals in minutes, not days. Focus on what matters.",
+      icon: Camera,
+      title: "Expense Tracking",
+      description: "Employees capture and submit expenses instantly with photo upload and OCR",
     },
     {
       icon: CheckCircle2,
-      title: "Seamless Integration",
-      subtitle: "Works With Your Tools",
-      description: "Email automation for non-registered organizations. Integrates smoothly with your existing workflow.",
+      title: "Smart Approval",
+      description: "Org-level admins review, approve, or reject claims with a single click",
+    },
+    {
+      icon: BarChart3,
+      title: "Powerful Insights",
+      description: "Company-wide dashboard with category-wise, employee-wise, and total spend analytics",
+    },
+  ];
+
+  const pricingPlans = [
+    {
+      name: "Early Stage",
+      price: "₹599",
+      period: "/month",
+      description: "Perfect for teams up to 20 employees",
+      popular: false,
+    },
+    {
+      name: "Growing Team",
+      price: "₹1,099",
+      period: "/month",
+      description: "Ideal for teams up to 50 employees",
+      popular: true,
+    },
+    {
+      name: "Enterprise",
+      price: "₹1,299",
+      period: "/month",
+      description: "Built for teams of 50+ employees",
+      popular: false,
+    },
+  ];
+
+  const benefits = [
+    {
+      icon: Users,
+      role: "Employees",
+      benefit: "Quick expense logging and faster reimbursements",
+    },
+    {
+      icon: Banknote,
+      role: "Finance Teams",
+      benefit: "Streamlined approval workflows and audit trails",
+    },
+    {
+      icon: Shield,
+      role: "HR Leaders",
+      benefit: "Complete visibility into company spending patterns",
     },
   ];
 
@@ -101,20 +140,19 @@ const Index = () => {
           <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
             <div className="space-y-8">
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary border border-primary/20 shadow-sm">
-                <Sparkles className="w-4 h-4" />
-                <span className="text-sm font-semibold">AI-Powered Expense Management</span>
+                <Receipt className="w-4 h-4" />
+                <span className="text-sm font-semibold">Built for Indian Startups</span>
               </div>
               
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-foreground leading-tight">
-                Automate Your Expenses.{" "}
+                Automated reimbursement expense tracker{" "}
                 <span className="bg-gradient-hero bg-clip-text text-transparent">
-                  Get Reimbursed with AI
+                  built for early-stage and growing Indian startups
                 </span>
               </h1>
               
               <p className="text-lg md:text-xl text-muted-foreground leading-relaxed max-w-xl">
-                PAISABACK eliminates the hassle of expense claims with AI-powered receipt scanning, 
-                smart categorization, and instant approval workflows. Submit in seconds, not hours.
+                Making reimbursements effortless, automated, and transparent for modern Indian startups.
               </p>
               
               <div className="flex flex-col sm:flex-row gap-4 pt-4">
@@ -125,60 +163,184 @@ const Index = () => {
                   </Button>
                 </Link>
               </div>
-              
-              <div className="flex flex-col sm:flex-row gap-4">
-                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-accent/20 border border-accent/30">
-                  <span className="text-sm font-medium">📧 Currently supports Gmail only</span>
-                </div>
-              </div>
             </div>
             
             <div className="relative order-first lg:order-last">
               <div className="absolute inset-0 bg-gradient-hero opacity-10 blur-3xl rounded-full animate-pulse"></div>
               <img
                 src={heroImage}
-                alt="PAISABACK AI-powered expense management showing receipt scanning in action"
+                alt="PAISABACK automated expense management dashboard"
                 className="relative rounded-2xl shadow-xl w-full"
               />
             </div>
           </div>
         </section>
 
-        {/* Features Section */}
-        <section className="container mx-auto px-4 py-20 md:py-28">
-          <div className="text-center mb-16 max-w-3xl mx-auto space-y-4">
-            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-foreground">
-              Everything You Need for Effortless Expense Management
-            </h2>
-            <p className="text-lg md:text-xl text-muted-foreground">
-              From AI-powered receipt scanning to multi-level approvals, PAISABACK streamlines 
-              every step of the reimbursement process.
-            </p>
-          </div>
+        {/* Problem Section */}
+        <section className="container mx-auto px-4 py-20 md:py-28 bg-card/30 backdrop-blur-sm">
+          <div className="max-w-6xl mx-auto">
+            <div className="text-center mb-16 space-y-4">
+              <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-foreground">
+                The Reimbursement Challenge
+              </h2>
+              <p className="text-lg md:text-xl text-muted-foreground max-w-4xl mx-auto leading-relaxed">
+                In rapidly growing startups, employees frequently forget to file all their reimbursement expenses, 
+                leading to consistent out-of-pocket losses. Meanwhile, HR and finance teams struggle with scattered, 
+                manual expense claims that drain time and resources.
+              </p>
+            </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {features.map((feature, index) => {
-              const Icon = feature.icon;
-              return (
+            <div className="grid md:grid-cols-3 gap-8">
+              {problems.map((problem, index) => {
+                const Icon = problem.icon;
+                return (
+                  <Card 
+                    key={index} 
+                    className="bg-gradient-card border-border/50 shadow-card hover:shadow-xl transition-all duration-300 hover:-translate-y-1 group text-center"
+                  >
+                    <CardContent className="pt-8 pb-8 space-y-4">
+                      <div className="w-16 h-16 rounded-2xl bg-destructive/10 border border-destructive/20 flex items-center justify-center mx-auto shadow-md">
+                        <Icon className="w-8 h-8 text-destructive" />
+                      </div>
+                      <div>
+                        <h3 className="text-xl font-bold mb-2">{problem.title}</h3>
+                        <p className="text-muted-foreground leading-relaxed">{problem.description}</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+
+        {/* Solution Section */}
+        <section className="container mx-auto px-4 py-20 md:py-28">
+          <div className="max-w-6xl mx-auto">
+            <div className="text-center mb-16 space-y-4">
+              <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-foreground">
+                Meet PAISABACK: Your Solution
+              </h2>
+              <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto">
+                PAISABACK automates the entire reimbursement workflow, giving startups transparency and employees peace of mind.
+              </p>
+            </div>
+
+            <div className="grid md:grid-cols-3 gap-8">
+              {solutions.map((solution, index) => {
+                const Icon = solution.icon;
+                return (
+                  <Card 
+                    key={index} 
+                    className="bg-gradient-card border-border/50 shadow-card hover:shadow-xl transition-all duration-300 hover:-translate-y-1 group"
+                  >
+                    <CardHeader className="space-y-4">
+                      <div className="w-16 h-16 rounded-2xl bg-gradient-primary flex items-center justify-center shadow-md group-hover:shadow-glow transition-all mx-auto">
+                        <Icon className="w-8 h-8 text-primary-foreground" />
+                      </div>
+                      <div className="text-center">
+                        <CardTitle className="text-2xl mb-3">{solution.title}</CardTitle>
+                        <CardDescription className="text-base leading-relaxed">
+                          {solution.description}
+                        </CardDescription>
+                      </div>
+                    </CardHeader>
+                  </Card>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+
+        {/* Pricing Section */}
+        <section className="container mx-auto px-4 py-20 md:py-28 bg-card/30 backdrop-blur-sm">
+          <div className="max-w-6xl mx-auto">
+            <div className="text-center mb-16 space-y-4">
+              <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-foreground">
+                Simple Pricing for Growing Teams
+              </h2>
+              <p className="text-lg md:text-xl text-muted-foreground">
+                Choose the plan that fits your team size and needs
+              </p>
+            </div>
+
+            <div className="grid md:grid-cols-3 gap-8">
+              {pricingPlans.map((plan, index) => (
                 <Card 
                   key={index} 
-                  className="bg-gradient-card border-border/50 shadow-card hover:shadow-xl transition-all duration-300 hover:-translate-y-1 group"
+                  className={`bg-gradient-card border-border/50 shadow-card hover:shadow-xl transition-all duration-300 hover:-translate-y-1 relative ${
+                    plan.popular ? 'ring-2 ring-primary shadow-xl' : ''
+                  }`}
                 >
-                  <CardHeader className="space-y-4">
-                    <div className="w-14 h-14 rounded-xl bg-gradient-primary flex items-center justify-center shadow-md group-hover:shadow-glow transition-all">
-                      <Icon className="w-7 h-7 text-primary-foreground" />
+                  {plan.popular && (
+                    <div className="absolute -top-4 left-1/2 -translate-x-1/2">
+                      <span className="bg-gradient-primary text-primary-foreground px-4 py-1 rounded-full text-sm font-semibold shadow-lg">
+                        Most Popular
+                      </span>
                     </div>
+                  )}
+                  <CardHeader className="space-y-6 text-center pt-8">
                     <div>
-                      <CardTitle className="text-xl mb-1">{feature.title}</CardTitle>
-                      <div className="text-sm font-medium text-primary">{feature.subtitle}</div>
+                      <h3 className="text-2xl font-bold mb-2">{plan.name}</h3>
+                      <div className="flex items-baseline justify-center gap-1">
+                        <span className="text-4xl md:text-5xl font-bold bg-gradient-hero bg-clip-text text-transparent">
+                          {plan.price}
+                        </span>
+                        <span className="text-muted-foreground text-lg">{plan.period}</span>
+                      </div>
                     </div>
-                    <CardDescription className="text-base leading-relaxed">
-                      {feature.description}
-                    </CardDescription>
+                    <p className="text-muted-foreground leading-relaxed">{plan.description}</p>
+                    <Link to="/auth" className="w-full">
+                      <Button 
+                        className={`w-full ${
+                          plan.popular 
+                            ? 'bg-gradient-primary hover:opacity-90 text-primary-foreground' 
+                            : 'bg-secondary hover:bg-secondary/80'
+                        }`}
+                        size="lg"
+                      >
+                        Get Started
+                      </Button>
+                    </Link>
                   </CardHeader>
                 </Card>
-              );
-            })}
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Benefits Section */}
+        <section className="container mx-auto px-4 py-20 md:py-28">
+          <div className="max-w-6xl mx-auto">
+            <div className="text-center mb-16 space-y-4">
+              <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-foreground">
+                Who Benefits from PAISABACK?
+              </h2>
+            </div>
+
+            <div className="grid md:grid-cols-3 gap-8">
+              {benefits.map((item, index) => {
+                const Icon = item.icon;
+                return (
+                  <Card 
+                    key={index} 
+                    className="bg-gradient-card border-border/50 shadow-card hover:shadow-xl transition-all duration-300 hover:-translate-y-1 group"
+                  >
+                    <CardHeader className="space-y-4 text-center">
+                      <div className="w-16 h-16 rounded-2xl bg-gradient-primary flex items-center justify-center shadow-md group-hover:shadow-glow transition-all mx-auto">
+                        <Icon className="w-8 h-8 text-primary-foreground" />
+                      </div>
+                      <div>
+                        <h3 className="text-2xl font-bold mb-3">{item.role}</h3>
+                        <p className="text-muted-foreground leading-relaxed text-base">
+                          {item.benefit}
+                        </p>
+                      </div>
+                    </CardHeader>
+                  </Card>
+                );
+              })}
+            </div>
           </div>
         </section>
 
@@ -190,11 +352,10 @@ const Index = () => {
             <CardContent className="relative py-16 md:py-20 px-8 text-center">
               <div className="max-w-3xl mx-auto space-y-6">
                 <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold">
-                  Ready to Transform Your Expense Process?
+                  Get your PAISABACK — faster, smarter, and stress-free
                 </h2>
-                <p className="text-lg md:text-xl text-primary-foreground/90">
-                  Join thousands of employees and organizations saving time and money with PAISABACK. 
-                  Start your free trial today—no credit card required.
+                <p className="text-lg md:text-xl text-primary-foreground/90 leading-relaxed">
+                  Making reimbursements effortless, automated, and transparent for modern Indian startups.
                 </p>
                 <div className="pt-6">
                   <Link to="/auth">
