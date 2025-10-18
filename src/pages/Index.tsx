@@ -245,10 +245,10 @@ const Index = () => {
           <div className="max-w-6xl mx-auto">
             <div className="text-center mb-16 space-y-4">
               <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-foreground">
-                See PAISABACK in Action
+                Built for Employees Who Want Their Money Back Fast
               </h2>
               <p className="text-lg md:text-xl text-muted-foreground">
-                Three simple steps to stress-free reimbursements
+                Submit expenses in seconds, not hours. Get reimbursed without the paperwork hassle.
               </p>
             </div>
 
