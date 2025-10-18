@@ -245,7 +245,7 @@ const Index = () => {
           <div className="max-w-6xl mx-auto">
             <div className="text-center mb-16 space-y-4">
               <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-foreground">
-                For Employees
+                Built for Employees
               </h2>
               <p className="text-lg md:text-xl text-muted-foreground">
                 Get your money back fast — no paperwork hassle
