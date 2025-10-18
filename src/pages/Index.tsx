@@ -7,12 +7,21 @@ import { Receipt, Camera, CheckCircle2, TrendingUp, Users, Banknote, BarChart3, 
 import heroImage from "@/assets/hero-image-modern.png";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { useScrollAnimation } from "@/hooks/useScrollAnimation";
 
 const Index = () => {
   const navigate = useNavigate();
   const { user, userRole } = useAuth();
   const [activeStep, setActiveStep] = useState(0);
   const [activeCompanyStep, setActiveCompanyStep] = useState(0);
+  
+  const employeeSection = useScrollAnimation();
+  const companySection = useScrollAnimation();
+  const problemSection = useScrollAnimation();
+  const solutionSection = useScrollAnimation();
+  const pricingSection = useScrollAnimation();
+  const benefitsSection = useScrollAnimation();
+  const ctaSection = useScrollAnimation();
 
   const demoSteps = [
     {
@@ -241,7 +250,12 @@ const Index = () => {
         </section>
 
         {/* Interactive Demo Section */}
-        <section className="container mx-auto px-4 py-20 md:py-28">
+        <section 
+          ref={employeeSection.ref as React.RefObject<HTMLElement>}
+          className={`container mx-auto px-4 py-20 md:py-28 transition-all duration-1000 ${
+            employeeSection.isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+          }`}
+        >
           <div className="max-w-6xl mx-auto">
             <div className="text-center mb-16 space-y-4">
               <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-foreground">
@@ -403,7 +417,12 @@ const Index = () => {
         </section>
 
         {/* Company Demo Section */}
-        <section className="container mx-auto px-4 py-20 md:py-28 bg-card/30 backdrop-blur-sm">
+        <section 
+          ref={companySection.ref as React.RefObject<HTMLElement>}
+          className={`container mx-auto px-4 py-20 md:py-28 bg-card/30 backdrop-blur-sm transition-all duration-1000 ${
+            companySection.isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+          }`}
+        >
           <div className="max-w-6xl mx-auto">
             <div className="text-center mb-16 space-y-4">
               <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-foreground">
@@ -565,7 +584,12 @@ const Index = () => {
         </section>
 
         {/* Problem Section */}
-        <section className="container mx-auto px-4 py-20 md:py-28 bg-card/30 backdrop-blur-sm">
+        <section 
+          ref={problemSection.ref as React.RefObject<HTMLElement>}
+          className={`container mx-auto px-4 py-20 md:py-28 bg-card/30 backdrop-blur-sm transition-all duration-1000 ${
+            problemSection.isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+          }`}
+        >
           <div className="max-w-6xl mx-auto">
             <div className="text-center mb-16 space-y-4">
               <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-foreground">
@@ -603,7 +627,12 @@ const Index = () => {
         </section>
 
         {/* Solution Section */}
-        <section className="container mx-auto px-4 py-20 md:py-28">
+        <section 
+          ref={solutionSection.ref as React.RefObject<HTMLElement>}
+          className={`container mx-auto px-4 py-20 md:py-28 transition-all duration-1000 ${
+            solutionSection.isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+          }`}
+        >
           <div className="max-w-6xl mx-auto">
             <div className="text-center mb-16 space-y-4">
               <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-foreground">
@@ -641,7 +670,12 @@ const Index = () => {
         </section>
 
         {/* Pricing Section */}
-        <section className="container mx-auto px-4 py-20 md:py-28 bg-card/30 backdrop-blur-sm">
+        <section 
+          ref={pricingSection.ref as React.RefObject<HTMLElement>}
+          className={`container mx-auto px-4 py-20 md:py-28 bg-card/30 backdrop-blur-sm transition-all duration-1000 ${
+            pricingSection.isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+          }`}
+        >
           <div className="max-w-6xl mx-auto">
             <div className="text-center mb-16 space-y-4">
               <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-foreground">
@@ -698,7 +732,12 @@ const Index = () => {
         </section>
 
         {/* Benefits Section */}
-        <section className="container mx-auto px-4 py-20 md:py-28">
+        <section 
+          ref={benefitsSection.ref as React.RefObject<HTMLElement>}
+          className={`container mx-auto px-4 py-20 md:py-28 transition-all duration-1000 ${
+            benefitsSection.isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+          }`}
+        >
           <div className="max-w-6xl mx-auto">
             <div className="text-center mb-16 space-y-4">
               <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-foreground">
@@ -733,7 +772,12 @@ const Index = () => {
         </section>
 
         {/* CTA Section */}
-        <section className="container mx-auto px-4 py-16 md:py-20">
+        <section 
+          ref={ctaSection.ref as React.RefObject<HTMLElement>}
+          className={`container mx-auto px-4 py-16 md:py-20 transition-all duration-1000 ${
+            ctaSection.isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+          }`}
+        >
           <Card className="shadow-xl bg-gradient-hero text-primary-foreground overflow-hidden relative border-0">
             <div className="absolute top-0 right-0 w-96 h-96 bg-accent/10 rounded-full blur-3xl"></div>
             <div className="absolute bottom-0 left-0 w-80 h-80 bg-primary-glow/20 rounded-full blur-3xl"></div>
