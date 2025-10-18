@@ -245,10 +245,10 @@ const Index = () => {
           <div className="max-w-6xl mx-auto">
             <div className="text-center mb-16 space-y-4">
               <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-foreground">
-                Built for Employees Who Want Their Money Back Fast
+                For Employees
               </h2>
               <p className="text-lg md:text-xl text-muted-foreground">
-                Submit expenses in seconds, not hours. Get reimbursed without the paperwork hassle.
+                Get your money back fast — no paperwork hassle
               </p>
             </div>
 
