@@ -7,19 +7,33 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { NotificationBell } from "@/components/NotificationBell";
 import { NotificationDrawer } from "@/components/NotificationDrawer";
 import { useNotifications } from "@/hooks/useNotifications";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export const Navigation = () => {
   const { user, signOut, userRole } = useAuth();
   const location = useLocation();
   const { notifications, unreadCount, markAsRead, markAllAsRead, deleteNotification } = useNotifications();
   const [notificationOpen, setNotificationOpen] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
   
   // Redirect admin users to /admin instead of employee dashboard
   const homeLink = user ? (userRole === 'admin' ? '/admin' : '/employee') : '/';
   
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 20);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+  
   return (
-    <nav className="fixed top-0 w-full bg-card/80 backdrop-blur-lg border-b border-border z-50 shadow-sm">
+    <nav className={`fixed top-0 w-full z-50 transition-all duration-300 ${
+      isScrolled 
+        ? 'bg-card/95 backdrop-blur-lg border-b border-border shadow-lg' 
+        : 'bg-transparent'
+    }`}>
       <div className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
           <Link to={homeLink} className="flex items-center gap-2 group">
@@ -50,10 +64,10 @@ export const Navigation = () => {
               <>
                 <ThemeToggle />
                 <Link to="/auth">
-                  <Button variant="ghost" className="hidden sm:inline-flex">Sign In</Button>
+                  <Button variant="ghost" className="hidden sm:inline-flex hover:scale-105 transition-transform">Sign In</Button>
                 </Link>
                 <Link to="/auth">
-                  <Button variant="hero" className="shadow-md hover:shadow-lg">Get Started</Button>
+                  <Button variant="hero" className="shadow-md hover:shadow-xl hover:scale-105 transition-all">Get Started</Button>
                 </Link>
               </>
             )}

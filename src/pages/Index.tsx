@@ -3,17 +3,25 @@ import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Navigation } from "@/components/ui/navigation";
-import { Receipt, Camera, CheckCircle2, TrendingUp, Users, Banknote, BarChart3, Clock, Shield, ArrowRight, AlertCircle, FileX, DollarSign, Upload, Sparkles, Wallet, Bell, ClipboardCheck, PieChart } from "lucide-react";
+import { Receipt, Camera, CheckCircle2, TrendingUp, Users, Banknote, BarChart3, Clock, Shield, ArrowRight, AlertCircle, FileX, DollarSign, Upload, Sparkles, Wallet, Bell, ClipboardCheck, PieChart, Lock, Instagram, Linkedin } from "lucide-react";
 import heroImage from "@/assets/hero-image-modern.png";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useScrollAnimation } from "@/hooks/useScrollAnimation";
+import { WaitlistPopup } from "@/components/WaitlistPopup";
+import { FloatingWaitlistButton } from "@/components/FloatingWaitlistButton";
+import { ScrollProgressBar } from "@/components/ScrollProgressBar";
+import { ProductDemoVideo } from "@/components/ProductDemoVideo";
+import { TestimonialCard } from "@/components/TestimonialCard";
+import { TrustBadge } from "@/components/TrustBadge";
 
 const Index = () => {
   const navigate = useNavigate();
   const { user, userRole } = useAuth();
   const [activeStep, setActiveStep] = useState(0);
   const [activeCompanyStep, setActiveCompanyStep] = useState(0);
+  const [isWaitlistOpen, setIsWaitlistOpen] = useState(false);
+  const [hasShownWaitlist, setHasShownWaitlist] = useState(false);
   
   const employeeSection = useScrollAnimation();
   const companySection = useScrollAnimation();
@@ -22,6 +30,7 @@ const Index = () => {
   const pricingSection = useScrollAnimation();
   const benefitsSection = useScrollAnimation();
   const ctaSection = useScrollAnimation();
+  const testimonialSection = useScrollAnimation();
 
   const demoSteps = [
     {
@@ -84,6 +93,33 @@ const Index = () => {
     }, 3000);
     return () => clearInterval(interval);
   }, []);
+
+  // Waitlist popup triggers
+  useEffect(() => {
+    if (hasShownWaitlist || user) return;
+
+    // Show after 15 seconds
+    const timer = setTimeout(() => {
+      setIsWaitlistOpen(true);
+      setHasShownWaitlist(true);
+    }, 15000);
+
+    // Show at 70% scroll
+    const handleScroll = () => {
+      const scrollPercentage = (window.scrollY / (document.documentElement.scrollHeight - window.innerHeight)) * 100;
+      if (scrollPercentage >= 70 && !hasShownWaitlist) {
+        setIsWaitlistOpen(true);
+        setHasShownWaitlist(true);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, [hasShownWaitlist, user]);
 
   useEffect(() => {
     const route = async () => {
@@ -202,52 +238,81 @@ const Index = () => {
     },
   ];
 
+  const testimonials = [
+    {
+      quote: "PAISABACK transformed how our team handles reimbursements. No more lost receipts or delayed payments!",
+      name: "Priya Sharma",
+      role: "Operations Manager, Tech Startup",
+    },
+    {
+      quote: "The AI automatically categorizes expenses and saves us hours every week. Game changer for our finance team.",
+      name: "Rahul Mehta",
+      role: "CFO, Growing SaaS Company",
+    },
+    {
+      quote: "Finally, a reimbursement solution built for Indian startups. Simple, fast, and exactly what we needed.",
+      name: "Anjali Desai",
+      role: "HR Lead, Early-Stage Startup",
+    },
+  ];
+
 
   return (
     <div className="min-h-screen bg-gradient-subtle">
+      <ScrollProgressBar />
       <Navigation />
+      <WaitlistPopup isOpen={isWaitlistOpen} onClose={() => setIsWaitlistOpen(false)} />
+      {!user && hasShownWaitlist && (
+        <FloatingWaitlistButton onClick={() => setIsWaitlistOpen(true)} />
+      )}
       
       <main>
         {/* Hero Section */}
-        <section className="container mx-auto px-4 pt-28 pb-16 md:pt-36 md:pb-24">
+        <section className="container mx-auto px-4 pt-28 pb-16 md:pt-36 md:pb-24 animate-fade-in">
           <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-            <div className="space-y-8">
+            <div className="space-y-6 animate-fade-in" style={{ animationDelay: "200ms" }}>
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary border border-primary/20 shadow-sm">
                 <Receipt className="w-4 h-4" />
                 <span className="text-sm font-semibold">Built for Indian Startups</span>
               </div>
               
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-foreground leading-tight">
-                Automated reimbursement expense tracker{" "}
+                Smart Reimbursements.{" "}
                 <span className="bg-gradient-hero bg-clip-text text-transparent">
-                  built for early-stage and growing Indian startups
+                  Simplified.
                 </span>
               </h1>
               
-              <p className="text-lg md:text-xl text-muted-foreground leading-relaxed max-w-xl">
-                Making reimbursements effortless, automated, and transparent for modern Indian startups.
+              <p className="text-xl md:text-2xl text-muted-foreground leading-relaxed">
+                Upload your bills, let AI analyze them, and get your money back — instantly.
               </p>
               
               <div className="flex flex-col sm:flex-row gap-4 pt-4">
                 <Link to="/auth">
-                  <Button size="lg" className="bg-gradient-primary hover:opacity-90 text-lg px-8 py-6 shadow-lg hover:shadow-xl transition-all">
-                    Get Started Free
+                  <Button 
+                    size="lg" 
+                    className="bg-gradient-primary hover:opacity-90 hover:scale-105 text-lg px-10 py-7 shadow-2xl hover:shadow-glow transition-all duration-300 rounded-xl font-semibold"
+                  >
+                    Get Started with PAISABACK
                     <ArrowRight className="ml-2 w-5 h-5" />
                   </Button>
                 </Link>
               </div>
             </div>
             
-            <div className="relative order-first lg:order-last">
-              <div className="absolute inset-0 bg-gradient-hero opacity-10 blur-3xl rounded-full animate-pulse"></div>
+            <div className="relative order-first lg:order-last animate-fade-in" style={{ animationDelay: "400ms" }}>
+              <div className="absolute inset-0 bg-gradient-hero opacity-20 blur-3xl rounded-full animate-pulse"></div>
               <img
                 src={heroImage}
                 alt="PAISABACK automated expense management dashboard"
-                className="relative rounded-2xl shadow-xl w-full"
+                className="relative rounded-2xl shadow-2xl w-full hover:scale-105 transition-transform duration-500"
               />
             </div>
           </div>
         </section>
+
+        {/* Product Demo Video */}
+        <ProductDemoVideo />
 
         {/* Interactive Demo Section */}
         <section 
@@ -731,6 +796,56 @@ const Index = () => {
           </div>
         </section>
 
+        {/* Testimonials Section */}
+        <section 
+          ref={testimonialSection.ref as React.RefObject<HTMLElement>}
+          className={`container mx-auto px-4 py-20 md:py-28 bg-card/30 backdrop-blur-sm transition-all duration-1000 ${
+            testimonialSection.isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+          }`}
+        >
+          <div className="max-w-6xl mx-auto">
+            <div className="text-center mb-16 space-y-4">
+              <p className="text-sm font-semibold text-primary uppercase tracking-wide">
+                Trusted by teams and early users
+              </p>
+              <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-foreground">
+                What Our Users Say
+              </h2>
+            </div>
+
+            <div className="grid md:grid-cols-3 gap-8">
+              {testimonials.map((testimonial, index) => (
+                <TestimonialCard
+                  key={index}
+                  quote={testimonial.quote}
+                  name={testimonial.name}
+                  role={testimonial.role}
+                  delay={index * 100}
+                />
+              ))}
+            </div>
+
+            {/* Partner/Accelerator Badge */}
+            <div className="mt-16 text-center">
+              <p className="text-sm text-muted-foreground mb-4">Built at</p>
+              <div className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-muted/50 border border-border">
+                <span className="text-lg font-bold text-foreground">Mesa School of Business</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Trust & Security Section */}
+        <section className="container mx-auto px-4 py-12 md:py-16">
+          <div className="max-w-4xl mx-auto">
+            <div className="flex flex-wrap justify-center items-center gap-6 md:gap-12">
+              <TrustBadge icon={Lock} text="Bank-grade encryption" />
+              <TrustBadge icon={Shield} text="Secure payments powered by Razorpay" />
+              <TrustBadge icon={CheckCircle2} text="Trusted by professionals" />
+            </div>
+          </div>
+        </section>
+
         {/* Benefits Section */}
         <section 
           ref={benefitsSection.ref as React.RefObject<HTMLElement>}
@@ -808,28 +923,102 @@ const Index = () => {
 
       {/* Footer */}
       <footer className="border-t border-border bg-card/50 backdrop-blur-sm">
-        <div className="container mx-auto px-4 py-10">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-6">
-            <div className="flex items-center gap-2">
-              <div className="bg-gradient-primary p-2 rounded-lg">
-                <Receipt className="w-5 h-5 text-primary-foreground" />
+        <div className="container mx-auto px-4 py-12">
+          <div className="grid md:grid-cols-4 gap-8 mb-8">
+            {/* Brand */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <div className="bg-gradient-primary p-2 rounded-lg">
+                  <Receipt className="w-5 h-5 text-primary-foreground" />
+                </div>
+                <span className="text-lg font-bold text-foreground">PAISABACK</span>
               </div>
-              <span className="text-lg font-bold text-foreground">PAISABACK</span>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Smart reimbursements for modern Indian startups
+              </p>
             </div>
+
+            {/* Quick Links */}
+            <div className="space-y-4">
+              <h4 className="font-semibold text-foreground">Product</h4>
+              <ul className="space-y-2">
+                <li>
+                  <Link to="/auth" className="text-sm text-muted-foreground hover:text-primary transition-colors">
+                    Get Started
+                  </Link>
+                </li>
+                <li>
+                  <a href="#" className="text-sm text-muted-foreground hover:text-primary transition-colors">
+                    Features
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="text-sm text-muted-foreground hover:text-primary transition-colors">
+                    Pricing
+                  </a>
+                </li>
+              </ul>
+            </div>
+
+            {/* Company */}
+            <div className="space-y-4">
+              <h4 className="font-semibold text-foreground">Company</h4>
+              <ul className="space-y-2">
+                <li>
+                  <a href="#" className="text-sm text-muted-foreground hover:text-primary transition-colors">
+                    About Us
+                  </a>
+                </li>
+                <li>
+                  <a href="https://api.whatsapp.com/send/?phone=919664316377&text=Hi%2C+I+wanted+to+enquire+about+PAISABACK&type=phone_number&app_absent=0" target="_blank" rel="noopener noreferrer" className="text-sm text-muted-foreground hover:text-primary transition-colors">
+                    Contact
+                  </a>
+                </li>
+              </ul>
+            </div>
+
+            {/* Legal & Social */}
+            <div className="space-y-4">
+              <h4 className="font-semibold text-foreground">Connect</h4>
+              <ul className="space-y-2">
+                <li>
+                  <a href="#" className="text-sm text-muted-foreground hover:text-primary transition-colors">
+                    Privacy Policy
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="text-sm text-muted-foreground hover:text-primary transition-colors">
+                    Terms of Service
+                  </a>
+                </li>
+              </ul>
+              <div className="flex gap-4 pt-2">
+                <a 
+                  href="#" 
+                  className="w-9 h-9 rounded-lg bg-muted hover:bg-primary/10 flex items-center justify-center transition-colors"
+                  aria-label="LinkedIn"
+                >
+                  <Linkedin className="w-4 h-4 text-muted-foreground hover:text-primary" />
+                </a>
+                <a 
+                  href="#" 
+                  className="w-9 h-9 rounded-lg bg-muted hover:bg-primary/10 flex items-center justify-center transition-colors"
+                  aria-label="Instagram"
+                >
+                  <Instagram className="w-4 h-4 text-muted-foreground hover:text-primary" />
+                </a>
+              </div>
+            </div>
+          </div>
+
+          {/* Bottom Bar */}
+          <div className="pt-8 border-t border-border flex flex-col md:flex-row justify-between items-center gap-4">
             <p className="text-sm text-muted-foreground">
               © 2025 PAISABACK. All rights reserved.
             </p>
-            <div className="flex gap-8">
-              <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors font-medium">
-                Privacy Policy
-              </a>
-              <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors font-medium">
-                Terms of Service
-              </a>
-              <a href="https://api.whatsapp.com/send/?phone=919664316377&text=Hi%2C+I+wanted+to+enquire+about+PAISABACK&type=phone_number&app_absent=0" target="_blank" rel="noopener noreferrer" className="text-sm text-muted-foreground hover:text-foreground transition-colors font-medium">
-                Contact
-              </a>
-            </div>
+            <p className="text-sm text-muted-foreground">
+              Made with ❤️ by the PAISABACK Team
+            </p>
           </div>
         </div>
       </footer>
