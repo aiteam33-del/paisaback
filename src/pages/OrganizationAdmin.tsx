@@ -564,7 +564,26 @@ const OrganizationAdmin = () => {
             <div className="space-y-4">
               {filteredExpenses.length === 0 ? (
                 <p className="text-center text-muted-foreground py-8">No expenses found</p>
+              ) : isMobile ? (
+                // Mobile view - use MobileExpenseCard
+                filteredExpenses.map((expense) => (
+                  <MobileExpenseCard
+                    key={expense.id}
+                    expense={expense}
+                    onView={() => setSelectedExpense(expense)}
+                    onApprove={expense.status === "pending" ? () => {
+                      setSelectedExpense(expense);
+                      setManagerNotes("");
+                    } : undefined}
+                    onReject={expense.status === "pending" ? () => {
+                      setSelectedExpense(expense);
+                      setManagerNotes("");
+                    } : undefined}
+                    showActions={expense.status === "pending"}
+                  />
+                ))
               ) : (
+                // Desktop view
                 filteredExpenses.map((expense) => (
                   <div
                     key={expense.id}
