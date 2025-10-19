@@ -14,6 +14,11 @@ interface MobileExpenseCardProps {
   onSelect?: () => void;
 }
 
+interface Expense {
+  manager_notes?: string;
+  [key: string]: any;
+}
+
 const getStatusColor = (status: string) => {
   switch (status) {
     case "pending":
@@ -75,6 +80,14 @@ export const MobileExpenseCard = ({
             <span className="text-2xl font-bold">₹{expense.amount.toFixed(2)}</span>
             <Badge variant="outline">{expense.category}</Badge>
           </div>
+
+          {/* Manager Notes */}
+          {expense.manager_notes && (
+            <div className="p-2 bg-muted/50 rounded-md border border-border">
+              <p className="text-xs font-semibold text-foreground mb-1">Manager Notes:</p>
+              <p className="text-xs text-muted-foreground">{expense.manager_notes}</p>
+            </div>
+          )}
 
           {/* Actions */}
           {showActions && expense.status === "pending" && (
