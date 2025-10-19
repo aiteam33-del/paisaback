@@ -25,7 +25,7 @@ const handler = async (req: Request): Promise<Response> => {
     // Send notification to admin
     const emailResponse = await resend.emails.send({
       from: "PAISABACK Waitlist <onboarding@resend.dev>",
-      to: ["your-email@example.com"], // Replace with your actual email
+      to: ["ai_team33@mesaschool.co"],
       subject: "New PAISABACK Waitlist Signup! 🎉",
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
