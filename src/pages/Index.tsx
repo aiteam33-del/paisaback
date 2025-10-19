@@ -951,12 +951,12 @@ const Index = () => {
                   </Link>
                 </li>
                 <li>
-                  <a href="#" className="text-xs sm:text-sm text-muted-foreground hover:text-primary transition-colors">
+                  <a href="#features" className="text-xs sm:text-sm text-muted-foreground hover:text-primary transition-colors">
                     Features
                   </a>
                 </li>
                 <li>
-                  <a href="#" className="text-xs sm:text-sm text-muted-foreground hover:text-primary transition-colors">
+                  <a href="#pricing" className="text-xs sm:text-sm text-muted-foreground hover:text-primary transition-colors">
                     Pricing
                   </a>
                 </li>
