@@ -14,3 +14,6 @@ verify_jwt = false
 
 [functions.verify-expense-token]
 verify_jwt = false
+
+[functions.send-waitlist-notification]
+verify_jwt = false

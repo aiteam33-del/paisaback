@@ -38,6 +38,17 @@ export const WaitlistPopup = ({ isOpen, onClose }: WaitlistPopupProps) => {
         }
       } else {
         setIsSuccess(true);
+        
+        // Send notification email to admin
+        try {
+          await supabase.functions.invoke('send-waitlist-notification', {
+            body: { email: email.trim().toLowerCase() }
+          });
+        } catch (notifError) {
+          console.error('Failed to send notification:', notifError);
+          // Don't show error to user - email was still saved
+        }
+        
         toast({
           title: "Success!",
           description: "You're on the waitlist. We'll notify you soon!",
