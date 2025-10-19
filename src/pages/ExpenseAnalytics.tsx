@@ -145,7 +145,7 @@ const ExpenseAnalytics = () => {
   const filteredExpenses = getFilteredExpenses();
 
   // Calculate metrics
-  const totalAmount = filteredExpenses.reduce((sum, exp) => sum + Number(exp.amount), 0);
+  const totalAmount = filteredExpenses.filter(e => e.status !== "rejected").reduce((sum, exp) => sum + Number(exp.amount), 0);
   const avgAmount = filteredExpenses.length > 0 ? totalAmount / filteredExpenses.length : 0;
   const pendingAmount = filteredExpenses.filter(e => e.status === "pending").reduce((sum, e) => sum + Number(e.amount), 0);
   const approvedAmount = filteredExpenses.filter(e => e.status === "approved").reduce((sum, e) => sum + Number(e.amount), 0);
