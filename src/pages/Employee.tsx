@@ -33,6 +33,7 @@ interface Expense {
   date: string;
   description?: string;
   attachments?: string[];
+  manager_notes?: string;
 }
 
 const Employee = () => {
@@ -1203,6 +1204,15 @@ const processOCR = async (file: File) => {
                         <p className="text-sm text-muted-foreground">
                           {expense.category} • {new Date(expense.date).toLocaleDateString()}
                         </p>
+                        {expense.description && (
+                          <p className="text-xs text-muted-foreground mt-1">{expense.description}</p>
+                        )}
+                        {expense.manager_notes && (
+                          <div className="mt-2 p-2 bg-muted/50 rounded-md border border-border">
+                            <p className="text-xs font-semibold text-foreground mb-1">Manager Notes:</p>
+                            <p className="text-xs text-muted-foreground">{expense.manager_notes}</p>
+                          </div>
+                        )}
                         {expense.attachments && expense.attachments.length > 0 && (
                           <div className="mt-2 flex flex-wrap gap-2">
                             {expense.attachments.map((url, idx) => (
