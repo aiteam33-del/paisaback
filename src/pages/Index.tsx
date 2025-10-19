@@ -268,7 +268,7 @@ const Index = () => {
       
       <main>
         {/* Hero Section */}
-        <section className="container mx-auto px-4 sm:px-6 pt-24 pb-12 sm:pt-28 sm:pb-16 md:pt-36 md:pb-24 animate-fade-in">
+        <section id="get-started" className="container mx-auto px-4 sm:px-6 pt-24 pb-12 sm:pt-28 sm:pb-16 md:pt-36 md:pb-24 animate-fade-in">
           <div className="grid lg:grid-cols-2 gap-8 sm:gap-12 lg:gap-16 items-center">
             <div className="space-y-5 sm:space-y-6 animate-fade-in text-center lg:text-left" style={{ animationDelay: "200ms" }}>
               <div className="inline-flex items-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full bg-primary/10 text-primary border border-primary/20 shadow-sm">
@@ -694,6 +694,7 @@ const Index = () => {
 
         {/* Solution Section */}
         <section 
+          id="features"
           ref={solutionSection.ref as React.RefObject<HTMLElement>}
           className={`container mx-auto px-4 sm:px-6 py-12 sm:py-16 md:py-20 lg:py-28 transition-all duration-1000 ${
             solutionSection.isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
@@ -737,6 +738,7 @@ const Index = () => {
 
         {/* Pricing Section */}
         <section 
+          id="pricing"
           ref={pricingSection.ref as React.RefObject<HTMLElement>}
           className={`container mx-auto px-4 sm:px-6 py-12 sm:py-16 md:py-20 lg:py-28 bg-card/30 backdrop-blur-sm transition-all duration-1000 ${
             pricingSection.isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'

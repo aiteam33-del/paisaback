@@ -62,13 +62,19 @@ export const Navigation = () => {
               </>
             ) : location.pathname === "/" && (
               <>
+                <a href="#features" className="hidden md:inline-flex">
+                  <Button variant="ghost" className="hover:scale-105 transition-transform">Features</Button>
+                </a>
+                <a href="#pricing" className="hidden md:inline-flex">
+                  <Button variant="ghost" className="hover:scale-105 transition-transform">Pricing</Button>
+                </a>
                 <ThemeToggle />
                 <Link to="/auth">
                   <Button variant="ghost" className="hidden sm:inline-flex hover:scale-105 transition-transform">Sign In</Button>
                 </Link>
-                <Link to="/auth">
+                <a href="#get-started">
                   <Button variant="hero" className="shadow-md hover:shadow-xl hover:scale-105 transition-all">Get Started</Button>
-                </Link>
+                </a>
               </>
             )}
           </div>
