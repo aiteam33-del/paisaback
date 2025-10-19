@@ -686,29 +686,29 @@ const OrganizationAdmin = () => {
                   <div 
                     key={request.id}
                     id={`jr-${request.id}`}
-                    className="flex items-center justify-between p-4 rounded-lg border border-border hover:shadow-sm transition-shadow"
+                    className="flex flex-col sm:flex-row sm:items-center gap-4 p-4 rounded-lg border border-border hover:shadow-sm transition-shadow"
                   >
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-1">
-                        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
                           <span className="text-sm font-semibold text-primary">
                             {request.employee.full_name.split(" ").map((n) => n[0]).join("")}
                           </span>
                         </div>
-                        <div>
+                        <div className="min-w-0">
                           <p className="font-medium text-foreground">{request.employee.full_name}</p>
-                          <p className="text-sm text-muted-foreground">{request.employee.email}</p>
+                          <p className="text-sm text-muted-foreground truncate">{request.employee.email}</p>
                         </div>
                       </div>
-                      <p className="text-xs text-muted-foreground ml-13">
+                      <p className="text-xs text-muted-foreground sm:ml-13 mt-2 sm:mt-0">
                         Requested {new Date(request.created_at).toLocaleDateString()} at {new Date(request.created_at).toLocaleTimeString()}
                       </p>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 w-full sm:w-auto">
                       <Button
                         size="sm"
                         variant="outline"
-                        className="text-destructive hover:bg-destructive/10"
+                        className="text-destructive hover:bg-destructive/10 flex-1 sm:flex-none"
                         onClick={() => handleJoinRequestAction(request.id, 'reject')}
                         disabled={isSubmitting}
                       >
@@ -718,6 +718,7 @@ const OrganizationAdmin = () => {
                       <Button
                         size="sm"
                         variant="hero"
+                        className="flex-1 sm:flex-none"
                         onClick={() => handleJoinRequestAction(request.id, 'approve')}
                         disabled={isSubmitting}
                       >
@@ -742,56 +743,114 @@ const OrganizationAdmin = () => {
             <CardDescription>Click on an employee to review their pending expenses</CardDescription>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead className="text-right">Pending</TableHead>
-                  <TableHead className="text-right">To be paid</TableHead>
-                  <TableHead className="text-right">Paid</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {employees.map((employee) => (
-                  <TableRow key={employee.id}>
-                    <TableCell className="font-medium">{employee.full_name || "N/A"}</TableCell>
-                    <TableCell>{employee.email}</TableCell>
-                    <TableCell className="text-right">
-                      <span className={employee.totalPending > 0 ? "font-bold text-primary" : ""}>
-                        ₹{employee.totalPending.toFixed(2)}
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <span className={employee.totalToBePaid > 0 ? "font-bold text-primary" : ""}>
-                        ₹{employee.totalToBePaid.toFixed(2)}
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <span className={employee.totalPaid > 0 ? "font-bold text-primary" : ""}>
-                        ₹{employee.totalPaid.toFixed(2)}
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button
-                        size="sm"
-                        onClick={() => handleEmployeeClick(employee.id)}
-                      >
-                        View Expenses
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-                {employees.length === 0 && (
+            {/* Mobile view - Cards */}
+            <div className="block md:hidden space-y-4">
+              {employees.map((employee) => (
+                <Card key={employee.id} className="p-4">
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                        <span className="text-sm font-semibold text-primary">
+                          {employee.full_name?.split(" ").map((n) => n[0]).join("") || "N/A"}
+                        </span>
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium text-foreground">{employee.full_name || "N/A"}</p>
+                        <p className="text-sm text-muted-foreground truncate">{employee.email}</p>
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-3 gap-2 text-center">
+                      <div className="p-2 bg-muted/50 rounded">
+                        <p className="text-xs text-muted-foreground mb-1">Pending</p>
+                        <p className={`text-sm font-semibold ${employee.totalPending > 0 ? "text-primary" : ""}`}>
+                          ₹{employee.totalPending.toFixed(2)}
+                        </p>
+                      </div>
+                      <div className="p-2 bg-muted/50 rounded">
+                        <p className="text-xs text-muted-foreground mb-1">To be paid</p>
+                        <p className={`text-sm font-semibold ${employee.totalToBePaid > 0 ? "text-primary" : ""}`}>
+                          ₹{employee.totalToBePaid.toFixed(2)}
+                        </p>
+                      </div>
+                      <div className="p-2 bg-muted/50 rounded">
+                        <p className="text-xs text-muted-foreground mb-1">Paid</p>
+                        <p className={`text-sm font-semibold ${employee.totalPaid > 0 ? "text-primary" : ""}`}>
+                          ₹{employee.totalPaid.toFixed(2)}
+                        </p>
+                      </div>
+                    </div>
+                    
+                    <Button
+                      size="sm"
+                      className="w-full"
+                      onClick={() => handleEmployeeClick(employee.id)}
+                    >
+                      View Expenses
+                    </Button>
+                  </div>
+                </Card>
+              ))}
+              {employees.length === 0 && (
+                <p className="text-center text-muted-foreground py-8">
+                  No employees yet. Share your organization name for employees to join.
+                </p>
+              )}
+            </div>
+
+            {/* Desktop view - Table */}
+            <div className="hidden md:block">
+              <Table>
+                <TableHeader>
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
-                      No employees yet. Share your organization name for employees to join.
-                    </TableCell>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead className="text-right">Pending</TableHead>
+                    <TableHead className="text-right">To be paid</TableHead>
+                    <TableHead className="text-right">Paid</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
-                )}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {employees.map((employee) => (
+                    <TableRow key={employee.id}>
+                      <TableCell className="font-medium">{employee.full_name || "N/A"}</TableCell>
+                      <TableCell>{employee.email}</TableCell>
+                      <TableCell className="text-right">
+                        <span className={employee.totalPending > 0 ? "font-bold text-primary" : ""}>
+                          ₹{employee.totalPending.toFixed(2)}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <span className={employee.totalToBePaid > 0 ? "font-bold text-primary" : ""}>
+                          ₹{employee.totalToBePaid.toFixed(2)}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <span className={employee.totalPaid > 0 ? "font-bold text-primary" : ""}>
+                          ₹{employee.totalPaid.toFixed(2)}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          size="sm"
+                          onClick={() => handleEmployeeClick(employee.id)}
+                        >
+                          View Expenses
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {employees.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                        No employees yet. Share your organization name for employees to join.
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
           </CardContent>
         </Card>
       </main>
