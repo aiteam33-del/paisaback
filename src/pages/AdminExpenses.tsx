@@ -339,8 +339,7 @@ const AdminExpenses = () => {
                       {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Reject"}
                     </Button>
                     <Button
-                      variant="default"
-                      className="flex-1"
+                      className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground"
                       onClick={() => handleExpenseAction(selectedExpense.id, "approved")}
                       disabled={isSubmitting}
                     >

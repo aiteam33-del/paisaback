@@ -159,7 +159,7 @@ const AdminEmployees = () => {
             {isMobile ? (
               <div className="space-y-4">
                 {filteredEmployees.map(employee => (
-                  <Card key={employee.id} className="cursor-pointer hover:shadow-md transition-shadow"
+                  <Card key={employee.id} className="cursor-pointer hover:shadow-md transition-shadow border-l-4 border-l-primary/50 hover:border-l-primary"
                     onClick={() => navigate(`/admin/employee/${employee.id}`)}>
                     <CardContent className="p-4">
                       <div className="flex items-start justify-between mb-3">
@@ -176,15 +176,15 @@ const AdminEmployees = () => {
                       <div className="grid grid-cols-3 gap-2 text-sm">
                         <div>
                           <p className="text-muted-foreground">Pending</p>
-                          <p className="font-semibold text-warning">₹{employee.totalPending.toFixed(2)}</p>
+                          <p className={`font-semibold ${employee.totalPending > 0 ? "text-primary" : ""}`}>₹{employee.totalPending.toFixed(2)}</p>
                         </div>
                         <div>
                           <p className="text-muted-foreground">Approved</p>
-                          <p className="font-semibold text-success">₹{employee.totalToBePaid.toFixed(2)}</p>
+                          <p className={`font-semibold ${employee.totalToBePaid > 0 ? "text-success" : ""}`}>₹{employee.totalToBePaid.toFixed(2)}</p>
                         </div>
                         <div>
                           <p className="text-muted-foreground">Paid</p>
-                          <p className="font-semibold text-primary">₹{employee.totalPaid.toFixed(2)}</p>
+                          <p className={`font-semibold ${employee.totalPaid > 0 ? "text-muted-foreground" : ""}`}>₹{employee.totalPaid.toFixed(2)}</p>
                         </div>
                       </div>
                     </CardContent>
@@ -217,10 +217,10 @@ const AdminEmployees = () => {
                       <TableCell className="text-right text-primary font-semibold">
                         ₹{employee.totalPaid.toFixed(2)}
                       </TableCell>
-                      <TableCell className="text-right">
+                       <TableCell className="text-right">
                         <Button
-                          variant="ghost"
                           size="sm"
+                          className="bg-primary hover:bg-primary/90 text-primary-foreground"
                           onClick={() => navigate(`/admin/employee/${employee.id}`)}
                         >
                           View Details

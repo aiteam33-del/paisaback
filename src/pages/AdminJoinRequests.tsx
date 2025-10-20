@@ -188,7 +188,7 @@ const AdminJoinRequests = () => {
                         {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Reject"}
                       </Button>
                       <Button
-                        variant="default"
+                        className="bg-primary hover:bg-primary/90 text-primary-foreground"
                         onClick={() => handleJoinRequestAction(request.id, 'approve')}
                         disabled={isSubmitting}
                       >

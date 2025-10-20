@@ -38,7 +38,7 @@ export const ExpenseCard = ({ expense, onAction, onViewDetails }: ExpenseCardPro
   };
 
   return (
-    <Card className="shadow-card hover:shadow-lg transition-shadow">
+    <Card className="shadow-card hover:shadow-lg transition-shadow border-l-4 border-l-primary/50 hover:border-l-primary">
       {/* Card Header - Always Visible */}
       <CardContent className="p-4">
         <div
@@ -120,9 +120,8 @@ export const ExpenseCard = ({ expense, onAction, onViewDetails }: ExpenseCardPro
                   Reject
                 </Button>
                 <Button
-                  variant="default"
                   size="sm"
-                  className="flex-1"
+                  className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground"
                   onClick={(e) => {
                     e.stopPropagation();
                     onAction(expense.id, "approved");

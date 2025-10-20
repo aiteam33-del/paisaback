@@ -4,8 +4,9 @@ import { Navigation } from "@/components/ui/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Building2, Users, Clock, CheckCircle, Loader2 } from "lucide-react";
+import { Building2, Users, Clock, CheckCircle, Loader2, BarChart3 } from "lucide-react";
 import { SummaryCard } from "@/components/SummaryCard";
+import { Button } from "@/components/ui/button";
 
 const OrganizationAdmin = () => {
   const { user } = useAuth();
@@ -106,11 +107,22 @@ const OrganizationAdmin = () => {
 
       <main className="container mx-auto px-4 pt-24 pb-16 max-w-7xl">
         <div className="mb-8">
-          <div className="flex items-center gap-3 mb-2">
-            <Building2 className="w-8 h-8 text-primary" />
-            <h1 className="text-4xl font-bold text-foreground">{organization?.name || "Organization"}</h1>
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-2">
+            <div>
+              <div className="flex items-center gap-3 mb-2">
+                <Building2 className="w-8 h-8 text-primary" />
+                <h1 className="text-4xl font-bold text-foreground">{organization?.name || "Organization"}</h1>
+              </div>
+              <p className="text-lg text-muted-foreground">Admin Dashboard - Action Center</p>
+            </div>
+            <Button
+              onClick={() => navigate("/admin/analytics")}
+              className="bg-primary hover:bg-primary/90 text-primary-foreground"
+            >
+              <BarChart3 className="w-4 h-4 mr-2" />
+              View Analytics
+            </Button>
           </div>
-          <p className="text-lg text-muted-foreground">Admin Dashboard - Action Center</p>
         </div>
 
         {/* Actionable Summary Cards */}
