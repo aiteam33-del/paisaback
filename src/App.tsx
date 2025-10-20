@@ -12,6 +12,9 @@ import ExpenseHistory from "./pages/ExpenseHistory";
 import ExpenseSummary from "./pages/ExpenseSummary";
 import Organization from "./pages/Organization";
 import OrganizationAdmin from "./pages/OrganizationAdmin";
+import AdminExpenses from "./pages/AdminExpenses";
+import AdminEmployees from "./pages/AdminEmployees";
+import AdminJoinRequests from "./pages/AdminJoinRequests";
 import EmployeeExpenseView from "./pages/EmployeeExpenseView";
 import PendingRequest from "./pages/PendingRequest";
 import RejectedRequest from "./pages/RejectedRequest";
@@ -37,6 +40,9 @@ const App = () => (
               <Route path="/expense-summary" element={<ExpenseSummary />} />
               <Route path="/organization" element={<Organization />} />
               <Route path="/admin" element={<OrganizationAdmin />} />
+              <Route path="/admin/expenses" element={<AdminExpenses />} />
+              <Route path="/admin/employees" element={<AdminEmployees />} />
+              <Route path="/admin/join-requests" element={<AdminJoinRequests />} />
               <Route path="/admin/analytics" element={<ExpenseAnalytics />} />
               <Route path="/admin/employee/:employeeId" element={<EmployeeExpenseView />} />
               <Route path="/pending-request" element={<PendingRequest />} />

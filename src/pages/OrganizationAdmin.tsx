@@ -1,114 +1,31 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useNavigate } from "react-router-dom";
 import { Navigation } from "@/components/ui/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Building2, Users, DollarSign, CheckCircle, XCircle, Clock, Loader2, Search, Filter, Calendar, Receipt, BarChart } from "lucide-react";
-import { ExpenseChart } from "@/components/ExpenseChart";
-import { MobileExpenseCard } from "@/components/MobileExpenseCard";
-import { BatchActionBar } from "@/components/BatchActionBar";
-import { useIsMobile } from "@/hooks/use-mobile";
-
-interface Employee {
-  id: string;
-  full_name: string;
-  email: string;
-  totalPending: number;
-  totalToBePaid: number;
-  totalPaid: number;
-}
-
-interface Expense {
-  id: string;
-  date: string;
-  category: string;
-  amount: number;
-  status: string;
-  description: string;
-  vendor: string;
-  attachments?: string[];
-  employee: {
-    full_name: string;
-    email: string;
-  };
-}
-
-interface JoinRequest {
-  id: string;
-  employee_id: string;
-  org_id: string;
-  status: string;
-  created_at: string;
-  employee: {
-    full_name: string;
-    email: string;
-  };
-}
+import { Building2, Users, Clock, CheckCircle, Loader2 } from "lucide-react";
+import { SummaryCard } from "@/components/SummaryCard";
 
 const OrganizationAdmin = () => {
-  const { user, userRole } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [organization, setOrganization] = useState<any>(null);
-  const [employees, setEmployees] = useState<Employee[]>([]);
-  const [allExpenses, setAllExpenses] = useState<Expense[]>([]);
-  const [joinRequests, setJoinRequests] = useState<JoinRequest[]>([]);
-  const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
-  const [employeeExpenses, setEmployeeExpenses] = useState<Expense[]>([]);
-  const [selectedExpense, setSelectedExpense] = useState<Expense | null>(null);
-  const [managerNotes, setManagerNotes] = useState("");
+  const [stats, setStats] = useState({
+    totalPending: 0,
+    totalApproved: 0,
+    employeeCount: 0,
+    joinRequestCount: 0,
+  });
   const [isLoading, setIsLoading] = useState(true);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [selectedExpenses, setSelectedExpenses] = useState<Set<string>>(new Set());
-  const [showCharts, setShowCharts] = useState(false);
-  const isMobile = useIsMobile();
-  const [searchParams] = useSearchParams();
-  
-  // Filter states
-  const [searchTerm, setSearchTerm] = useState("");
-  const [filterCategory, setFilterCategory] = useState<string>("all");
-  const [filterEmployee, setFilterEmployee] = useState<string>("all");
-  const [filterStatus, setFilterStatus] = useState<string>("all");
-  const [filterDateFrom, setFilterDateFrom] = useState("");
-  const [filterDateTo, setFilterDateTo] = useState("");
 
   useEffect(() => {
     if (!user) {
       navigate("/auth");
       return;
     }
-
     loadDashboardData();
-  }, [user, userRole, navigate]);
-
-  // Deep-link: open expense modal or scroll to join request from query params
-  useEffect(() => {
-    const expenseId = searchParams.get('expenseId');
-    if (expenseId && allExpenses.length > 0) {
-      const exp = allExpenses.find(e => e.id === expenseId);
-      if (exp) setSelectedExpense(exp);
-    }
-    const jrId = searchParams.get('joinRequestId');
-    if (jrId) {
-      setTimeout(() => {
-        const el = document.getElementById(`jr-${jrId}`);
-        if (el) {
-          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          el.classList.add('ring-2', 'ring-primary');
-          setTimeout(() => el.classList.remove('ring-2', 'ring-primary'), 2000);
-        }
-      }, 0);
-    }
-  }, [searchParams, allExpenses, joinRequests]);
+  }, [user, navigate]);
 
   const loadDashboardData = async () => {
     if (!user) return;
@@ -125,219 +42,53 @@ const OrganizationAdmin = () => {
       if (orgData) {
         setOrganization(orgData);
 
-        // Get pending join requests with employee details
-        const { data: joinRequestsData, error: jrError } = await supabase
-          .from("join_requests")
-          .select("*")
-          .eq("org_id", orgData.id)
-          .eq("status", "pending")
-          .order("created_at", { ascending: false });
-
-        if (jrError) {
-          console.error("Error loading join requests:", jrError);
-        }
-
-        if (joinRequestsData && joinRequestsData.length > 0) {
-          // Fetch employee profiles separately
-          const employeeIds = joinRequestsData.map(req => req.employee_id);
-          const { data: employeeProfiles } = await supabase
-            .from("profiles")
-            .select("id, full_name, email")
-            .in("id", employeeIds);
-
-          const profileMap = new Map(
-            (employeeProfiles || []).map(p => [p.id, { full_name: p.full_name || "Unknown", email: p.email }])
-          );
-
-          setJoinRequests(joinRequestsData.map(req => ({
-            ...req,
-            employee: profileMap.get(req.employee_id) || { full_name: "Unknown", email: "unknown" }
-          })));
-        } else {
-          setJoinRequests([]);
-        }
-
-        // Get all employees in organization
-        const { data: employeesData } = await supabase
+        // Get employees count
+        const { count: employeeCount } = await supabase
           .from("profiles")
-          .select("id, full_name, email")
+          .select("*", { count: "exact", head: true })
           .eq("organization_id", orgData.id)
           .neq("id", user.id);
 
-        // Get all expenses for the organization - fetch separately and join in JS
-        const employeeIds = (employeesData || []).map(e => e.id);
-        
+        // Get join requests count
+        const { count: joinRequestCount } = await supabase
+          .from("join_requests")
+          .select("*", { count: "exact", head: true })
+          .eq("org_id", orgData.id)
+          .eq("status", "pending");
+
+        // Get expense stats
+        const employeeIds = await supabase
+          .from("profiles")
+          .select("id")
+          .eq("organization_id", orgData.id);
+
+        const ids = (employeeIds.data || []).map(e => e.id);
+
         const { data: expensesData } = await supabase
           .from("expenses")
-          .select("*")
-          .in("user_id", [...employeeIds, user.id])
-          .order("date", { ascending: false });
+          .select("amount, status")
+          .in("user_id", [...ids, user.id]);
 
-        // Calculate per-employee totals (pending, approved = to be paid, paid)
-        const employeesWithTotals = (employeesData || []).map(emp => {
-          const empExpenses = (expensesData || []).filter(exp => exp.user_id === emp.id);
-          const pending = empExpenses
-            .filter(e => e.status === "pending")
-            .reduce((sum, e) => sum + Number(e.amount), 0);
-          const toBePaid = empExpenses
-            .filter(e => e.status === "approved")
-            .reduce((sum, e) => sum + Number(e.amount), 0);
-          const paid = empExpenses
-            .filter(e => e.status === "paid")
-            .reduce((sum, e) => sum + Number(e.amount), 0);
-          
-          return {
-            ...emp,
-            totalPending: pending,
-            totalToBePaid: toBePaid,
-            totalPaid: paid,
-          } as Employee;
+        const totalPending = (expensesData || [])
+          .filter(exp => exp.status === "pending")
+          .reduce((sum, exp) => sum + Number(exp.amount), 0);
+
+        const totalApproved = (expensesData || [])
+          .filter(exp => exp.status === "approved")
+          .reduce((sum, exp) => sum + Number(exp.amount), 0);
+
+        setStats({
+          totalPending,
+          totalApproved,
+          employeeCount: employeeCount || 0,
+          joinRequestCount: joinRequestCount || 0,
         });
-
-        // Sort by highest pending first
-        const sortedEmployees = [...employeesWithTotals].sort((a, b) => b.totalPending - a.totalPending);
-
-        setEmployees(sortedEmployees);
-        
-        // Create employee lookup for transforming expenses
-        const allEmployees = [...(employeesData || []), { id: user.id, full_name: "", email: "" }];
-        const employeeLookup = new Map(
-          allEmployees.map(e => [e.id, { full_name: e.full_name || "", email: e.email }])
-        );
-        
-        // Transform expenses data
-        const transformedExpenses = (expensesData || []).map(exp => ({
-          id: exp.id,
-          date: exp.date,
-          category: exp.category,
-          amount: Number(exp.amount),
-          status: exp.status,
-          description: exp.description,
-          vendor: exp.vendor,
-          attachments: exp.attachments || [],
-          employee: employeeLookup.get(exp.user_id) || { full_name: "Unknown", email: "unknown" }
-        }));
-        
-        setAllExpenses(transformedExpenses);
       }
     } catch (error: any) {
       toast.error("Failed to load dashboard data");
       console.error(error);
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const handleEmployeeClick = (employeeId: string) => {
-    navigate(`/admin/employee/${employeeId}`);
-  };
-
-  const handleJoinRequestAction = async (requestId: string, action: 'approve' | 'reject') => {
-    setIsSubmitting(true);
-    try {
-      const functionName = action === 'approve' ? 'approve_join_request' : 'reject_join_request';
-      const { error } = await supabase.rpc(functionName, { request_id: requestId });
-
-      if (error) throw error;
-
-      toast.success(`Join request ${action}d successfully`);
-      // Remove from local state
-      setJoinRequests(prev => prev.filter(req => req.id !== requestId));
-      // Reload data to reflect new employee if approved
-      if (action === 'approve') {
-        loadDashboardData();
-      }
-    } catch (error: any) {
-      console.error(`Error ${action}ing request:`, error);
-      toast.error(error?.message ? error.message : `Failed to ${action} join request`);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleExpenseAction = async (expenseId: string, newStatus: "approved" | "rejected") => {
-    setIsSubmitting(true);
-    try {
-      const { error } = await supabase
-        .from("expenses")
-        .update({
-          status: newStatus,
-          manager_notes: managerNotes || null,
-        })
-        .eq("id", expenseId)
-        .eq("status", "pending");
-
-      if (error) throw error;
-
-      toast.success(`Expense ${newStatus} successfully`);
-      setSelectedExpense(null);
-      setManagerNotes("");
-      await loadDashboardData();
-    } catch (error: any) {
-      console.error("Expense update failed:", error);
-      toast.error(error?.message ?? `Failed to ${newStatus} expense`);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  // Filter expenses based on all filter criteria
-  const filteredExpenses = allExpenses.filter(exp => {
-    const matchesSearch = searchTerm === "" || 
-      exp.vendor.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      exp.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      exp.employee.full_name.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesCategory = filterCategory === "all" || exp.category === filterCategory;
-    const matchesEmployee = filterEmployee === "all" || exp.employee.email === filterEmployee;
-    const matchesStatus = filterStatus === "all" || exp.status === filterStatus;
-    
-    const matchesDateFrom = !filterDateFrom || new Date(exp.date) >= new Date(filterDateFrom);
-    const matchesDateTo = !filterDateTo || new Date(exp.date) <= new Date(filterDateTo);
-    
-    return matchesSearch && matchesCategory && matchesEmployee && matchesStatus && matchesDateFrom && matchesDateTo;
-  });
-
-  // Category breakdown: show both Approved (to be paid) and Paid
-  const categoryStatusBreakdown = filteredExpenses.reduce((acc, exp) => {
-    if (!acc[exp.category]) {
-      acc[exp.category] = { approved: 0, paid: 0 };
-    }
-    if (exp.status === "approved") acc[exp.category].approved += exp.amount;
-    if (exp.status === "paid") acc[exp.category].paid += exp.amount;
-    return acc;
-  }, {} as Record<string, { approved: number; paid: number }>);
-
-  // Employee breakdown
-  const employeeBreakdown = filteredExpenses.reduce((acc, exp) => {
-    const key = exp.employee.email;
-    if (!acc[key]) {
-      acc[key] = { name: exp.employee.full_name, total: 0, count: 0 };
-    }
-    acc[key].total += exp.amount;
-    acc[key].count += 1;
-    return acc;
-  }, {} as Record<string, { name: string; total: number; count: number }>);
-
-  const totalPending = allExpenses
-    .filter(exp => exp.status === "pending")
-    .reduce((sum, exp) => sum + exp.amount, 0);
-
-  const totalApproved = allExpenses
-    .filter(exp => exp.status === "approved")
-    .reduce((sum, exp) => sum + exp.amount, 0);
-
-  // Get unique categories for filter
-  const categories = Array.from(new Set(allExpenses.map(exp => exp.category)));
-  
-  // Status colors
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "pending": return "bg-warning/20 text-warning border-warning/30";
-      case "approved": return "bg-success/20 text-success border-success/30";
-      case "rejected": return "bg-destructive/20 text-destructive border-destructive/30";
-      case "paid": return "bg-primary/20 text-primary border-primary/30";
-      default: return "bg-muted/20 text-muted-foreground border-muted/30";
     }
   };
 
@@ -352,654 +103,49 @@ const OrganizationAdmin = () => {
   return (
     <div className="min-h-screen bg-gradient-subtle">
       <Navigation />
-      
+
       <main className="container mx-auto px-4 pt-24 pb-16 max-w-7xl">
         <div className="mb-8">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div>
-              <div className="flex items-center gap-3 mb-2">
-                <Building2 className="w-8 h-8 text-primary" />
-                <h1 className="text-4xl font-bold text-foreground">{organization?.name || "Organization"}</h1>
-              </div>
-              <p className="text-lg text-muted-foreground">Admin Dashboard</p>
-            </div>
-            <Button
-              variant="outline"
-              onClick={() => navigate("/admin/analytics")}
-            >
-              <BarChart className="w-4 h-4 mr-2" />
-              View Analytics
-            </Button>
+          <div className="flex items-center gap-3 mb-2">
+            <Building2 className="w-8 h-8 text-primary" />
+            <h1 className="text-4xl font-bold text-foreground">{organization?.name || "Organization"}</h1>
           </div>
+          <p className="text-lg text-muted-foreground">Admin Dashboard - Action Center</p>
         </div>
 
-         {/* KPI Cards */}
-        <div className="grid md:grid-cols-4 gap-6 mb-8">
-           <Card className="shadow-card">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Pending</CardTitle>
-              <Clock className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">₹{totalPending.toFixed(2)}</div>
-              <p className="text-xs text-muted-foreground">
-                Awaiting approval
-              </p>
-            </CardContent>
-          </Card>
-
-           <Card className="shadow-card">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Approved</CardTitle>
-              <CheckCircle className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">₹{totalApproved.toFixed(2)}</div>
-              <p className="text-xs text-muted-foreground">
-                Awaiting payment
-              </p>
-            </CardContent>
-          </Card>
-
-           <Card className="shadow-card">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Employees</CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{employees.length}</div>
-              <p className="text-xs text-muted-foreground">
-                Active team members
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card className="shadow-card bg-gradient-primary text-primary-foreground">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Join Requests</CardTitle>
-              <Users className="h-4 w-4" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{joinRequests.length}</div>
-              <p className="text-xs text-primary-foreground/80">
-                Pending approval
-              </p>
-            </CardContent>
-          </Card>
+        {/* Actionable Summary Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <SummaryCard
+            title="Total Pending"
+            value={`₹${stats.totalPending.toFixed(2)}`}
+            icon={Clock}
+            linkTo="/admin/expenses?status=pending"
+            actionText="Review Expenses"
+          />
+          <SummaryCard
+            title="Total Approved"
+            value={`₹${stats.totalApproved.toFixed(2)}`}
+            icon={CheckCircle}
+            linkTo="/admin/expenses?status=approved"
+            actionText="View Approved"
+          />
+          <SummaryCard
+            title="Employees"
+            value={stats.employeeCount}
+            icon={Users}
+            linkTo="/admin/employees"
+            actionText="Manage Team"
+          />
+          <SummaryCard
+            title="Join Requests"
+            value={stats.joinRequestCount}
+            icon={Users}
+            linkTo="/admin/join-requests"
+            actionText="Review Now"
+            highlight={stats.joinRequestCount > 0}
+          />
         </div>
-
-        {/* Filters */}
-        <Card className="mb-8 shadow-card">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Filter className="w-5 h-5" />
-              Filters & Search
-            </CardTitle>
-            <CardDescription>Filter and search through all expenses</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="search">Search</Label>
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input
-                    id="search"
-                    placeholder="Vendor, description, employee..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Category</Label>
-                <Select value={filterCategory} onValueChange={setFilterCategory}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Categories</SelectItem>
-                    {categories.map(cat => (
-                      <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Employee</Label>
-                <Select value={filterEmployee} onValueChange={setFilterEmployee}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Employees</SelectItem>
-                    {employees.map(emp => (
-                      <SelectItem key={emp.id} value={emp.email}>
-                        {emp.full_name || emp.email}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Status</Label>
-                <Select value={filterStatus} onValueChange={setFilterStatus}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Statuses</SelectItem>
-                    <SelectItem value="pending">Pending</SelectItem>
-                    <SelectItem value="approved">Approved</SelectItem>
-                    <SelectItem value="paid">Paid</SelectItem>
-                    <SelectItem value="rejected">Rejected</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="dateFrom">From Date</Label>
-                <div className="relative">
-                  <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input
-                    id="dateFrom"
-                    type="date"
-                    value={filterDateFrom}
-                    onChange={(e) => setFilterDateFrom(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="dateTo">To Date</Label>
-                <div className="relative">
-                  <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input
-                    id="dateTo"
-                    type="date"
-                    value={filterDateTo}
-                    onChange={(e) => setFilterDateTo(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {(searchTerm || filterCategory !== "all" || filterEmployee !== "all" || filterStatus !== "all" || filterDateFrom || filterDateTo) && (
-              <div className="mt-4 flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    setSearchTerm("");
-                    setFilterCategory("all");
-                    setFilterEmployee("all");
-                    setFilterStatus("all");
-                    setFilterDateFrom("");
-                    setFilterDateTo("");
-                  }}
-                >
-                  Clear Filters
-                </Button>
-                <span className="text-sm text-muted-foreground">
-                  Showing {filteredExpenses.length} of {allExpenses.length} expenses
-                </span>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Expenses List - single view (tabs removed) */}
-        <Card className="shadow-card">
-          <CardHeader>
-            <CardTitle>Expense Details</CardTitle>
-            <CardDescription>Complete list of all expenses</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {filteredExpenses.length === 0 ? (
-                <p className="text-center text-muted-foreground py-8">No expenses found</p>
-              ) : isMobile ? (
-                // Mobile view - use MobileExpenseCard
-                filteredExpenses.map((expense) => (
-                  <MobileExpenseCard
-                    key={expense.id}
-                    expense={expense}
-                    onView={() => setSelectedExpense(expense)}
-                    onApprove={expense.status === "pending" ? () => {
-                      setSelectedExpense(expense);
-                      setManagerNotes("");
-                    } : undefined}
-                    onReject={expense.status === "pending" ? () => {
-                      setSelectedExpense(expense);
-                      setManagerNotes("");
-                    } : undefined}
-                    showActions={expense.status === "pending"}
-                  />
-                ))
-              ) : (
-                // Desktop view
-                filteredExpenses.map((expense) => (
-                  <div
-                    key={expense.id}
-                    className="flex items-center justify-between p-4 rounded-lg border border-border hover:shadow-sm transition-all"
-                  >
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                          <span className="text-sm font-semibold text-primary">
-                            {expense.employee.full_name.split(" ").map((n) => n[0]).join("")}
-                          </span>
-                        </div>
-                        <div>
-                          <p className="font-medium text-foreground">{expense.vendor}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {expense.employee.full_name} • {expense.category}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2 ml-13">
-                        <Badge variant="outline" className={getStatusColor(expense.status)}>
-                          {expense.status === "pending" && <Clock className="w-3 h-3 mr-1" />}
-                          {expense.status === "approved" && <CheckCircle className="w-3 h-3 mr-1" />}
-                          {expense.status === "rejected" && <XCircle className="w-3 h-3 mr-1" />}
-                          {expense.status === "paid" && <DollarSign className="w-3 h-3 mr-1" />}
-                          <span className="capitalize">{expense.status}</span>
-                        </Badge>
-                        <span className="text-xs text-muted-foreground">
-                          {new Date(expense.date).toLocaleDateString()}
-                        </span>
-                      </div>
-                      <p className="text-sm text-muted-foreground mt-2 ml-13">{expense.description}</p>
-                      {expense.attachments && expense.attachments.length > 0 && (
-                        <div className="flex gap-2 mt-2 ml-13">
-                          {expense.attachments.map((url, idx) => (
-                            <Button 
-                              key={idx} 
-                              variant="outline" 
-                              size="sm"
-                              onClick={() => window.open(url, '_blank')}
-                            >
-                              <Receipt className="w-3 h-3 mr-1" />
-                              Receipt {expense.attachments!.length > 1 ? `${idx + 1}` : ''}
-                            </Button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-4">
-                      <p className="text-xl font-semibold text-foreground">₹{expense.amount.toFixed(2)}</p>
-                      {expense.status === "pending" && (
-                        <div className="flex gap-2">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="text-destructive hover:bg-destructive/10"
-                            onClick={() => {
-                              setSelectedExpense(expense);
-                              setManagerNotes("");
-                            }}
-                          >
-                            <XCircle className="w-4 h-4 mr-1" />
-                            Reject
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="hero"
-                            onClick={() => {
-                              setSelectedExpense(expense);
-                              setManagerNotes("");
-                            }}
-                          >
-                            <CheckCircle className="w-4 h-4 mr-1" />
-                            Approve
-                          </Button>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Pending Join Requests Section */}
-        {joinRequests.length > 0 && (
-          <Card className="shadow-card mb-8 border-primary/20">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="w-5 h-5 text-primary" />
-                Pending Join Requests
-                <Badge variant="default" className="ml-2">{joinRequests.length}</Badge>
-              </CardTitle>
-              <CardDescription>Review and approve employees requesting to join your organization</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {joinRequests.map((request) => (
-                  <div 
-                    key={request.id}
-                    id={`jr-${request.id}`}
-                    className="flex flex-col sm:flex-row sm:items-center gap-4 p-4 rounded-lg border border-border hover:shadow-sm transition-shadow"
-                  >
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-1">
-                        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                          <span className="text-sm font-semibold text-primary">
-                            {request.employee.full_name.split(" ").map((n) => n[0]).join("")}
-                          </span>
-                        </div>
-                        <div className="min-w-0">
-                          <p className="font-medium text-foreground">{request.employee.full_name}</p>
-                          <p className="text-sm text-muted-foreground truncate">{request.employee.email}</p>
-                        </div>
-                      </div>
-                      <p className="text-xs text-muted-foreground sm:ml-13 mt-2 sm:mt-0">
-                        Requested {new Date(request.created_at).toLocaleDateString()} at {new Date(request.created_at).toLocaleTimeString()}
-                      </p>
-                    </div>
-                    <div className="flex gap-2 w-full sm:w-auto">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="text-destructive hover:bg-destructive/10 flex-1 sm:flex-none"
-                        onClick={() => handleJoinRequestAction(request.id, 'reject')}
-                        disabled={isSubmitting}
-                      >
-                        <XCircle className="w-4 h-4 mr-1" />
-                        Reject
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="hero"
-                        className="flex-1 sm:flex-none"
-                        onClick={() => handleJoinRequestAction(request.id, 'approve')}
-                        disabled={isSubmitting}
-                      >
-                        <CheckCircle className="w-4 h-4 mr-1" />
-                        Approve
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Employees Table */}
-        <Card className="shadow-card">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Users className="w-5 h-5" />
-              Employees & Pending Expenses
-            </CardTitle>
-            <CardDescription>Click on an employee to review their pending expenses</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {/* Mobile view - Cards */}
-            <div className="block md:hidden space-y-4">
-              {employees.map((employee) => (
-                <Card key={employee.id} className="p-4">
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                        <span className="text-sm font-semibold text-primary">
-                          {employee.full_name?.split(" ").map((n) => n[0]).join("") || "N/A"}
-                        </span>
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="font-medium text-foreground">{employee.full_name || "N/A"}</p>
-                        <p className="text-sm text-muted-foreground truncate">{employee.email}</p>
-                      </div>
-                    </div>
-                    
-                    <div className="grid grid-cols-3 gap-2 text-center">
-                      <div className="p-2 bg-muted/50 rounded">
-                        <p className="text-xs text-muted-foreground mb-1">Pending</p>
-                        <p className={`text-sm font-semibold ${employee.totalPending > 0 ? "text-primary" : ""}`}>
-                          ₹{employee.totalPending.toFixed(2)}
-                        </p>
-                      </div>
-                      <div className="p-2 bg-muted/50 rounded">
-                        <p className="text-xs text-muted-foreground mb-1">To be paid</p>
-                        <p className={`text-sm font-semibold ${employee.totalToBePaid > 0 ? "text-primary" : ""}`}>
-                          ₹{employee.totalToBePaid.toFixed(2)}
-                        </p>
-                      </div>
-                      <div className="p-2 bg-muted/50 rounded">
-                        <p className="text-xs text-muted-foreground mb-1">Paid</p>
-                        <p className={`text-sm font-semibold ${employee.totalPaid > 0 ? "text-primary" : ""}`}>
-                          ₹{employee.totalPaid.toFixed(2)}
-                        </p>
-                      </div>
-                    </div>
-                    
-                    <Button
-                      size="sm"
-                      className="w-full"
-                      onClick={() => handleEmployeeClick(employee.id)}
-                    >
-                      View Expenses
-                    </Button>
-                  </div>
-                </Card>
-              ))}
-              {employees.length === 0 && (
-                <p className="text-center text-muted-foreground py-8">
-                  No employees yet. Share your organization name for employees to join.
-                </p>
-              )}
-            </div>
-
-            {/* Desktop view - Table */}
-            <div className="hidden md:block">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead className="text-right">Pending</TableHead>
-                    <TableHead className="text-right">To be paid</TableHead>
-                    <TableHead className="text-right">Paid</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {employees.map((employee) => (
-                    <TableRow key={employee.id}>
-                      <TableCell className="font-medium">{employee.full_name || "N/A"}</TableCell>
-                      <TableCell>{employee.email}</TableCell>
-                      <TableCell className="text-right">
-                        <span className={employee.totalPending > 0 ? "font-bold text-primary" : ""}>
-                          ₹{employee.totalPending.toFixed(2)}
-                        </span>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <span className={employee.totalToBePaid > 0 ? "font-bold text-primary" : ""}>
-                          ₹{employee.totalToBePaid.toFixed(2)}
-                        </span>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <span className={employee.totalPaid > 0 ? "font-bold text-primary" : ""}>
-                          ₹{employee.totalPaid.toFixed(2)}
-                        </span>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button
-                          size="sm"
-                          onClick={() => handleEmployeeClick(employee.id)}
-                        >
-                          View Expenses
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                  {employees.length === 0 && (
-                    <TableRow>
-                      <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
-                        No employees yet. Share your organization name for employees to join.
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-          </CardContent>
-        </Card>
       </main>
-
-      {/* Employee Expenses Modal */}
-      <Dialog open={!!selectedEmployee} onOpenChange={() => setSelectedEmployee(null)}>
-        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{selectedEmployee?.full_name}'s Pending Expenses</DialogTitle>
-            <DialogDescription>{selectedEmployee?.email}</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            {employeeExpenses.map((expense) => (
-              <Card key={expense.id} className="shadow-card">
-                <CardHeader>
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <CardTitle className="text-lg">{expense.vendor}</CardTitle>
-                      <CardDescription>{new Date(expense.date).toLocaleDateString()}</CardDescription>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-2xl font-bold">₹{expense.amount.toFixed(2)}</div>
-                      <Badge variant="secondary">{expense.category}</Badge>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm mb-4">{expense.description}</p>
-                  {expense.attachments && expense.attachments.length > 0 && (
-                    <div className="mb-4">
-                      <Label className="text-xs text-muted-foreground mb-2 block">Receipts</Label>
-                      <div className="flex flex-wrap gap-2">
-                        {expense.attachments.map((url, idx) => (
-                          <Button 
-                            key={idx} 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => window.open(url, '_blank')}
-                          >
-                            <Receipt className="w-3 h-3 mr-1" />
-                            View Receipt {expense.attachments!.length > 1 ? `${idx + 1}` : ''}
-                          </Button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  <div className="flex gap-2">
-                    <Button variant="hero"
-                      size="sm"
-                      onClick={() => {
-                        setSelectedExpense(expense);
-                        setManagerNotes("");
-                      }}
-                      
-                    >
-                      <CheckCircle className="w-4 h-4 mr-1" />
-                      Approve
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      onClick={() => {
-                        setSelectedExpense(expense);
-                        setManagerNotes("");
-                      }}
-                    >
-                      <XCircle className="w-4 h-4 mr-1" />
-                      Reject
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-            {employeeExpenses.length === 0 && (
-              <p className="text-center text-muted-foreground py-8">No pending expenses</p>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Expense Action Modal */}
-      <Dialog open={!!selectedExpense} onOpenChange={() => setSelectedExpense(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>
-              {selectedExpense && `${selectedExpense.vendor} - ₹${selectedExpense.amount.toFixed(2)}`}
-            </DialogTitle>
-            <DialogDescription>
-              {selectedExpense && (
-                <div className="space-y-1 mt-2">
-                  <p className="text-sm"><span className="font-medium">Employee:</span> {selectedExpense.employee.full_name}</p>
-                  <p className="text-sm"><span className="font-medium">Category:</span> {selectedExpense.category}</p>
-                  <p className="text-sm"><span className="font-medium">Date:</span> {new Date(selectedExpense.date).toLocaleDateString()}</p>
-                  <p className="text-sm"><span className="font-medium">Description:</span> {selectedExpense.description}</p>
-                  {selectedExpense.attachments && selectedExpense.attachments.length > 0 && (
-                    <div className="mt-3">
-                      <Label className="text-xs font-medium">Attached Receipts</Label>
-                      <div className="flex flex-wrap gap-2 mt-2">
-                        {selectedExpense.attachments.map((url, idx) => (
-                          <Button 
-                            key={idx} 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => window.open(url, '_blank')}
-                          >
-                            <Receipt className="w-3 h-3 mr-1" />
-                            Document {idx + 1}
-                          </Button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="notes">Manager Notes</Label>
-              <Textarea
-                id="notes"
-                placeholder="Add any comments or feedback..."
-                value={managerNotes}
-                onChange={(e) => setManagerNotes(e.target.value)}
-                rows={3}
-              />
-            </div>
-            <div className="flex gap-2">
-               <Button variant="hero"
-                className="flex-1"
-                onClick={() => selectedExpense && handleExpenseAction(selectedExpense.id, "approved")}
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4 mr-1" />}
-                Approve
-              </Button>
-              <Button
-                className="flex-1"
-                variant="destructive"
-                onClick={() => selectedExpense && handleExpenseAction(selectedExpense.id, "rejected")}
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <XCircle className="w-4 h-4 mr-1" />}
-                Reject
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };
