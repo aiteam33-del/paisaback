@@ -4,7 +4,7 @@ import { Navigation } from "@/components/ui/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2, Search, Filter } from "lucide-react";
+import { Loader2, Search, Filter, ArrowLeft } from "lucide-react";
 import { ExpenseCard } from "@/components/ExpenseCard";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -169,6 +169,14 @@ const AdminExpenses = () => {
 
       <main className="container mx-auto px-4 pt-24 pb-16 max-w-7xl">
         <div className="mb-8">
+          <Button
+            variant="ghost"
+            onClick={() => navigate("/admin")}
+            className="mb-4"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Dashboard
+          </Button>
           <h1 className="text-4xl font-bold text-foreground mb-2">Expense Management</h1>
           <p className="text-lg text-muted-foreground">Review and manage all employee expenses</p>
         </div>
