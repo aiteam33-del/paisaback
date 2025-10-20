@@ -106,20 +106,24 @@ const OrganizationAdmin = () => {
       <Navigation />
 
       <main className="container mx-auto px-4 pt-24 pb-16 max-w-7xl">
-        <div className="mb-8">
-          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-2">
-            <div>
+        {/* Enhanced header with gradient background */}
+        <div className="mb-8 -mx-4 px-4 py-6 bg-gradient-to-b from-background/50 to-background rounded-lg">
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-3">
+            <div className="flex-1">
               <div className="flex items-center gap-3 mb-2">
                 <Building2 className="w-8 h-8 text-primary" />
-                <h1 className="text-4xl font-bold text-foreground">{organization?.name || "Organization"}</h1>
+                <h1 className="text-4xl font-bold text-primary">{organization?.name || "Organization"}</h1>
               </div>
-              <p className="text-lg text-muted-foreground">Admin Dashboard - Action Center</p>
+              <div className="border-l-2 border-primary pl-3">
+                <p className="text-lg text-muted-foreground">Admin Dashboard - Action Center</p>
+              </div>
             </div>
             <Button
               onClick={() => navigate("/admin/analytics")}
-              className="bg-primary hover:bg-primary/90 text-primary-foreground"
+              size="lg"
+              className="bg-primary hover:bg-primary/90 text-white shadow-elegant"
             >
-              <BarChart3 className="w-4 h-4 mr-2" />
+              <BarChart3 className="w-5 h-5 mr-2" />
               View Analytics
             </Button>
           </div>
