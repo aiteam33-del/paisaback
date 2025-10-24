@@ -86,13 +86,51 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
+    // Regenerate fresh signed URLs for all attachments (old signed URLs expire)
+    const expensesWithFreshUrls = await Promise.all(
+      (expenses || []).map(async (expense: any) => {
+        if (expense.attachments && Array.isArray(expense.attachments) && expense.attachments.length > 0) {
+          const freshUrls = await Promise.all(
+            expense.attachments.map(async (url: string) => {
+              try {
+                // Extract the file path from the existing URL
+                // URLs are in format: .../storage/v1/object/sign/receipts/filename?token=...
+                const match = url.match(/\/receipts\/([^?]+)/);
+                if (!match) return url; // Return original if parsing fails
+                
+                const fileName = match[1];
+                
+                // Generate a fresh signed URL (30 days expiration)
+                const { data: signedData, error: signError } = await supabase.storage
+                  .from('receipts')
+                  .createSignedUrl(fileName, 60 * 60 * 24 * 30);
+                
+                if (signError || !signedData) {
+                  console.error('Error generating signed URL:', signError);
+                  return url; // Return original if signing fails
+                }
+                
+                return signedData.signedUrl;
+              } catch (err) {
+                console.error('Error processing attachment URL:', err);
+                return url; // Return original on error
+              }
+            })
+          );
+          
+          return { ...expense, attachments: freshUrls };
+        }
+        return expense;
+      })
+    );
+
     return new Response(
       JSON.stringify({
         user: {
           full_name: profile.full_name,
           email: profile.email
         },
-        expenses: expenses || []
+        expenses: expensesWithFreshUrls
       }),
       {
         status: 200,
