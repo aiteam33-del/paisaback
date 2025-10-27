@@ -38,33 +38,47 @@ serve(async (req) => {
       });
     }
 
-    // Get organization
-    const { data: orgData } = await supabase
+    // Resolve organization context
+    const { data: orgByAdmin } = await supabase
       .from('organizations')
-      .select('*')
+      .select('id')
       .eq('admin_user_id', user.id)
-      .single();
+      .maybeSingle();
 
-    if (!orgData) {
-      return new Response(JSON.stringify({ error: 'No organization found' }), {
-        status: 404,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
+    let orgId: string | null = orgByAdmin?.id ?? null;
+
+    if (!orgId) {
+      // Fall back to user's profile membership org
+      const { data: profileOrg } = await supabase
+        .from('profiles')
+        .select('organization_id')
+        .eq('id', user.id)
+        .maybeSingle();
+      orgId = profileOrg?.organization_id ?? null;
     }
 
-    // Get all expenses for the organization
-    const { data: employees } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('organization_id', orgData.id);
-
-    const employeeIds = (employees || []).map(e => e.id);
-    
-    const { data: expenses } = await supabase
+    let expensesQuery = supabase
       .from('expenses')
       .select('*')
-      .in('user_id', employeeIds)
       .order('date', { ascending: false });
+
+    if (orgId) {
+      const { data: employees } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('organization_id', orgId);
+      const employeeIds = (employees || []).map(e => e.id);
+      if (employeeIds.length > 0) {
+        expensesQuery = expensesQuery.in('user_id', employeeIds);
+      } else {
+        expensesQuery = expensesQuery.eq('user_id', user.id);
+      }
+    } else {
+      // No org context: analyze only the current user's expenses
+      expensesQuery = expensesQuery.eq('user_id', user.id);
+    }
+
+    const { data: expenses } = await expensesQuery;
 
     if (!expenses || expenses.length === 0) {
       return new Response(JSON.stringify({ 
@@ -93,6 +107,8 @@ serve(async (req) => {
         date: e.date
       }))
     };
+
+    const fallbackAnalysis = `Executive summary: Total ₹${expenseSummary.total_amount.toFixed(0)} across ${expenseSummary.total_expenses} expenses. Top categories: ${Object.entries(expenseSummary.categories).sort((a,b)=>Number(b[1])-Number(a[1])).slice(0,3).map(([k,v])=>`${k} (₹${Number(v).toFixed(0)})`).join(', ')}. Approval mix — Approved: ${expenseSummary.approved}, Pending: ${expenseSummary.pending}, Rejected: ${expenseSummary.rejected}.\n\nRecommendations:\n- Tighten policy on top 1-2 categories with caps and pre-approvals.\n- Vendor consolidation for top spend to target 5–12% savings.\n- SLA on pending approvals to lift throughput, monthly audits on rejects.\n- Instrument dashboards with monthly category budgets and alerts.\n\nAction Plan (30/60/90):\n- 30d: publish policy + auto-approvals; tag vendors; enable alerts.\n- 60d: negotiate vendor rates; implement per-category budgets.\n- 90d: audit controls, benchmark vs peers, revise caps.`;
 
     console.log('Analyzing expenses with OpenAI...');
 
@@ -142,17 +158,19 @@ Please provide:
     if (!response.ok) {
       const errorText = await response.text();
       console.error('OpenAI API error:', response.status, errorText);
+      // Return a structured fallback instead of failing hard
       return new Response(JSON.stringify({ 
-        error: 'Failed to generate analysis',
-        details: errorText
+        analysis: fallbackAnalysis,
+        summary: expenseSummary,
+        note: 'AI fallback used due to upstream error'
       }), {
-        status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
 
     const data = await response.json();
-    const analysis = data.choices[0].message.content;
+    let analysis: string = (data?.choices?.[0]?.message?.content ?? '').trim();
+    if (!analysis) analysis = fallbackAnalysis;
 
     console.log('Analysis generated successfully');
 
