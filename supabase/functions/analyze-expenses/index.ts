@@ -107,11 +107,11 @@ serve(async (req) => {
         messages: [
           {
             role: 'system',
-            content: 'You are a financial analyst specializing in expense management and business optimization. Provide detailed, actionable insights based on expense data.'
+            content: 'You are a seasoned CFO and VC advisor managing a $2B portfolio. Deliver board-ready insights, quantified risks, and stepwise optimizations. Be concise, structured, and decisive.'
           },
           {
             role: 'user',
-            content: `Analyze the following expense data and provide detailed insights and recommendations:
+            content: `Analyze the following expense data and provide a VC-grade review and recommendations:
 
 Total Expenses: ${expenseSummary.total_expenses}
 Total Amount: ₹${expenseSummary.total_amount.toFixed(2)}
@@ -126,16 +126,16 @@ Recent Expenses:
 ${expenseSummary.recent_expenses.map(e => `- ${e.vendor} (${e.category}): ₹${e.amount} - ${e.status}`).join('\n')}
 
 Please provide:
-1. Key Insights: What are the main spending patterns?
-2. Areas of Concern: Are there any red flags or unusual spending?
-3. Recommendations: Specific actions to improve expense management
-4. Cost Optimization: Ways to reduce unnecessary spending
-5. Process Improvements: Suggestions for better expense tracking and approval workflows
-
-Format your response in clear sections with bullet points for easy reading.`
+1. Executive Summary (3-5 bullets)
+2. Spend Drivers & Anomalies (with numbers)
+3. Risks & Controls (prioritized)
+4. Optimization Levers (projected savings %/₹)
+5. Policy & Process Improvements
+6. 30/60/90-Day Action Plan with owners & KPIs
+7. Benchmarks & Guardrails (where applicable)`
           }
         ],
-        max_completion_tokens: 2000
+        max_tokens: 2000
       }),
     });
 

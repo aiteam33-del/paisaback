@@ -256,19 +256,25 @@ const ExpenseAnalytics = () => {
     try {
       const { data, error } = await supabase.functions.invoke('analyze-expenses', {
         headers: {
-          Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
-        }
+          Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+        },
       });
 
       if (error) throw error;
 
+      if (data?.error) {
+        throw new Error(typeof data.error === 'string' ? data.error : JSON.stringify(data.error));
+      }
+
       if (data?.analysis) {
-        setAiAnalysis(data.analysis);
+        setAiAnalysis(data.analysis as string);
         toast.success("AI analysis generated successfully");
+      } else {
+        toast.info("No analysis returned. Try broadening the date range.");
       }
     } catch (error: any) {
       console.error('AI analysis error:', error);
-      toast.error(error.message || "Failed to generate AI analysis");
+      toast.error(error?.message || "Failed to generate AI analysis");
     } finally {
       setIsAnalyzing(false);
     }
@@ -484,7 +490,7 @@ const ExpenseAnalytics = () => {
                       <Sparkles className="w-6 h-6 text-primary-foreground" />
                     </div>
                     <div>
-                      <CardTitle className="text-2xl">AI-Powered Insights & Recommendations</CardTitle>
+                      <CardTitle className="text-2xl">Remarks — VC-grade analysis</CardTitle>
                       <CardDescription className="mt-1">
                         Get detailed analysis and actionable recommendations to optimize your expense management
                       </CardDescription>
