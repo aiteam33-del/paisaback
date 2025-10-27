@@ -7,6 +7,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 interface Message {
   role: "user" | "assistant";
@@ -138,19 +140,36 @@ export const AnalyticsChatbot = () => {
         transition={{ type: "spring", stiffness: 300, damping: 30 }}
         className={`flex ${isUser ? "justify-end" : "justify-start"} mb-4`}
       >
-        <div className={`max-w-[85%] ${isUser ? "bg-primary text-primary-foreground" : "bg-muted/80 backdrop-blur-sm"} rounded-2xl px-4 py-3 shadow-lg`}>
+        <div className={`max-w-[90%] ${isUser ? "bg-primary text-primary-foreground" : "bg-muted/90 backdrop-blur-sm"} rounded-2xl px-5 py-4 shadow-lg`}>
           {isUser ? (
             <p className="text-sm whitespace-pre-wrap leading-relaxed">{cleanContent}</p>
           ) : (
-            <div className="prose prose-sm prose-invert max-w-none">
+            <div className="prose prose-sm dark:prose-invert max-w-none">
               <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
                 components={{
-                  p: ({children}) => <p className="text-sm leading-relaxed mb-2 last:mb-0">{children}</p>,
+                  p: ({children}) => <p className="text-sm leading-relaxed mb-3 last:mb-0 text-foreground">{children}</p>,
                   strong: ({children}) => <strong className="font-bold text-primary">{children}</strong>,
-                  ul: ({children}) => <ul className="list-disc list-inside space-y-1 my-2">{children}</ul>,
-                  ol: ({children}) => <ol className="list-decimal list-inside space-y-1 my-2">{children}</ol>,
-                  li: ({children}) => <li className="text-sm">{children}</li>,
-                  code: ({children}) => <code className="bg-background/50 px-1.5 py-0.5 rounded text-xs font-mono">{children}</code>,
+                  ul: ({children}) => <ul className="list-disc pl-4 space-y-1.5 my-3 text-foreground">{children}</ul>,
+                  ol: ({children}) => <ol className="list-decimal pl-4 space-y-1.5 my-3 text-foreground">{children}</ol>,
+                  li: ({children}) => <li className="text-sm leading-relaxed">{children}</li>,
+                  code: ({children}) => <code className="bg-background/70 px-2 py-1 rounded text-xs font-mono text-primary border border-border/30">{children}</code>,
+                  table: ({children}) => (
+                    <div className="my-4 rounded-lg border border-border/50 overflow-hidden bg-background/50">
+                      <Table>
+                        {children}
+                      </Table>
+                    </div>
+                  ),
+                  thead: ({children}) => <TableHeader className="bg-primary/10">{children}</TableHeader>,
+                  tbody: ({children}) => <TableBody>{children}</TableBody>,
+                  tr: ({children}) => <TableRow className="border-border/30">{children}</TableRow>,
+                  th: ({children}) => <TableHead className="text-xs font-semibold text-foreground py-3 px-4">{children}</TableHead>,
+                  td: ({children}) => <TableCell className="text-sm py-3 px-4 text-foreground">{children}</TableCell>,
+                  h1: ({children}) => <h1 className="text-lg font-bold text-foreground mb-3 mt-4">{children}</h1>,
+                  h2: ({children}) => <h2 className="text-base font-semibold text-foreground mb-2 mt-3">{children}</h2>,
+                  h3: ({children}) => <h3 className="text-sm font-semibold text-foreground mb-2 mt-2">{children}</h3>,
+                  blockquote: ({children}) => <blockquote className="border-l-4 border-primary/50 pl-4 my-3 text-muted-foreground italic">{children}</blockquote>,
                 }}
               >
                 {cleanContent}

@@ -164,7 +164,7 @@ YOUR ROLE:
 CRITICAL RESPONSE FORMAT:
 Return ONLY valid JSON (no markdown, no backticks, no extra text):
 {
-  "response": "Natural language answer with **markdown** support",
+  "response": "Natural language answer with **markdown** support. Use markdown tables for tabular data.",
   "metadata": {
     "type": "insight|summary|anomaly|comparison",
     "links": [{"label": "View Details", "url": "/admin/expenses"}],
@@ -172,10 +172,27 @@ Return ONLY valid JSON (no markdown, no backticks, no extra text):
   }
 }
 
+IMPORTANT TABLE FORMATTING:
+When displaying lists of data (employees, vendors, categories), ALWAYS use proper markdown tables:
+- Use pipe characters | to separate columns
+- Include a header row with column names
+- Include a separator row with dashes
+- Align currency values to the right
+- Keep it clean and readable
+
+Example table format:
+| Employee | Total Amount | Count |
+|----------|-------------:|------:|
+| John Doe | ₹24,900.00   | 8     |
+| Jane Smith | ₹20,500.00 | 6     |
+
 EXAMPLE RESPONSES:
 
 Query: "Top vendors this month"
-{"response":"📊 **Top Vendors This Month:**\\n\\n1. **Sharma** - ₹24,900 (8 transactions)\\n2. **ZODIACAL OVERSEAS** - ₹21,000 (4 transactions)\\n3. **Abhishek Sharma** - ₹20,000 (6 transactions)\\n\\nThese 3 vendors account for **₹65,900** (~45% of total spend).","metadata":{"type":"insight","links":[{"label":"View All Vendors","url":"/admin/expenses"}],"suggestions":["Show vendor trends","Compare with last month"]}}
+{"response":"📊 **Top Vendors This Month:**\\n\\n| Vendor | Amount | Transactions |\\n|--------|-------:|---------:|\\n| Sharma | ₹24,900 | 8 |\\n| ZODIACAL OVERSEAS | ₹21,000 | 4 |\\n| Abhishek Sharma | ₹20,000 | 6 |\\n\\nThese 3 vendors account for **₹65,900** (~45% of total spend).","metadata":{"type":"insight","links":[{"label":"View All Vendors","url":"/admin/expenses"}],"suggestions":["Show vendor trends","Compare with last month"]}}
+
+Query: "Total reimbursements by employee"
+{"response":"👥 **Total Reimbursements by Employee:**\\n\\n| Employee | Total Amount | Expense Count |\\n|----------|-------------:|--------------:|\\n| Lalit ji | ₹24,900.00 | 1 |\\n| employee12 | ₹20,519.55 | 3 |\\n| garvit | ₹16,110.00 | 2 |\\n| employee 2 | ₹12,812.50 | 4 |\\n\\n**Lalit ji** has the highest total reimbursements at **₹24,900.00**.","metadata":{"type":"summary","links":[{"label":"View All Employees","url":"/admin/employees"}],"suggestions":["Show by department","Filter by status"]}}
 
 Query: "Approved expenses last 24 hours"
 {"response":"✅ **Last 24 Hours Approvals:**\\n\\nYou've approved **₹${expenseSummary.last24h.approved.toFixed(2)}** from ${expenseSummary.last24h.count} total expenses submitted.","metadata":{"type":"summary","links":[{"label":"Review Expenses","url":"/admin/expenses?status=approved"}],"suggestions":["Show pending expenses","See by employee"]}}
