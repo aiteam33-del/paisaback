@@ -19,6 +19,7 @@ import EmployeeExpenseView from "./pages/EmployeeExpenseView";
 import PendingRequest from "./pages/PendingRequest";
 import RejectedRequest from "./pages/RejectedRequest";
 import ExpenseAnalytics from "./pages/ExpenseAnalytics";
+import AnomalyDashboard from "./pages/AnomalyDashboard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -44,6 +45,7 @@ const App = () => (
               <Route path="/admin/employees" element={<AdminEmployees />} />
               <Route path="/admin/join-requests" element={<AdminJoinRequests />} />
               <Route path="/admin/analytics" element={<ExpenseAnalytics />} />
+              <Route path="/admin/anomalies" element={<AnomalyDashboard />} />
               <Route path="/admin/employee/:employeeId" element={<EmployeeExpenseView />} />
               <Route path="/pending-request" element={<PendingRequest />} />
               <Route path="/rejected-request" element={<RejectedRequest />} />

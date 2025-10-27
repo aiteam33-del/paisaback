@@ -4,7 +4,7 @@ import { Navigation } from "@/components/ui/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Building2, Users, Clock, CheckCircle, Loader2, BarChart3 } from "lucide-react";
+import { Building2, Users, Clock, CheckCircle, Loader2, BarChart3, Shield } from "lucide-react";
 import { SummaryCard } from "@/components/SummaryCard";
 import { Button } from "@/components/ui/button";
 
@@ -118,14 +118,25 @@ const OrganizationAdmin = () => {
                 <p className="text-lg text-muted-foreground">Admin Dashboard - Action Center</p>
               </div>
             </div>
-            <Button
-              onClick={() => navigate("/admin/analytics")}
-              size="lg"
-              className="bg-primary hover:bg-primary/90 text-white shadow-elegant"
-            >
-              <BarChart3 className="w-5 h-5 mr-2" />
-              View Analytics
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                onClick={() => navigate("/admin/analytics")}
+                size="lg"
+                variant="outline"
+                className="shadow-elegant"
+              >
+                <BarChart3 className="w-5 h-5 mr-2" />
+                Analytics
+              </Button>
+              <Button
+                onClick={() => navigate("/admin/anomalies")}
+                size="lg"
+                className="bg-destructive hover:bg-destructive/90 text-white shadow-elegant"
+              >
+                <Shield className="w-5 h-5 mr-2" />
+                Anomaly Detection
+              </Button>
+            </div>
           </div>
         </div>
 
