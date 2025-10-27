@@ -2,9 +2,10 @@ import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ChevronDown, ChevronUp, ExternalLink } from "lucide-react";
+import { ChevronDown, ChevronUp, ExternalLink, X } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 interface ExpenseCardProps {
   expense: {
     id: string;
@@ -27,6 +28,8 @@ interface ExpenseCardProps {
 
 export const ExpenseCard = ({ expense, onAction, onViewDetails }: ExpenseCardProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [receiptUrl, setReceiptUrl] = useState<string | null>(null);
+  const [isLoadingReceipt, setIsLoadingReceipt] = useState(false);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -104,15 +107,14 @@ export const ExpenseCard = ({ expense, onAction, onViewDetails }: ExpenseCardPro
                   className="mt-2"
                   onClick={async (e) => {
                     e.stopPropagation();
+                    setIsLoadingReceipt(true);
                     try {
                       const raw = expense.attachments![0];
-                      // Extract file path after /receipts/
                       let filePath = '';
                       const match = typeof raw === 'string' ? raw.match(/\/receipts\/([^?]+)/) : null;
                       if (match && match[1]) {
                         filePath = match[1];
                       } else {
-                        // if DB stored direct path
                         filePath = raw;
                       }
                       const { data, error } = await supabase.storage
@@ -120,18 +122,27 @@ export const ExpenseCard = ({ expense, onAction, onViewDetails }: ExpenseCardPro
                         .createSignedUrl(filePath, 60 * 60 * 24 * 30);
                       if (error || !data) {
                         console.error('Signed URL error:', error);
-                        window.open(raw as string, '_blank');
-                        return;
+                        setReceiptUrl(raw as string);
+                      } else {
+                        setReceiptUrl(data.signedUrl);
                       }
-                      window.open(data.signedUrl, '_blank');
                     } catch (err) {
                       console.error('Receipt open failed:', err);
-                      window.open(expense.attachments![0] as string, '_blank');
+                      setReceiptUrl(expense.attachments![0] as string);
+                    } finally {
+                      setIsLoadingReceipt(false);
                     }
                   }}
+                  disabled={isLoadingReceipt}
                 >
-                  <ExternalLink className="w-4 h-4 mr-2" />
-                  View Receipt
+                  {isLoadingReceipt ? (
+                    <>Loading...</>
+                  ) : (
+                    <>
+                      <ExternalLink className="w-4 h-4 mr-2" />
+                      View Receipt
+                    </>
+                  )}
                 </Button>
               </div>
             )}
@@ -178,6 +189,28 @@ export const ExpenseCard = ({ expense, onAction, onViewDetails }: ExpenseCardPro
           </div>
         )}
       </CardContent>
+
+      {/* Receipt Viewer Dialog */}
+      <Dialog open={!!receiptUrl} onOpenChange={() => setReceiptUrl(null)}>
+        <DialogContent className="max-w-4xl max-h-[90vh]">
+          <DialogHeader>
+            <DialogTitle>Receipt - {expense.vendor}</DialogTitle>
+          </DialogHeader>
+          <div className="relative w-full h-[70vh] overflow-auto">
+            {receiptUrl && (
+              <img 
+                src={receiptUrl} 
+                alt="Receipt" 
+                className="w-full h-auto object-contain"
+                onError={(e) => {
+                  console.error('Image load failed');
+                  e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48dGV4dCB4PSI1MCUiIHk9IjUwJSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+RmFpbGVkIHRvIGxvYWQgcmVjZWlwdDwvdGV4dD48L3N2Zz4=';
+                }}
+              />
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 };
