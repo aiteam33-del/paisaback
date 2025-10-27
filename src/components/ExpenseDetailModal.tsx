@@ -39,7 +39,10 @@ export const ExpenseDetailModal = ({ expense, open, onOpenChange }: ExpenseDetai
     try {
       const { data, error } = await supabase
         .from("expenses")
-        .select("*")
+        .select(`
+          *,
+          profiles!expenses_user_id_fkey(full_name, email)
+        `)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
@@ -164,46 +167,55 @@ export const ExpenseDetailModal = ({ expense, open, onOpenChange }: ExpenseDetai
                           Loading duplicates...
                         </div>
                       ) : duplicateExpenses.length > 0 ? (
-                        duplicateExpenses.map((dup, index) => (
-                          <div 
-                            key={dup.id} 
-                            className={`p-3 rounded border ${
-                              dup.id === expense.id 
-                                ? 'bg-primary/10 border-primary' 
-                                : 'bg-muted border-border'
-                            }`}
-                          >
-                            <div className="flex items-center justify-between mb-2">
-                              <div className="flex items-center gap-2">
-                                <span className="text-xs font-mono text-muted-foreground">#{index + 1}</span>
-                                {dup.id === expense.id && (
-                                  <Badge variant="default" className="text-xs">Current</Badge>
-                                )}
-                                <Badge variant="outline" className="text-xs">{dup.status}</Badge>
+                        duplicateExpenses.map((dup, index) => {
+                          const employeeName = dup.profiles?.full_name || dup.profiles?.email || 'Unknown Employee';
+                          return (
+                            <div 
+                              key={dup.id} 
+                              className={`p-3 rounded border ${
+                                dup.id === expense.id 
+                                  ? 'bg-primary/10 border-primary' 
+                                  : 'bg-muted border-border'
+                              }`}
+                            >
+                              <div className="flex items-center justify-between mb-2">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-xs font-mono text-muted-foreground">#{index + 1}</span>
+                                  {dup.id === expense.id && (
+                                    <Badge variant="default" className="text-xs">Current</Badge>
+                                  )}
+                                  <Badge variant="outline" className="text-xs">{dup.status}</Badge>
+                                </div>
+                                <span className="text-sm font-bold">₹{Number(dup.amount).toFixed(2)}</span>
                               </div>
-                              <span className="text-sm font-bold">₹{Number(dup.amount).toFixed(2)}</span>
+                              <div className="mb-2">
+                                <span className="text-xs font-medium text-foreground">
+                                  <User className="w-3 h-3 inline mr-1" />
+                                  {employeeName}
+                                </span>
+                              </div>
+                              <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
+                                <div>
+                                  <span className="font-medium">ID:</span> {dup.id.slice(0, 8)}...
+                                </div>
+                                <div>
+                                  <span className="font-medium">Submitted:</span> {format(new Date(dup.created_at), "PP")}
+                                </div>
+                                <div>
+                                  <span className="font-medium">Date:</span> {format(new Date(dup.date), "PP")}
+                                </div>
+                                <div>
+                                  <span className="font-medium">Category:</span> {dup.category}
+                                </div>
+                              </div>
+                              {dup.description && (
+                                <p className="text-xs text-muted-foreground mt-2 line-clamp-2">
+                                  {dup.description}
+                                </p>
+                              )}
                             </div>
-                            <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
-                              <div>
-                                <span className="font-medium">ID:</span> {dup.id.slice(0, 8)}...
-                              </div>
-                              <div>
-                                <span className="font-medium">Submitted:</span> {format(new Date(dup.created_at), "PP")}
-                              </div>
-                              <div>
-                                <span className="font-medium">Date:</span> {format(new Date(dup.date), "PP")}
-                              </div>
-                              <div>
-                                <span className="font-medium">Category:</span> {dup.category}
-                              </div>
-                            </div>
-                            {dup.description && (
-                              <p className="text-xs text-muted-foreground mt-2 line-clamp-2">
-                                {dup.description}
-                              </p>
-                            )}
-                          </div>
-                        ))
+                          );
+                        })
                       ) : (
                         <div className="text-center py-4 text-sm text-muted-foreground">
                           No duplicates found
