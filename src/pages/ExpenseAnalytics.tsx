@@ -92,25 +92,44 @@ const ExpenseAnalytics = () => {
         .select("*")
         .order("date", { ascending: false });
 
-      if (!isAdmin) {
-        query = query.eq("user_id", user.id);
-      } else {
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("organization_id")
-          .eq("id", user.id)
-          .single();
+      if (isAdmin) {
+        // Try to resolve organization via organizations table first (admin ownership)
+        const { data: orgByAdmin } = await supabase
+          .from("organizations")
+          .select("id")
+          .eq("admin_user_id", user.id)
+          .maybeSingle();
 
-        if (profile?.organization_id) {
-          const { data: employeeIds } = await supabase
+        let orgId: string | null = orgByAdmin?.id ?? null;
+
+        // If not org owner, fall back to user's profile org membership
+        if (!orgId) {
+          const { data: profileMaybe } = await supabase
+            .from("profiles")
+            .select("organization_id")
+            .eq("id", user.id)
+            .maybeSingle();
+          orgId = profileMaybe?.organization_id ?? null;
+        }
+
+        if (orgId) {
+          const { data: employees } = await supabase
             .from("profiles")
             .select("id")
-            .eq("organization_id", profile.organization_id);
-
-          if (employeeIds) {
-            query = query.in("user_id", employeeIds.map(e => e.id));
+            .eq("organization_id", orgId);
+          if (employees && employees.length > 0) {
+            query = query.in("user_id", employees.map((e) => e.id));
+          } else {
+            // No employees found, safely fall back to user's own expenses
+            query = query.eq("user_id", user.id);
           }
+        } else {
+          // No organization context, show user's own expenses
+          query = query.eq("user_id", user.id);
         }
+      } else {
+        // Non-admins always see their own expenses
+        query = query.eq("user_id", user.id);
       }
 
       const { data, error } = await query;
