@@ -4,12 +4,13 @@ import { Navigation } from "@/components/ui/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2, TrendingUp, DollarSign, Receipt, CheckCircle, XCircle, Clock, ArrowUp, ArrowDown, ArrowLeft, BarChart3 } from "lucide-react";
+import { Loader2, TrendingUp, DollarSign, Receipt, CheckCircle, XCircle, Clock, ArrowUp, ArrowDown, ArrowLeft, BarChart3, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { StatCard } from "@/components/StatCard";
 import { AnalyticsFilters } from "@/components/AnalyticsFilters";
 import { ExpenseChart } from "@/components/ExpenseChart";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { startOfDay, subDays, isAfter } from "date-fns";
 
 interface Expense {
@@ -33,6 +34,8 @@ const ExpenseAnalytics = () => {
   const [dateRange, setDateRange] = useState("30days");
   const [category, setCategory] = useState("all");
   const [status, setStatus] = useState("all");
+  const [aiAnalysis, setAiAnalysis] = useState<string | null>(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
 
   const isAdmin = userRole === "admin" || userRole === "manager" || userRole === "finance";
 
@@ -248,6 +251,29 @@ const ExpenseAnalytics = () => {
     toast.success("Export complete");
   };
 
+  const generateAIAnalysis = async () => {
+    setIsAnalyzing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('analyze-expenses', {
+        headers: {
+          Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
+        }
+      });
+
+      if (error) throw error;
+
+      if (data?.analysis) {
+        setAiAnalysis(data.analysis);
+        toast.success("AI analysis generated successfully");
+      }
+    } catch (error: any) {
+      console.error('AI analysis error:', error);
+      toast.error(error.message || "Failed to generate AI analysis");
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-analytics flex items-center justify-center">
@@ -447,6 +473,63 @@ const ExpenseAnalytics = () => {
               />
             )}
           </div>
+
+          {/* AI Analysis Section */}
+          {isAdmin && (
+            <Card className="animate-fade-in border-primary/20" style={{ animationDelay: '0.6s' }}>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="p-3 rounded-xl bg-gradient-primary shadow-lg">
+                      <Sparkles className="w-6 h-6 text-primary-foreground" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-2xl">AI-Powered Insights & Recommendations</CardTitle>
+                      <CardDescription className="mt-1">
+                        Get detailed analysis and actionable recommendations to optimize your expense management
+                      </CardDescription>
+                    </div>
+                  </div>
+                  <Button
+                    onClick={generateAIAnalysis}
+                    disabled={isAnalyzing || filteredExpenses.length === 0}
+                    size="lg"
+                    className="bg-primary hover:bg-primary/90"
+                  >
+                    {isAnalyzing ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Analyzing...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="w-4 h-4 mr-2" />
+                        Generate Analysis
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </CardHeader>
+              {aiAnalysis && (
+                <CardContent>
+                  <div className="prose prose-sm max-w-none dark:prose-invert">
+                    <div className="whitespace-pre-wrap text-foreground leading-relaxed">
+                      {aiAnalysis}
+                    </div>
+                  </div>
+                </CardContent>
+              )}
+              {!aiAnalysis && !isAnalyzing && (
+                <CardContent>
+                  <div className="text-center py-12 text-muted-foreground">
+                    <Sparkles className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                    <p className="text-lg font-medium mb-2">No analysis yet</p>
+                    <p>Click "Generate Analysis" to get AI-powered insights about your expenses</p>
+                  </div>
+                </CardContent>
+              )}
+            </Card>
+          )}
         </div>
       </main>
     </div>
