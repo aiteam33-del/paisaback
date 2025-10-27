@@ -109,6 +109,20 @@ const AnomalyDashboard = () => {
     }
   };
 
+  // Normalize text for comparison (case-insensitive, trim, remove extra spaces)
+  const normalizeText = (text: string): string => {
+    return text?.toLowerCase().trim().replace(/\s+/g, ' ') || '';
+  };
+
+  // Format date to YYYY-MM-DD for comparison
+  const normalizeDate = (dateStr: string): string => {
+    try {
+      return new Date(dateStr).toISOString().split('T')[0];
+    } catch {
+      return dateStr;
+    }
+  };
+
   // READ-ONLY: Compute anomaly scores without database modifications
   const computeAnomalyScores = (rawExpenses: any[]) => {
     const amounts = rawExpenses.map(e => Number(e.amount));
@@ -116,9 +130,32 @@ const AnomalyDashboard = () => {
     const variance = amounts.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / Math.max(amounts.length, 1);
     const stdDev = Math.sqrt(variance);
 
+    // Build duplicate detection map with normalized keys
+    const duplicateMap = new Map<string, any[]>();
+    rawExpenses.forEach(expense => {
+      const normalizedVendor = normalizeText(expense.vendor);
+      const normalizedAmount = Number(expense.amount).toFixed(2);
+      const normalizedDate = normalizeDate(expense.date);
+      const key = `${normalizedVendor}|${normalizedAmount}|${normalizedDate}`;
+      
+      if (!duplicateMap.has(key)) {
+        duplicateMap.set(key, []);
+      }
+      duplicateMap.get(key)!.push(expense);
+    });
+
+    // Find actual duplicates (groups with more than one expense)
+    const duplicateGroups = new Map<string, any[]>();
+    duplicateMap.forEach((expenses, key) => {
+      if (expenses.length > 1) {
+        duplicateGroups.set(key, expenses);
+      }
+    });
+
     return rawExpenses.map(expense => {
       const reasonCodes: string[] = [];
       let suspicionScore = 0;
+      let duplicateInfo: any = null;
 
       // Statistical outlier
       if (Math.abs(Number(expense.amount) - mean) > 2 * stdDev) {
@@ -126,30 +163,65 @@ const AnomalyDashboard = () => {
         suspicionScore += 30;
       }
 
-      // Round number
+      // Round number (suspicious for large amounts)
       const amt = Number(expense.amount);
       if (amt >= 100 && (amt % 100 === 0 || amt % 1000 === 0)) {
         reasonCodes.push("round_number");
         suspicionScore += 10;
       }
 
-      // Weekend office
+      // Weekend office expenses
       const day = new Date(expense.date).getDay();
-      if (expense.category === "office" && (day === 0 || day === 6)) {
+      if (expense.category?.toLowerCase() === "office" && (day === 0 || day === 6)) {
         reasonCodes.push("weekend_office");
         suspicionScore += 20;
       }
 
-      // Threshold gaming
-      if ([99, 199, 499, 999, 1999, 4999, 9999].some(t => amt >= t - 10 && amt <= t)) {
+      // Threshold gaming (amounts suspiciously close to approval limits)
+      const thresholds = [99, 199, 499, 999, 1999, 4999, 9999];
+      if (thresholds.some(t => amt >= t - 10 && amt <= t)) {
         reasonCodes.push("threshold_gaming");
         suspicionScore += 25;
+      }
+
+      // Duplicate claim detection (HIGH PRIORITY)
+      const normalizedVendor = normalizeText(expense.vendor);
+      const normalizedAmount = Number(expense.amount).toFixed(2);
+      const normalizedDate = normalizeDate(expense.date);
+      const duplicateKey = `${normalizedVendor}|${normalizedAmount}|${normalizedDate}`;
+      
+      if (duplicateGroups.has(duplicateKey)) {
+        const duplicates = duplicateGroups.get(duplicateKey)!;
+        if (duplicates.length > 1) {
+          reasonCodes.push("duplicate_claim");
+          suspicionScore += 40; // High severity
+          duplicateInfo = {
+            count: duplicates.length,
+            expenseIds: duplicates.map(d => d.id),
+            totalAmount: duplicates.reduce((sum, d) => sum + Number(d.amount), 0)
+          };
+        }
+      }
+
+      // Date mismatch (bill date vs submission date)
+      try {
+        const billDate = new Date(expense.date);
+        const submissionDate = new Date(expense.created_at);
+        const daysDiff = Math.abs((submissionDate.getTime() - billDate.getTime()) / (1000 * 60 * 60 * 24));
+        
+        if (daysDiff > 90) {
+          reasonCodes.push("date_mismatch");
+          suspicionScore += 15;
+        }
+      } catch {
+        // Invalid date, skip
       }
 
       return {
         ...expense,
         suspicionScore,
-        reasonCodes
+        reasonCodes,
+        duplicateInfo
       };
     });
   };
