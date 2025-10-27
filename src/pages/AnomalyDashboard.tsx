@@ -157,10 +157,10 @@ const AnomalyDashboard = () => {
       let suspicionScore = 0;
       let duplicateInfo: any = null;
 
-      // Statistical outlier
+      // Statistical outlier (HIGH WEIGHT - major anomaly)
       if (Math.abs(Number(expense.amount) - mean) > 2 * stdDev) {
         reasonCodes.push("statistical_outlier");
-        suspicionScore += 30;
+        suspicionScore += 45;
       }
 
       // Round number (suspicious for large amounts)
@@ -232,14 +232,14 @@ const AnomalyDashboard = () => {
       expense.category.toLowerCase().includes(searchQuery.toLowerCase());
     
     const score = expense.suspicionScore || 0;
-    const severity = score >= 60 ? "high" : score >= 40 ? "medium" : "low";
+    const severity = score >= 50 ? "high" : score >= 30 ? "medium" : "low";
     const matchesSeverity = severityFilter === "all" || severity === severityFilter;
 
     return matchesSearch && matchesSeverity && expense.suspicionScore > 0;
   });
 
-  const flaggedCount = expenses.filter(e => (e.suspicionScore || 0) >= 40).length;
-  const highRiskCount = expenses.filter(e => (e.suspicionScore || 0) >= 60).length;
+  const flaggedCount = expenses.filter(e => (e.suspicionScore || 0) >= 30).length;
+  const highRiskCount = expenses.filter(e => (e.suspicionScore || 0) >= 50).length;
   const avgSuspicionScore = expenses.length > 0
     ? (expenses.reduce((sum, e) => sum + (e.suspicionScore || 0), 0) / expenses.length).toFixed(1)
     : "0";
@@ -340,7 +340,7 @@ const AnomalyDashboard = () => {
               value={avgSuspicionScore}
               subtitle="Score out of 100"
               icon={TrendingUp}
-              severity={Number(avgSuspicionScore) >= 40 ? "high" : "low"}
+              severity={Number(avgSuspicionScore) >= 30 ? "high" : "low"}
             />
           </div>
 
@@ -378,12 +378,12 @@ const AnomalyDashboard = () => {
                 All Flagged ({filteredExpenses.length})
               </TabsTrigger>
               <TabsTrigger value="high">
-                High Risk ({filteredExpenses.filter(e => (e.suspicionScore || 0) >= 60).length})
+                High Risk ({filteredExpenses.filter(e => (e.suspicionScore || 0) >= 50).length})
               </TabsTrigger>
               <TabsTrigger value="medium">
                 Medium Risk ({filteredExpenses.filter(e => {
                   const s = e.suspicionScore || 0;
-                  return s >= 40 && s < 60;
+                  return s >= 30 && s < 50;
                 }).length})
               </TabsTrigger>
             </TabsList>
@@ -407,7 +407,7 @@ const AnomalyDashboard = () => {
             </TabsContent>
 
             <TabsContent value="high" className="space-y-3 mt-4">
-              {filteredExpenses.filter(e => (e.suspicionScore || 0) >= 60).map(expense => (
+              {filteredExpenses.filter(e => (e.suspicionScore || 0) >= 50).map(expense => (
                 <FlaggedExpenseRow
                   key={expense.id}
                   expense={expense}
@@ -419,7 +419,7 @@ const AnomalyDashboard = () => {
             <TabsContent value="medium" className="space-y-3 mt-4">
               {filteredExpenses.filter(e => {
                 const s = e.suspicionScore || 0;
-                return s >= 40 && s < 60;
+                return s >= 30 && s < 50;
               }).map(expense => (
                 <FlaggedExpenseRow
                   key={expense.id}

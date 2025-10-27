@@ -40,7 +40,7 @@ const getReasonLabel = (code: string) => {
 
 export const FlaggedExpenseRow = ({ expense, onClick }: FlaggedExpenseRowProps) => {
   const score = expense.suspicionScore || 0;
-  const severity = score >= 60 ? "high" : score >= 40 ? "medium" : "low";
+  const severity = score >= 50 ? "high" : score >= 30 ? "medium" : "low";
   const severityColors = {
     high: "border-red-500/50 bg-red-500/10 hover:bg-red-500/15",
     medium: "border-yellow-500/50 bg-yellow-500/10 hover:bg-yellow-500/15",
