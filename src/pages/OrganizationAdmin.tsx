@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { Building2, Users, Clock, CheckCircle, Loader2, BarChart3, Shield } from "lucide-react";
 import { SummaryCard } from "@/components/SummaryCard";
 import { Button } from "@/components/ui/button";
+import { AnalyticsChatbot } from "@/components/AnalyticsChatbot";
 
 const OrganizationAdmin = () => {
   const { user } = useAuth();
@@ -173,6 +174,8 @@ const OrganizationAdmin = () => {
           />
         </div>
       </main>
+
+      <AnalyticsChatbot />
     </div>
   );
 };
