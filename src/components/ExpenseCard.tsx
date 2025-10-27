@@ -127,13 +127,16 @@ export const ExpenseCard = ({ expense, onAction, onViewDetails }: ExpenseCardPro
                       
                       if (error || !data) {
                         console.error('Signed URL error:', error);
-                        newWindow.location.href = raw as string;
+                        newWindow.opener = null;
+                        newWindow.location.replace(raw as string);
                       } else {
-                        newWindow.location.href = data.signedUrl;
+                        newWindow.opener = null;
+                        newWindow.location.replace(data.signedUrl);
                       }
                     } catch (err) {
                       console.error('Receipt open failed:', err);
-                      newWindow.location.href = expense.attachments![0] as string;
+                      newWindow.opener = null;
+                      newWindow.location.replace(expense.attachments![0] as string);
                     }
                   }}
                 >
