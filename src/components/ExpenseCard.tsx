@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ChevronDown, ChevronUp, ExternalLink } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
-
+import { supabase } from "@/integrations/supabase/client";
 interface ExpenseCardProps {
   expense: {
     id: string;
@@ -102,9 +102,32 @@ export const ExpenseCard = ({ expense, onAction, onViewDetails }: ExpenseCardPro
                   variant="outline"
                   size="sm"
                   className="mt-2"
-                  onClick={(e) => {
+                  onClick={async (e) => {
                     e.stopPropagation();
-                    window.open(expense.attachments![0], "_blank");
+                    try {
+                      const raw = expense.attachments![0];
+                      // Extract file path after /receipts/
+                      let filePath = '';
+                      const match = typeof raw === 'string' ? raw.match(/\/receipts\/([^?]+)/) : null;
+                      if (match && match[1]) {
+                        filePath = match[1];
+                      } else {
+                        // if DB stored direct path
+                        filePath = raw;
+                      }
+                      const { data, error } = await supabase.storage
+                        .from('receipts')
+                        .createSignedUrl(filePath, 60 * 60 * 24 * 30);
+                      if (error || !data) {
+                        console.error('Signed URL error:', error);
+                        window.open(raw as string, '_blank');
+                        return;
+                      }
+                      window.open(data.signedUrl, '_blank');
+                    } catch (err) {
+                      console.error('Receipt open failed:', err);
+                      window.open(expense.attachments![0] as string, '_blank');
+                    }
                   }}
                 >
                   <ExternalLink className="w-4 h-4 mr-2" />
