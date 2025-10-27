@@ -80,6 +80,29 @@ export const AnalyticsChatbot = () => {
   const renderMessage = (msg: Message, idx: number) => {
     const isUser = msg.role === "user";
     
+    // Clean the content - remove any markdown code blocks
+    let cleanContent = msg.content;
+    if (!isUser) {
+      // Remove ```json and ``` markers if present
+      cleanContent = cleanContent.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+      
+      // Try to parse if it looks like JSON
+      if (cleanContent.startsWith('{') && cleanContent.endsWith('}')) {
+        try {
+          const parsed = JSON.parse(cleanContent);
+          if (parsed.response) {
+            cleanContent = parsed.response;
+            // Merge metadata if not already present
+            if (parsed.metadata && !msg.metadata) {
+              msg.metadata = parsed.metadata;
+            }
+          }
+        } catch {
+          // If parsing fails, use as-is
+        }
+      }
+    }
+    
     return (
       <motion.div
         key={idx}
@@ -88,9 +111,9 @@ export const AnalyticsChatbot = () => {
         className={`flex ${isUser ? "justify-end" : "justify-start"} mb-4`}
       >
         <div className={`max-w-[80%] ${isUser ? "bg-primary text-primary-foreground" : "bg-muted"} rounded-2xl px-4 py-3`}>
-          <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+          <p className="text-sm whitespace-pre-wrap leading-relaxed">{cleanContent}</p>
           
-          {msg.metadata?.metrics && (
+          {msg.metadata?.metrics && msg.metadata.metrics.length > 0 && (
             <div className="grid grid-cols-2 gap-2 mt-3">
               {msg.metadata.metrics.map((metric, i) => {
                 const Icon = metric.icon || DollarSign;
@@ -107,14 +130,14 @@ export const AnalyticsChatbot = () => {
             </div>
           )}
           
-          {msg.metadata?.links && msg.metadata.links.length > 0 && (
-            <div className="flex flex-wrap gap-2 mt-3">
+          {!isUser && msg.metadata?.links && msg.metadata.links.length > 0 && (
+            <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-border/30">
               {msg.metadata.links.map((link, i) => (
                 <Button
                   key={i}
-                  variant="outline"
+                  variant="secondary"
                   size="sm"
-                  className="text-xs"
+                  className="text-xs hover:bg-primary hover:text-primary-foreground transition-colors"
                   onClick={() => window.location.href = link.url}
                 >
                   {link.label} →
@@ -135,7 +158,8 @@ export const AnalyticsChatbot = () => {
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className="fixed bottom-24 right-6 w-[420px] h-[600px] z-50 shadow-2xl rounded-2xl overflow-hidden border border-border/50 backdrop-blur-xl"
+            transition={{ type: "spring", damping: 25, stiffness: 300 }}
+            className="fixed bottom-24 right-6 w-[420px] max-w-[calc(100vw-3rem)] h-[600px] max-h-[calc(100vh-8rem)] z-[100] shadow-2xl rounded-2xl overflow-hidden border border-border/50 backdrop-blur-xl"
           >
             <Card className="h-full flex flex-col bg-gradient-to-br from-background via-background to-muted/20">
               {/* Header */}
@@ -206,7 +230,8 @@ export const AnalyticsChatbot = () => {
       <motion.div
         initial={{ scale: 0 }}
         animate={{ scale: 1 }}
-        className="fixed bottom-6 right-6 z-50"
+        transition={{ delay: 0.2, type: "spring", stiffness: 260, damping: 20 }}
+        className="fixed bottom-6 right-6 z-[100]"
       >
         <Button
           onClick={() => setIsOpen(!isOpen)}

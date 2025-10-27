@@ -75,16 +75,19 @@ PERSONALITY:
 - Be concise but helpful
 - Highlight anomalies or interesting patterns
 
-RESPONSE FORMAT:
-Return JSON with:
+CRITICAL RESPONSE FORMAT:
+You MUST return ONLY a valid JSON object. No markdown, no code blocks, no backticks, no explanatory text before or after.
+Just pure JSON in this exact structure:
 {
-  "response": "natural language answer",
+  "response": "your natural language answer here",
   "metadata": {
-    "type": "insight|anomaly|summary",
-    "links": [{"label": "View Details", "url": "/admin/expenses"}],
-    "metrics": [{"label": "Total", "value": "₹X", "icon": "DollarSign"}]
+    "type": "insight",
+    "links": [{"label": "View Details", "url": "/admin/expenses"}]
   }
 }
+
+Example good response:
+{"response":"Sure! Your top vendors are Sharma (₹24,900), ZODIACAL OVERSEAS (₹21,000), and Abhishek Sharma (₹20,000). They account for most of your spending.","metadata":{"type":"insight","links":[{"label":"View Vendor Details","url":"/admin/vendors"}]}}
 
 When asked about:
 - Vendors: analyze top spenders, concentration risk
@@ -92,7 +95,7 @@ When asked about:
 - Anomalies: flag outliers, suspicious patterns
 - Trends: compare time periods, categories
 
-Always suggest next actions via links or follow-up questions.`;
+Always suggest next actions via links.`;
 
     // Call Lovable AI
     const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
@@ -119,18 +122,23 @@ Always suggest next actions via links or follow-up questions.`;
     }
 
     const aiData = await aiResponse.json();
-    const aiContent = aiData.choices[0].message.content;
+    let aiContent = aiData.choices[0].message.content;
+
+    // Clean up any markdown code blocks if AI adds them
+    aiContent = aiContent.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
 
     // Try to parse JSON response
     let response, metadata;
     try {
       const parsed = JSON.parse(aiContent);
-      response = parsed.response;
-      metadata = parsed.metadata;
-    } catch {
-      // Fallback if AI doesn't return JSON
+      response = parsed.response || aiContent;
+      metadata = parsed.metadata || { type: "summary", links: [] };
+    } catch (parseError) {
+      console.error('Failed to parse AI response as JSON:', parseError);
+      console.log('Raw AI content:', aiContent);
+      // Fallback: use raw content as response
       response = aiContent;
-      metadata = { type: "summary" };
+      metadata = { type: "summary", links: [] };
     }
 
     console.log('Chatbot response generated successfully');
