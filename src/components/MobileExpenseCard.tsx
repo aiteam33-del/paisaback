@@ -64,15 +64,29 @@ export const MobileExpenseCard = ({
           </div>
 
           {/* Details Grid */}
-          <div className="grid grid-cols-2 gap-3 text-xs">
-            <div className="flex items-center gap-2">
-              <Calendar className="h-3 w-3 text-muted-foreground" />
-              <span>{format(new Date(expense.date), "MMM dd, yyyy")}</span>
+          <div className="space-y-2 text-xs">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="flex items-center gap-2">
+                <Calendar className="h-3 w-3 text-muted-foreground" />
+                <div>
+                  <p className="text-muted-foreground text-[10px]">Expense Date</p>
+                  <span>{format(new Date(expense.date), "MMM dd, yyyy")}</span>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <User className="h-3 w-3 text-muted-foreground" />
+                <span className="truncate">{expense.employee?.full_name}</span>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              <User className="h-3 w-3 text-muted-foreground" />
-              <span className="truncate">{expense.employee?.full_name}</span>
-            </div>
+            {expense.created_at && (
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <Calendar className="h-3 w-3" />
+                <div>
+                  <span className="text-[10px]">Submitted: </span>
+                  <span>{format(new Date(expense.created_at), "MMM dd, yyyy")}</span>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Amount */}

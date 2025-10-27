@@ -67,20 +67,21 @@ export const NotificationDrawer = ({
     try {
       switch (notification.type) {
         case 'expense_submitted':
-          // Admin: open the specific expense in a modal on /admin
-          navigate(notification.related_id ? `/admin?expenseId=${notification.related_id}` : '/admin');
+          // Admin: navigate to expenses page with pending filter
+          navigate('/admin/expenses?status=pending');
           break;
         case 'expense_approved':
         case 'expense_rejected':
-          // Employee: focus the specific expense in history
-          navigate(notification.related_id ? `/employee/history?expenseId=${notification.related_id}` : '/employee/history');
+          // Employee: navigate to expense history
+          navigate('/employee/history');
           break;
         case 'join_request':
-          // Admin: focus the specific join request card
-          navigate(notification.related_id ? `/admin?joinRequestId=${notification.related_id}` : '/admin');
+          // Admin: navigate to join requests page
+          navigate('/admin/join-requests');
           break;
         case 'join_approved':
         case 'join_rejected':
+          // Employee: navigate to employee dashboard
           navigate('/employee');
           break;
         default:

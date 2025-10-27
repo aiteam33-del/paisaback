@@ -23,6 +23,7 @@ interface Expense {
   description: string;
   vendor: string;
   attachments?: string[];
+  created_at: string;
   employee: {
     full_name: string;
     email: string;
@@ -100,6 +101,7 @@ const AdminExpenses = () => {
           description: exp.description,
           vendor: exp.vendor,
           attachments: exp.attachments || [],
+          created_at: exp.created_at,
           employee: employeeLookup.get(exp.user_id) || { full_name: "Unknown", email: "unknown" }
         }));
 

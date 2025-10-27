@@ -15,6 +15,7 @@ interface ExpenseCardProps {
     category: string;
     description: string;
     attachments?: string[];
+    created_at: string;
     employee: {
       full_name: string;
       email: string;
@@ -54,7 +55,7 @@ export const ExpenseCard = ({ expense, onAction, onViewDetails }: ExpenseCardPro
             </div>
             <div className="text-sm text-muted-foreground space-y-1">
               <p>{expense.employee.full_name}</p>
-              <p>{formatDistanceToNow(new Date(expense.date), { addSuffix: true })}</p>
+              <p>Submitted {formatDistanceToNow(new Date(expense.created_at), { addSuffix: true })}</p>
             </div>
           </div>
           <div className="flex flex-col items-end gap-2">
@@ -76,9 +77,15 @@ export const ExpenseCard = ({ expense, onAction, onViewDetails }: ExpenseCardPro
                 <p className="font-medium capitalize">{expense.category}</p>
               </div>
               <div>
-                <span className="text-muted-foreground">Date:</span>
+                <span className="text-muted-foreground">Expense Date:</span>
                 <p className="font-medium">
                   {new Date(expense.date).toLocaleDateString()}
+                </p>
+              </div>
+              <div className="col-span-2">
+                <span className="text-muted-foreground">Submitted:</span>
+                <p className="font-medium">
+                  {new Date(expense.created_at).toLocaleDateString()} ({formatDistanceToNow(new Date(expense.created_at), { addSuffix: true })})
                 </p>
               </div>
             </div>
