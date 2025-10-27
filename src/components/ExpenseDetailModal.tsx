@@ -20,17 +20,6 @@ export const ExpenseDetailModal = ({ expense, open, onOpenChange }: ExpenseDetai
   const [duplicateExpenses, setDuplicateExpenses] = useState<any[]>([]);
   const [loadingDuplicates, setLoadingDuplicates] = useState(false);
 
-  if (!expense) return null;
-
-  const score = expense.suspicionScore || 0;
-  const severity = score >= 50 ? "high" : score >= 30 ? "medium" : "low";
-  const hasDuplicate = expense.reasonCodes?.includes("duplicate_claim");
-
-  const copyExpenseId = () => {
-    navigator.clipboard.writeText(expense.id);
-    toast.success("Expense ID copied to clipboard");
-  };
-
   const normalizeText = (text: string): string => {
     return text?.toLowerCase().trim().replace(/\s+/g, ' ') || '';
   };
@@ -81,10 +70,21 @@ export const ExpenseDetailModal = ({ expense, open, onOpenChange }: ExpenseDetai
   };
 
   useEffect(() => {
-    if (showDuplicates && hasDuplicate) {
+    if (showDuplicates && expense?.reasonCodes?.includes("duplicate_claim")) {
       loadDuplicates();
     }
-  }, [showDuplicates, hasDuplicate]);
+  }, [showDuplicates, expense]);
+
+  if (!expense) return null;
+
+  const score = expense.suspicionScore || 0;
+  const severity = score >= 50 ? "high" : score >= 30 ? "medium" : "low";
+  const hasDuplicate = expense.reasonCodes?.includes("duplicate_claim");
+
+  const copyExpenseId = () => {
+    navigator.clipboard.writeText(expense.id);
+    toast.success("Expense ID copied to clipboard");
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
