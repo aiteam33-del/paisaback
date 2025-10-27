@@ -2,10 +2,9 @@ import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ChevronDown, ChevronUp, ExternalLink, X } from "lucide-react";
+import { ChevronDown, ChevronUp, ExternalLink } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 interface ExpenseCardProps {
   expense: {
     id: string;
@@ -28,8 +27,6 @@ interface ExpenseCardProps {
 
 export const ExpenseCard = ({ expense, onAction, onViewDetails }: ExpenseCardProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
-  const [receiptUrl, setReceiptUrl] = useState<string | null>(null);
-  const [isLoadingReceipt, setIsLoadingReceipt] = useState(false);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -107,7 +104,14 @@ export const ExpenseCard = ({ expense, onAction, onViewDetails }: ExpenseCardPro
                   className="mt-2"
                   onClick={async (e) => {
                     e.stopPropagation();
-                    setIsLoadingReceipt(true);
+                    // Open window immediately (synchronously) to avoid popup blocker
+                    const newWindow = window.open('about:blank', '_blank');
+                    if (!newWindow) {
+                      alert('Please allow pop-ups to view receipts');
+                      return;
+                    }
+                    newWindow.document.write('<html><body style="margin:0;display:flex;align-items:center;justify-content:center;min-height:100vh;background:#1a1a1a;"><p style="color:#fff;">Loading receipt...</p></body></html>');
+                    
                     try {
                       const raw = expense.attachments![0];
                       let filePath = '';
@@ -120,29 +124,21 @@ export const ExpenseCard = ({ expense, onAction, onViewDetails }: ExpenseCardPro
                       const { data, error } = await supabase.storage
                         .from('receipts')
                         .createSignedUrl(filePath, 60 * 60 * 24 * 30);
+                      
                       if (error || !data) {
                         console.error('Signed URL error:', error);
-                        setReceiptUrl(raw as string);
+                        newWindow.location.href = raw as string;
                       } else {
-                        setReceiptUrl(data.signedUrl);
+                        newWindow.location.href = data.signedUrl;
                       }
                     } catch (err) {
                       console.error('Receipt open failed:', err);
-                      setReceiptUrl(expense.attachments![0] as string);
-                    } finally {
-                      setIsLoadingReceipt(false);
+                      newWindow.location.href = expense.attachments![0] as string;
                     }
                   }}
-                  disabled={isLoadingReceipt}
                 >
-                  {isLoadingReceipt ? (
-                    <>Loading...</>
-                  ) : (
-                    <>
-                      <ExternalLink className="w-4 h-4 mr-2" />
-                      View Receipt
-                    </>
-                  )}
+                  <ExternalLink className="w-4 h-4 mr-2" />
+                  View Receipt
                 </Button>
               </div>
             )}
@@ -189,28 +185,6 @@ export const ExpenseCard = ({ expense, onAction, onViewDetails }: ExpenseCardPro
           </div>
         )}
       </CardContent>
-
-      {/* Receipt Viewer Dialog */}
-      <Dialog open={!!receiptUrl} onOpenChange={() => setReceiptUrl(null)}>
-        <DialogContent className="max-w-4xl max-h-[90vh]">
-          <DialogHeader>
-            <DialogTitle>Receipt - {expense.vendor}</DialogTitle>
-          </DialogHeader>
-          <div className="relative w-full h-[70vh] overflow-auto">
-            {receiptUrl && (
-              <img 
-                src={receiptUrl} 
-                alt="Receipt" 
-                className="w-full h-auto object-contain"
-                onError={(e) => {
-                  console.error('Image load failed');
-                  e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48dGV4dCB4PSI1MCUiIHk9IjUwJSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+RmFpbGVkIHRvIGxvYWQgcmVjZWlwdDwvdGV4dD48L3N2Zz4=';
-                }}
-              />
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
     </Card>
   );
 };
