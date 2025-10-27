@@ -25,6 +25,7 @@ const Index = () => {
   
   const employeeSection = useScrollAnimation();
   const companySection = useScrollAnimation();
+  const advancedFeaturesSection = useScrollAnimation();
   const problemSection = useScrollAnimation();
   const solutionSection = useScrollAnimation();
   const pricingSection = useScrollAnimation();
@@ -254,6 +255,51 @@ const Index = () => {
       name: "Anjali Desai",
       role: "HR Lead, Early-Stage Startup",
     },
+  ];
+
+  const advancedFeatures = [
+    {
+      icon: BarChart3,
+      title: "Real-Time Analytics & Insights",
+      description: "Visualize spending patterns with interactive charts. Track expenses by category, employee, department, and time periods.",
+      benefits: [
+        "Category-wise expense breakdown",
+        "Employee spending trends",
+        "Department-level analytics",
+        "Custom date range filtering",
+        "One-click report exports"
+      ],
+      color: "from-teal-500 to-green-500",
+      imagePosition: "left"
+    },
+    {
+      icon: Sparkles,
+      title: "AI-Powered Analytics Assistant",
+      description: "Ask questions in natural language and get instant answers. The AI chatbot analyzes your expense data and provides intelligent insights.",
+      benefits: [
+        "Natural language queries",
+        "Instant data-driven responses",
+        "Trend analysis and predictions",
+        "Conversational interface",
+        "No technical knowledge required"
+      ],
+      color: "from-purple-500 to-pink-500",
+      imagePosition: "right"
+    },
+    {
+      icon: AlertCircle,
+      title: "Smart Fraud & Anomaly Detection",
+      description: "AI automatically flags suspicious expenses before approval. Detect duplicates, outliers, and policy violations.",
+      benefits: [
+        "Automatic duplicate detection",
+        "Statistical outlier identification",
+        "Policy compliance checking",
+        "Risk scoring (High/Medium/Low)",
+        "Detailed anomaly explanations"
+      ],
+      color: "from-orange-500 to-red-500",
+      imagePosition: "left"
+    }
   ];
 
 
@@ -645,6 +691,232 @@ const Index = () => {
                   />
                 ))}
               </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Advanced Features Section */}
+        <section 
+          ref={advancedFeaturesSection.ref as React.RefObject<HTMLElement>}
+          className={`container mx-auto px-4 sm:px-6 py-12 sm:py-16 md:py-20 lg:py-28 transition-all duration-1000 ${
+            advancedFeaturesSection.isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+          }`}
+        >
+          <div className="max-w-7xl mx-auto">
+            <div className="text-center mb-12 sm:mb-16 md:mb-20 space-y-4">
+              <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-foreground px-4">
+                Powered by{" "}
+                <span className="bg-gradient-hero bg-clip-text text-transparent">
+                  Intelligence
+                </span>
+              </h2>
+              <p className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto px-4">
+                Go beyond basic tracking with AI-driven insights and anomaly detection
+              </p>
+            </div>
+
+            <div className="space-y-16 sm:space-y-20 md:space-y-24">
+              {advancedFeatures.map((feature, index) => {
+                const Icon = feature.icon;
+                const isReversed = feature.imagePosition === "right";
+                
+                return (
+                  <div 
+                    key={index}
+                    className={`grid lg:grid-cols-2 gap-8 sm:gap-12 items-center ${
+                      isReversed ? 'lg:grid-flow-dense' : ''
+                    }`}
+                  >
+                    {/* Content Side */}
+                    <div className={`space-y-6 ${isReversed ? 'lg:col-start-1' : ''}`}>
+                      <div className="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-br shadow-xl relative overflow-hidden group">
+                        <div className={`absolute inset-0 bg-gradient-to-br ${feature.color} opacity-90 group-hover:opacity-100 transition-opacity`}></div>
+                        <Icon className="w-8 h-8 sm:w-10 sm:h-10 text-white relative z-10" />
+                      </div>
+                      
+                      <div>
+                        <h3 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4">
+                          {feature.title}
+                        </h3>
+                        <p className="text-base sm:text-lg text-muted-foreground leading-relaxed mb-6">
+                          {feature.description}
+                        </p>
+                      </div>
+
+                      <ul className="space-y-3">
+                        {feature.benefits.map((benefit, idx) => (
+                          <li key={idx} className="flex items-start gap-3">
+                            <CheckCircle2 className={`w-5 h-5 mt-0.5 flex-shrink-0 bg-gradient-to-br ${feature.color} bg-clip-text text-transparent`} style={{
+                              filter: 'drop-shadow(0 0 2px currentColor)'
+                            }} />
+                            <span className="text-sm sm:text-base text-foreground">{benefit}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    {/* Visual Side */}
+                    <div className={`${isReversed ? 'lg:col-start-2' : ''}`}>
+                      <Card className="bg-gradient-card border-2 border-primary/20 shadow-2xl overflow-hidden hover:shadow-glow transition-all duration-500 group">
+                        <CardContent className="p-6 sm:p-8">
+                          {/* Analytics Dashboard Mockup */}
+                          {index === 0 && (
+                            <div className="space-y-4">
+                              <div className="flex items-center justify-between mb-6">
+                                <h4 className="text-lg font-semibold">Expense Analytics</h4>
+                                <div className="flex gap-2">
+                                  <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                                  <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
+                                  <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                                </div>
+                              </div>
+                              
+                              {/* Chart representation */}
+                              <div className="space-y-3">
+                                <div className="flex items-center gap-3">
+                                  <div className="text-sm text-muted-foreground w-24">Travel</div>
+                                  <div className="flex-1 h-8 rounded-lg bg-gradient-to-r from-teal-500 to-green-500 opacity-80"></div>
+                                  <div className="text-sm font-semibold w-16 text-right">₹42K</div>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                  <div className="text-sm text-muted-foreground w-24">Food</div>
+                                  <div className="flex-1 h-8 rounded-lg bg-gradient-to-r from-teal-500 to-green-500 opacity-60" style={{ width: '70%' }}></div>
+                                  <div className="text-sm font-semibold w-16 text-right">₹28K</div>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                  <div className="text-sm text-muted-foreground w-24">Office</div>
+                                  <div className="flex-1 h-8 rounded-lg bg-gradient-to-r from-teal-500 to-green-500 opacity-40" style={{ width: '50%' }}></div>
+                                  <div className="text-sm font-semibold w-16 text-right">₹18K</div>
+                                </div>
+                              </div>
+                              
+                              <div className="grid grid-cols-2 gap-4 mt-6 pt-6 border-t border-border">
+                                <div className="text-center">
+                                  <div className="text-2xl font-bold text-primary">₹88K</div>
+                                  <div className="text-xs text-muted-foreground">Total Spend</div>
+                                </div>
+                                <div className="text-center">
+                                  <div className="text-2xl font-bold text-primary">156</div>
+                                  <div className="text-xs text-muted-foreground">Transactions</div>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* AI Chatbot Mockup */}
+                          {index === 1 && (
+                            <div className="space-y-4">
+                              <div className="flex items-center justify-between mb-6">
+                                <h4 className="text-lg font-semibold">AI Analytics Assistant</h4>
+                                <Sparkles className="w-5 h-5 text-primary" />
+                              </div>
+                              
+                              {/* Chat messages */}
+                              <div className="space-y-4">
+                                <div className="flex justify-end">
+                                  <div className="bg-primary text-primary-foreground px-4 py-2 rounded-2xl rounded-tr-sm max-w-xs">
+                                    <p className="text-sm">How much did we spend on travel last month?</p>
+                                  </div>
+                                </div>
+                                
+                                <div className="flex justify-start">
+                                  <div className="bg-muted px-4 py-3 rounded-2xl rounded-tl-sm max-w-sm">
+                                    <p className="text-sm mb-3">Based on your data, travel expenses for last month:</p>
+                                    <div className="bg-background rounded-lg p-3 space-y-2">
+                                      <div className="flex justify-between text-xs">
+                                        <span className="text-muted-foreground">Total</span>
+                                        <span className="font-semibold">₹42,340</span>
+                                      </div>
+                                      <div className="flex justify-between text-xs">
+                                        <span className="text-muted-foreground">Transactions</span>
+                                        <span className="font-semibold">23</span>
+                                      </div>
+                                      <div className="flex justify-between text-xs">
+                                        <span className="text-muted-foreground">Top Vendor</span>
+                                        <span className="font-semibold">Uber</span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                              
+                              <div className="flex items-center gap-2 pt-4 border-t border-border">
+                                <div className="flex-1 h-10 rounded-lg bg-muted flex items-center px-3 text-sm text-muted-foreground">
+                                  Ask me anything...
+                                </div>
+                                <Button size="icon" className="h-10 w-10 rounded-lg">
+                                  <ArrowRight className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Anomaly Detection Mockup */}
+                          {index === 2 && (
+                            <div className="space-y-4">
+                              <div className="flex items-center justify-between mb-6">
+                                <h4 className="text-lg font-semibold">Anomaly Dashboard</h4>
+                                <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-destructive/10 border border-destructive/20">
+                                  <AlertCircle className="w-4 h-4 text-destructive" />
+                                  <span className="text-xs font-semibold text-destructive">3 Flagged</span>
+                                </div>
+                              </div>
+                              
+                              {/* Flagged expenses */}
+                              <div className="space-y-3">
+                                <Card className="border-2 border-red-500/30 bg-red-500/5">
+                                  <CardContent className="p-4">
+                                    <div className="flex items-start justify-between mb-2">
+                                      <div className="flex-1">
+                                        <div className="font-semibold text-sm">Duplicate Detected</div>
+                                        <div className="text-xs text-muted-foreground">Restaurant Bill - ₹2,450</div>
+                                      </div>
+                                      <div className="px-2 py-1 rounded-full bg-red-500/20 text-red-500 text-xs font-bold">
+                                        HIGH
+                                      </div>
+                                    </div>
+                                    <p className="text-xs text-muted-foreground">Same vendor, amount, and date as expense #1234</p>
+                                  </CardContent>
+                                </Card>
+
+                                <Card className="border-2 border-orange-500/30 bg-orange-500/5">
+                                  <CardContent className="p-4">
+                                    <div className="flex items-start justify-between mb-2">
+                                      <div className="flex-1">
+                                        <div className="font-semibold text-sm">Statistical Outlier</div>
+                                        <div className="text-xs text-muted-foreground">Office Supplies - ₹8,900</div>
+                                      </div>
+                                      <div className="px-2 py-1 rounded-full bg-orange-500/20 text-orange-500 text-xs font-bold">
+                                        MED
+                                      </div>
+                                    </div>
+                                    <p className="text-xs text-muted-foreground">245% higher than employee's average</p>
+                                  </CardContent>
+                                </Card>
+
+                                <Card className="border-2 border-yellow-500/30 bg-yellow-500/5">
+                                  <CardContent className="p-4">
+                                    <div className="flex items-start justify-between mb-2">
+                                      <div className="flex-1">
+                                        <div className="font-semibold text-sm">Policy Violation</div>
+                                        <div className="text-xs text-muted-foreground">Taxi Fare - ₹1,200</div>
+                                      </div>
+                                      <div className="px-2 py-1 rounded-full bg-yellow-500/20 text-yellow-500 text-xs font-bold">
+                                        LOW
+                                      </div>
+                                    </div>
+                                    <p className="text-xs text-muted-foreground">Missing required receipt attachment</p>
+                                  </CardContent>
+                                </Card>
+                              </div>
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </section>
