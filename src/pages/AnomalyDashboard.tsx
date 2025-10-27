@@ -401,6 +401,7 @@ const AnomalyDashboard = () => {
                     key={expense.id}
                     expense={expense}
                     onClick={() => setSelectedExpense(expense)}
+                    onReject={loadExpenses}
                   />
                 ))
               )}
@@ -412,6 +413,7 @@ const AnomalyDashboard = () => {
                   key={expense.id}
                   expense={expense}
                   onClick={() => setSelectedExpense(expense)}
+                  onReject={loadExpenses}
                 />
               ))}
             </TabsContent>
@@ -425,6 +427,7 @@ const AnomalyDashboard = () => {
                   key={expense.id}
                   expense={expense}
                   onClick={() => setSelectedExpense(expense)}
+                  onReject={loadExpenses}
                 />
               ))}
             </TabsContent>

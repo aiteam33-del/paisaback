@@ -15,13 +15,26 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDistanceToNow } from "date-fns";
+import { toast } from "sonner";
+import { useAuth } from "@/hooks/useAuth";
 
 interface FlaggedExpenseRowProps {
   expense: any;
   onClick: () => void;
+  onReject?: () => void;
 }
 
 const getReasonIcon = (code: string) => {
@@ -98,9 +111,12 @@ const getReasonDetails = (code: string, expense: any) => {
   }
 };
 
-export const FlaggedExpenseRow = ({ expense, onClick }: FlaggedExpenseRowProps) => {
+export const FlaggedExpenseRow = ({ expense, onClick, onReject }: FlaggedExpenseRowProps) => {
+  const { user } = useAuth();
   const [employeeName, setEmployeeName] = useState<string>("");
   const [employeeDepartment, setEmployeeDepartment] = useState<string>("");
+  const [showRejectDialog, setShowRejectDialog] = useState(false);
+  const [isRejecting, setIsRejecting] = useState(false);
   
   const score = expense.suspicionScore || 0;
   const severity = score >= 50 ? "high" : score >= 30 ? "medium" : "low";
@@ -171,10 +187,41 @@ export const FlaggedExpenseRow = ({ expense, onClick }: FlaggedExpenseRowProps) 
     }
   }, [expense.user_id]);
 
-  const handleReject = (e: React.MouseEvent) => {
+  const handleRejectClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    // Handle rejection logic
-    onClick();
+    setShowRejectDialog(true);
+  };
+
+  const handleConfirmReject = async () => {
+    if (!user) return;
+    
+    setIsRejecting(true);
+    try {
+      const { error } = await supabase
+        .from("expenses")
+        .update({
+          status: "rejected",
+          rejected_by: user.id,
+          rejected_at: new Date().toISOString(),
+          finance_notes: `Flagged by anomaly detection system. Reason: ${getReasonLabel(primaryReason)}`
+        })
+        .eq("id", expense.id);
+
+      if (error) throw error;
+
+      toast.success("Expense rejected successfully");
+      setShowRejectDialog(false);
+      
+      // Call the optional onReject callback to refresh the list
+      if (onReject) {
+        onReject();
+      }
+    } catch (error: any) {
+      console.error("Error rejecting expense:", error);
+      toast.error("Failed to reject expense");
+    } finally {
+      setIsRejecting(false);
+    }
   };
 
   const handleReview = (e: React.MouseEvent) => {
@@ -273,9 +320,10 @@ export const FlaggedExpenseRow = ({ expense, onClick }: FlaggedExpenseRowProps) 
           <Button
             variant="destructive"
             className="flex-1 font-semibold"
-            onClick={handleReject}
+            onClick={handleRejectClick}
+            disabled={expense.status === "rejected"}
           >
-            Flag & Reject
+            {expense.status === "rejected" ? "Already Rejected" : "Flag & Reject"}
           </Button>
           <Button
             variant="outline"
@@ -286,6 +334,54 @@ export const FlaggedExpenseRow = ({ expense, onClick }: FlaggedExpenseRowProps) 
           </Button>
         </div>
       </CardContent>
+
+      {/* Rejection Confirmation Dialog */}
+      <AlertDialog open={showRejectDialog} onOpenChange={setShowRejectDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-destructive" />
+              Reject Flagged Expense?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-3 pt-2">
+              <div className="text-foreground">
+                You are about to reject this expense:
+              </div>
+              <div className="bg-muted p-3 rounded-lg space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Vendor:</span>
+                  <span className="font-semibold">{expense.vendor}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Amount:</span>
+                  <span className="font-semibold">₹{Number(expense.amount).toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Employee:</span>
+                  <span className="font-semibold">{employeeName || "Unknown"}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Reason:</span>
+                  <span className="font-semibold text-destructive">{getReasonLabel(primaryReason)}</span>
+                </div>
+              </div>
+              <div className="text-sm text-muted-foreground">
+                The employee will be notified of the rejection. This action cannot be undone.
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isRejecting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmReject}
+              disabled={isRejecting}
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              {isRejecting ? "Rejecting..." : "Confirm Rejection"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 };
