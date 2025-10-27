@@ -704,18 +704,22 @@ const Index = () => {
         >
           <div className="max-w-7xl mx-auto">
             <div className="text-center mb-12 sm:mb-16 md:mb-20 space-y-4">
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-4">
+                <Sparkles className="w-4 h-4 text-primary" />
+                <span className="text-sm font-semibold text-primary">Advanced Intelligence</span>
+              </div>
               <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-foreground px-4">
                 Powered by{" "}
                 <span className="bg-gradient-hero bg-clip-text text-transparent">
-                  Intelligence
+                  AI & Machine Learning
                 </span>
               </h2>
               <p className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto px-4">
-                Go beyond basic tracking with AI-driven insights and anomaly detection
+                Go beyond basic tracking with enterprise-grade analytics, conversational AI, and intelligent fraud detection
               </p>
             </div>
 
-            <div className="space-y-16 sm:space-y-20 md:space-y-24">
+            <div className="space-y-24 sm:space-y-32">
               {advancedFeatures.map((feature, index) => {
                 const Icon = feature.icon;
                 const isReversed = feature.imagePosition === "right";
@@ -723,196 +727,410 @@ const Index = () => {
                 return (
                   <div 
                     key={index}
-                    className={`grid lg:grid-cols-2 gap-8 sm:gap-12 items-center ${
-                      isReversed ? 'lg:grid-flow-dense' : ''
-                    }`}
+                    className="relative"
                   >
-                    {/* Content Side */}
-                    <div className={`space-y-6 ${isReversed ? 'lg:col-start-1' : ''}`}>
-                      <div className="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-br shadow-xl relative overflow-hidden group">
-                        <div className={`absolute inset-0 bg-gradient-to-br ${feature.color} opacity-90 group-hover:opacity-100 transition-opacity`}></div>
-                        <Icon className="w-8 h-8 sm:w-10 sm:h-10 text-white relative z-10" />
+                    {/* Feature Header */}
+                    <div className="mb-8 sm:mb-12">
+                      <div className="flex items-center gap-4 mb-6">
+                        <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${feature.color} flex items-center justify-center shadow-lg`}>
+                          <Icon className="w-7 h-7 text-white" />
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-2">
+                            {feature.title}
+                          </h3>
+                          <p className="text-base sm:text-lg text-muted-foreground">
+                            {feature.description}
+                          </p>
+                        </div>
                       </div>
-                      
-                      <div>
-                        <h3 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4">
-                          {feature.title}
-                        </h3>
-                        <p className="text-base sm:text-lg text-muted-foreground leading-relaxed mb-6">
-                          {feature.description}
-                        </p>
-                      </div>
-
-                      <ul className="space-y-3">
-                        {feature.benefits.map((benefit, idx) => (
-                          <li key={idx} className="flex items-start gap-3">
-                            <CheckCircle2 className={`w-5 h-5 mt-0.5 flex-shrink-0 bg-gradient-to-br ${feature.color} bg-clip-text text-transparent`} style={{
-                              filter: 'drop-shadow(0 0 2px currentColor)'
-                            }} />
-                            <span className="text-sm sm:text-base text-foreground">{benefit}</span>
-                          </li>
-                        ))}
-                      </ul>
                     </div>
 
-                    {/* Visual Side */}
-                    <div className={`${isReversed ? 'lg:col-start-2' : ''}`}>
-                      <Card className="bg-gradient-card border-2 border-primary/20 shadow-2xl overflow-hidden hover:shadow-glow transition-all duration-500 group">
-                        <CardContent className="p-6 sm:p-8">
-                          {/* Analytics Dashboard Mockup */}
-                          {index === 0 && (
-                            <div className="space-y-4">
-                              <div className="flex items-center justify-between mb-6">
-                                <h4 className="text-lg font-semibold">Expense Analytics</h4>
-                                <div className="flex gap-2">
-                                  <div className="w-3 h-3 rounded-full bg-red-500"></div>
-                                  <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
-                                  <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                    <div className={`grid lg:grid-cols-5 gap-8 sm:gap-12 items-start ${
+                      isReversed ? 'lg:grid-flow-dense' : ''
+                    }`}>
+                      {/* Benefits Cards */}
+                      <div className={`lg:col-span-2 space-y-4 ${isReversed ? 'lg:col-start-4' : ''}`}>
+                        {feature.benefits.map((benefit, idx) => (
+                          <Card 
+                            key={idx}
+                            className="bg-gradient-card border-border/50 shadow-card hover:shadow-xl hover:border-primary/30 transition-all duration-300 group"
+                          >
+                            <CardContent className="p-4 flex items-start gap-3">
+                              <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${feature.color} flex items-center justify-center flex-shrink-0 shadow-md group-hover:scale-110 transition-transform`}>
+                                <CheckCircle2 className="w-4 h-4 text-white" />
+                              </div>
+                              <p className="text-sm font-medium text-foreground leading-relaxed pt-1">
+                                {benefit}
+                              </p>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+
+                      {/* Interactive Demo */}
+                      <div className={`lg:col-span-3 ${isReversed ? 'lg:col-start-1 lg:row-start-1' : ''}`}>
+                        {/* Analytics Dashboard Mockup */}
+                        {index === 0 && (
+                          <Card className="bg-gradient-card border-2 border-primary/20 shadow-2xl overflow-hidden">
+                            <div className="bg-muted/50 px-4 py-3 border-b border-border flex items-center justify-between">
+                              <div className="flex items-center gap-3">
+                                <div className="flex gap-1.5">
+                                  <div className="w-3 h-3 rounded-full bg-red-500/80"></div>
+                                  <div className="w-3 h-3 rounded-full bg-yellow-500/80"></div>
+                                  <div className="w-3 h-3 rounded-full bg-green-500/80"></div>
+                                </div>
+                                <span className="text-sm font-semibold">Expense Analytics Dashboard</span>
+                              </div>
+                              <BarChart3 className="w-4 h-4 text-muted-foreground" />
+                            </div>
+                            <CardContent className="p-6 space-y-6">
+                              {/* Stats Grid */}
+                              <div className="grid grid-cols-3 gap-4">
+                                <div className="bg-background/50 rounded-lg p-4 border border-border">
+                                  <div className="text-2xl font-bold bg-gradient-to-r from-teal-500 to-green-500 bg-clip-text text-transparent">₹88K</div>
+                                  <div className="text-xs text-muted-foreground mt-1">Total Spend</div>
+                                  <div className="flex items-center gap-1 mt-2">
+                                    <TrendingUp className="w-3 h-3 text-green-500" />
+                                    <span className="text-xs text-green-500 font-semibold">12%</span>
+                                  </div>
+                                </div>
+                                <div className="bg-background/50 rounded-lg p-4 border border-border">
+                                  <div className="text-2xl font-bold bg-gradient-to-r from-teal-500 to-green-500 bg-clip-text text-transparent">156</div>
+                                  <div className="text-xs text-muted-foreground mt-1">Transactions</div>
+                                  <div className="flex items-center gap-1 mt-2">
+                                    <TrendingUp className="w-3 h-3 text-green-500" />
+                                    <span className="text-xs text-green-500 font-semibold">8%</span>
+                                  </div>
+                                </div>
+                                <div className="bg-background/50 rounded-lg p-4 border border-border">
+                                  <div className="text-2xl font-bold bg-gradient-to-r from-teal-500 to-green-500 bg-clip-text text-transparent">42</div>
+                                  <div className="text-xs text-muted-foreground mt-1">Employees</div>
+                                  <div className="flex items-center gap-1 mt-2">
+                                    <span className="text-xs text-muted-foreground font-semibold">Active</span>
+                                  </div>
                                 </div>
                               </div>
-                              
-                              {/* Chart representation */}
-                              <div className="space-y-3">
-                                <div className="flex items-center gap-3">
-                                  <div className="text-sm text-muted-foreground w-24">Travel</div>
-                                  <div className="flex-1 h-8 rounded-lg bg-gradient-to-r from-teal-500 to-green-500 opacity-80"></div>
-                                  <div className="text-sm font-semibold w-16 text-right">₹42K</div>
-                                </div>
-                                <div className="flex items-center gap-3">
-                                  <div className="text-sm text-muted-foreground w-24">Food</div>
-                                  <div className="flex-1 h-8 rounded-lg bg-gradient-to-r from-teal-500 to-green-500 opacity-60" style={{ width: '70%' }}></div>
-                                  <div className="text-sm font-semibold w-16 text-right">₹28K</div>
-                                </div>
-                                <div className="flex items-center gap-3">
-                                  <div className="text-sm text-muted-foreground w-24">Office</div>
-                                  <div className="flex-1 h-8 rounded-lg bg-gradient-to-r from-teal-500 to-green-500 opacity-40" style={{ width: '50%' }}></div>
-                                  <div className="text-sm font-semibold w-16 text-right">₹18K</div>
+
+                              {/* Category Breakdown */}
+                              <div>
+                                <h4 className="text-sm font-semibold mb-4 flex items-center justify-between">
+                                  <span>Spending by Category</span>
+                                  <span className="text-xs text-muted-foreground font-normal">Last 30 days</span>
+                                </h4>
+                                <div className="space-y-3">
+                                  <div className="group">
+                                    <div className="flex items-center justify-between mb-2">
+                                      <div className="flex items-center gap-2">
+                                        <div className="w-2 h-2 rounded-full bg-teal-500"></div>
+                                        <span className="text-sm font-medium">Travel & Transport</span>
+                                      </div>
+                                      <span className="text-sm font-bold">₹42,340</span>
+                                    </div>
+                                    <div className="h-2 bg-muted rounded-full overflow-hidden">
+                                      <div className="h-full bg-gradient-to-r from-teal-500 to-green-500 rounded-full transition-all duration-1000 group-hover:scale-x-105" style={{ width: '48%' }}></div>
+                                    </div>
+                                  </div>
+                                  <div className="group">
+                                    <div className="flex items-center justify-between mb-2">
+                                      <div className="flex items-center gap-2">
+                                        <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
+                                        <span className="text-sm font-medium">Meals & Entertainment</span>
+                                      </div>
+                                      <span className="text-sm font-bold">₹28,900</span>
+                                    </div>
+                                    <div className="h-2 bg-muted rounded-full overflow-hidden">
+                                      <div className="h-full bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full transition-all duration-1000 group-hover:scale-x-105" style={{ width: '33%' }}></div>
+                                    </div>
+                                  </div>
+                                  <div className="group">
+                                    <div className="flex items-center justify-between mb-2">
+                                      <div className="flex items-center gap-2">
+                                        <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                                        <span className="text-sm font-medium">Office Supplies</span>
+                                      </div>
+                                      <span className="text-sm font-bold">₹16,760</span>
+                                    </div>
+                                    <div className="h-2 bg-muted rounded-full overflow-hidden">
+                                      <div className="h-full bg-gradient-to-r from-green-500 to-emerald-500 rounded-full transition-all duration-1000 group-hover:scale-x-105" style={{ width: '19%' }}></div>
+                                    </div>
+                                  </div>
                                 </div>
                               </div>
-                              
-                              <div className="grid grid-cols-2 gap-4 mt-6 pt-6 border-t border-border">
-                                <div className="text-center">
-                                  <div className="text-2xl font-bold text-primary">₹88K</div>
-                                  <div className="text-xs text-muted-foreground">Total Spend</div>
+
+                              {/* Quick Actions */}
+                              <div className="flex gap-2 pt-2">
+                                <Button variant="outline" size="sm" className="flex-1 text-xs">
+                                  <PieChart className="w-3 h-3 mr-1" />
+                                  View Report
+                                </Button>
+                                <Button variant="outline" size="sm" className="flex-1 text-xs">
+                                  <Clock className="w-3 h-3 mr-1" />
+                                  Time Range
+                                </Button>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        )}
+
+                        {/* AI Chatbot Mockup */}
+                        {index === 1 && (
+                          <Card className="bg-gradient-card border-2 border-primary/20 shadow-2xl overflow-hidden">
+                            <div className="bg-gradient-to-r from-purple-500/10 to-pink-500/10 px-4 py-3 border-b border-border flex items-center justify-between">
+                              <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                                  <Sparkles className="w-4 h-4 text-white" />
                                 </div>
-                                <div className="text-center">
-                                  <div className="text-2xl font-bold text-primary">156</div>
-                                  <div className="text-xs text-muted-foreground">Transactions</div>
+                                <div>
+                                  <div className="text-sm font-semibold">AI Analytics Assistant</div>
+                                  <div className="text-xs text-muted-foreground flex items-center gap-1">
+                                    <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                                    Online
+                                  </div>
                                 </div>
                               </div>
                             </div>
-                          )}
-
-                          {/* AI Chatbot Mockup */}
-                          {index === 1 && (
-                            <div className="space-y-4">
-                              <div className="flex items-center justify-between mb-6">
-                                <h4 className="text-lg font-semibold">AI Analytics Assistant</h4>
-                                <Sparkles className="w-5 h-5 text-primary" />
-                              </div>
-                              
-                              {/* Chat messages */}
-                              <div className="space-y-4">
-                                <div className="flex justify-end">
-                                  <div className="bg-primary text-primary-foreground px-4 py-2 rounded-2xl rounded-tr-sm max-w-xs">
-                                    <p className="text-sm">How much did we spend on travel last month?</p>
+                            <CardContent className="p-0">
+                              {/* Chat Messages */}
+                              <div className="p-6 space-y-4 min-h-[320px] max-h-[400px] overflow-y-auto">
+                                <div className="flex justify-end animate-fade-in" style={{ animationDelay: '0ms' }}>
+                                  <div className="bg-primary text-primary-foreground px-4 py-3 rounded-2xl rounded-tr-md max-w-xs shadow-md">
+                                    <p className="text-sm">Show me travel expenses for last month</p>
+                                    <span className="text-xs opacity-70 mt-1 block">10:24 AM</span>
                                   </div>
                                 </div>
                                 
-                                <div className="flex justify-start">
-                                  <div className="bg-muted px-4 py-3 rounded-2xl rounded-tl-sm max-w-sm">
-                                    <p className="text-sm mb-3">Based on your data, travel expenses for last month:</p>
-                                    <div className="bg-background rounded-lg p-3 space-y-2">
-                                      <div className="flex justify-between text-xs">
-                                        <span className="text-muted-foreground">Total</span>
-                                        <span className="font-semibold">₹42,340</span>
+                                <div className="flex justify-start animate-fade-in" style={{ animationDelay: '200ms' }}>
+                                  <div className="bg-muted px-4 py-3 rounded-2xl rounded-tl-md max-w-md shadow-md">
+                                    <p className="text-sm mb-3">Here's your travel expense summary for last month:</p>
+                                    <Card className="bg-background border-border">
+                                      <CardContent className="p-3 space-y-2">
+                                        <div className="flex justify-between items-center">
+                                          <span className="text-xs text-muted-foreground">Total Amount</span>
+                                          <span className="text-lg font-bold bg-gradient-to-r from-purple-500 to-pink-500 bg-clip-text text-transparent">₹42,340</span>
+                                        </div>
+                                        <div className="h-px bg-border"></div>
+                                        <div className="grid grid-cols-2 gap-3 text-xs">
+                                          <div>
+                                            <div className="text-muted-foreground">Transactions</div>
+                                            <div className="font-semibold">23</div>
+                                          </div>
+                                          <div>
+                                            <div className="text-muted-foreground">Top Vendor</div>
+                                            <div className="font-semibold">Uber</div>
+                                          </div>
+                                          <div>
+                                            <div className="text-muted-foreground">Avg/Trip</div>
+                                            <div className="font-semibold">₹1,841</div>
+                                          </div>
+                                          <div>
+                                            <div className="text-muted-foreground">Employees</div>
+                                            <div className="font-semibold">12</div>
+                                          </div>
+                                        </div>
+                                      </CardContent>
+                                    </Card>
+                                    <span className="text-xs text-muted-foreground mt-2 block">10:24 AM</span>
+                                  </div>
+                                </div>
+
+                                <div className="flex justify-end animate-fade-in" style={{ animationDelay: '400ms' }}>
+                                  <div className="bg-primary text-primary-foreground px-4 py-3 rounded-2xl rounded-tr-md max-w-xs shadow-md">
+                                    <p className="text-sm">Who spent the most?</p>
+                                    <span className="text-xs opacity-70 mt-1 block">10:25 AM</span>
+                                  </div>
+                                </div>
+
+                                <div className="flex justify-start animate-fade-in" style={{ animationDelay: '600ms' }}>
+                                  <div className="bg-muted px-4 py-3 rounded-2xl rounded-tl-md max-w-md shadow-md">
+                                    <p className="text-sm mb-2">Top 3 employees by travel spend:</p>
+                                    <div className="space-y-2">
+                                      <div className="flex items-center gap-2 text-xs">
+                                        <div className="w-6 h-6 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold">1</div>
+                                        <span className="font-medium flex-1">Sarah J.</span>
+                                        <span className="font-bold">₹12,450</span>
                                       </div>
-                                      <div className="flex justify-between text-xs">
-                                        <span className="text-muted-foreground">Transactions</span>
-                                        <span className="font-semibold">23</span>
+                                      <div className="flex items-center gap-2 text-xs">
+                                        <div className="w-6 h-6 rounded-full bg-muted-foreground/20 flex items-center justify-center font-bold">2</div>
+                                        <span className="font-medium flex-1">Mike R.</span>
+                                        <span className="font-bold">₹9,800</span>
                                       </div>
-                                      <div className="flex justify-between text-xs">
-                                        <span className="text-muted-foreground">Top Vendor</span>
-                                        <span className="font-semibold">Uber</span>
+                                      <div className="flex items-center gap-2 text-xs">
+                                        <div className="w-6 h-6 rounded-full bg-muted-foreground/20 flex items-center justify-center font-bold">3</div>
+                                        <span className="font-medium flex-1">Priya S.</span>
+                                        <span className="font-bold">₹7,340</span>
                                       </div>
                                     </div>
+                                    <span className="text-xs text-muted-foreground mt-2 block">10:25 AM</span>
                                   </div>
                                 </div>
                               </div>
                               
-                              <div className="flex items-center gap-2 pt-4 border-t border-border">
-                                <div className="flex-1 h-10 rounded-lg bg-muted flex items-center px-3 text-sm text-muted-foreground">
-                                  Ask me anything...
+                              {/* Input Area */}
+                              <div className="p-4 bg-muted/30 border-t border-border">
+                                <div className="flex items-center gap-2">
+                                  <div className="flex-1 h-11 rounded-lg bg-background border border-border flex items-center px-4">
+                                    <span className="text-sm text-muted-foreground">Ask me anything about expenses...</span>
+                                  </div>
+                                  <Button size="icon" className="h-11 w-11 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 hover:opacity-90">
+                                    <ArrowRight className="w-5 h-5" />
+                                  </Button>
                                 </div>
-                                <Button size="icon" className="h-10 w-10 rounded-lg">
-                                  <ArrowRight className="w-4 h-4" />
-                                </Button>
+                                <p className="text-xs text-muted-foreground mt-2 text-center">
+                                  Powered by AI • Instant insights from your data
+                                </p>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        )}
+
+                        {/* Anomaly Detection Mockup */}
+                        {index === 2 && (
+                          <Card className="bg-gradient-card border-2 border-primary/20 shadow-2xl overflow-hidden">
+                            <div className="bg-destructive/10 px-4 py-3 border-b border-destructive/20 flex items-center justify-between">
+                              <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-lg bg-destructive flex items-center justify-center">
+                                  <Shield className="w-4 h-4 text-destructive-foreground" />
+                                </div>
+                                <div>
+                                  <div className="text-sm font-semibold">Fraud Detection System</div>
+                                  <div className="text-xs text-muted-foreground">Real-time monitoring active</div>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-destructive text-destructive-foreground">
+                                <AlertCircle className="w-4 h-4" />
+                                <span className="text-xs font-bold">3 Alerts</span>
                               </div>
                             </div>
-                          )}
-
-                          {/* Anomaly Detection Mockup */}
-                          {index === 2 && (
-                            <div className="space-y-4">
-                              <div className="flex items-center justify-between mb-6">
-                                <h4 className="text-lg font-semibold">Anomaly Dashboard</h4>
-                                <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-destructive/10 border border-destructive/20">
-                                  <AlertCircle className="w-4 h-4 text-destructive" />
-                                  <span className="text-xs font-semibold text-destructive">3 Flagged</span>
+                            <CardContent className="p-6 space-y-4">
+                              {/* High Risk Alert */}
+                              <Card className="border-2 border-red-500 bg-red-500/5 shadow-lg overflow-hidden animate-fade-in">
+                                <div className="bg-red-500/20 px-4 py-2 border-b border-red-500/30 flex items-center justify-between">
+                                  <div className="flex items-center gap-2">
+                                    <AlertCircle className="w-4 h-4 text-red-600" />
+                                    <span className="text-xs font-bold text-red-600">CRITICAL RISK</span>
+                                  </div>
+                                  <span className="px-2 py-1 rounded-md bg-red-600 text-white text-xs font-bold">HIGH</span>
                                 </div>
-                              </div>
-                              
-                              {/* Flagged expenses */}
-                              <div className="space-y-3">
-                                <Card className="border-2 border-red-500/30 bg-red-500/5">
-                                  <CardContent className="p-4">
-                                    <div className="flex items-start justify-between mb-2">
-                                      <div className="flex-1">
-                                        <div className="font-semibold text-sm">Duplicate Detected</div>
-                                        <div className="text-xs text-muted-foreground">Restaurant Bill - ₹2,450</div>
-                                      </div>
-                                      <div className="px-2 py-1 rounded-full bg-red-500/20 text-red-500 text-xs font-bold">
-                                        HIGH
+                                <CardContent className="p-4">
+                                  <div className="flex items-start gap-3 mb-3">
+                                    <div className="w-10 h-10 rounded-lg bg-red-500/20 flex items-center justify-center flex-shrink-0">
+                                      <Receipt className="w-5 h-5 text-red-600" />
+                                    </div>
+                                    <div className="flex-1">
+                                      <div className="font-bold text-sm mb-1">Duplicate Transaction Detected</div>
+                                      <div className="text-xs text-muted-foreground mb-2">Restaurant Bill • ₹2,450 • 2 hours ago</div>
+                                      <div className="flex items-center gap-2 text-xs">
+                                        <Users className="w-3 h-3" />
+                                        <span>John Doe (Marketing)</span>
                                       </div>
                                     </div>
-                                    <p className="text-xs text-muted-foreground">Same vendor, amount, and date as expense #1234</p>
-                                  </CardContent>
-                                </Card>
+                                  </div>
+                                  <div className="bg-background/50 rounded-lg p-3 space-y-2 border border-red-500/20">
+                                    <div className="flex items-start gap-2">
+                                      <CheckCircle2 className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" />
+                                      <span className="text-xs">Same vendor: "The Pizza Place"</span>
+                                    </div>
+                                    <div className="flex items-start gap-2">
+                                      <CheckCircle2 className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" />
+                                      <span className="text-xs">Identical amount: ₹2,450</span>
+                                    </div>
+                                    <div className="flex items-start gap-2">
+                                      <CheckCircle2 className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" />
+                                      <span className="text-xs">Same date: Nov 15, 2024</span>
+                                    </div>
+                                    <div className="pt-2 border-t border-border mt-2">
+                                      <span className="text-xs font-semibold text-red-600">
+                                        ⚠️ Matches expense #1234 submitted yesterday
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <div className="flex gap-2 mt-3">
+                                    <Button size="sm" variant="destructive" className="flex-1 text-xs">
+                                      Flag & Reject
+                                    </Button>
+                                    <Button size="sm" variant="outline" className="flex-1 text-xs">
+                                      Review Details
+                                    </Button>
+                                  </div>
+                                </CardContent>
+                              </Card>
 
-                                <Card className="border-2 border-orange-500/30 bg-orange-500/5">
-                                  <CardContent className="p-4">
-                                    <div className="flex items-start justify-between mb-2">
-                                      <div className="flex-1">
-                                        <div className="font-semibold text-sm">Statistical Outlier</div>
-                                        <div className="text-xs text-muted-foreground">Office Supplies - ₹8,900</div>
-                                      </div>
-                                      <div className="px-2 py-1 rounded-full bg-orange-500/20 text-orange-500 text-xs font-bold">
-                                        MED
+                              {/* Medium Risk Alert */}
+                              <Card className="border-2 border-orange-500 bg-orange-500/5 shadow-md overflow-hidden animate-fade-in" style={{ animationDelay: '200ms' }}>
+                                <div className="bg-orange-500/20 px-4 py-2 border-b border-orange-500/30 flex items-center justify-between">
+                                  <div className="flex items-center gap-2">
+                                    <TrendingUp className="w-4 h-4 text-orange-600" />
+                                    <span className="text-xs font-bold text-orange-600">UNUSUAL PATTERN</span>
+                                  </div>
+                                  <span className="px-2 py-1 rounded-md bg-orange-600 text-white text-xs font-bold">MEDIUM</span>
+                                </div>
+                                <CardContent className="p-4">
+                                  <div className="flex items-start gap-3 mb-3">
+                                    <div className="w-10 h-10 rounded-lg bg-orange-500/20 flex items-center justify-center flex-shrink-0">
+                                      <BarChart3 className="w-5 h-5 text-orange-600" />
+                                    </div>
+                                    <div className="flex-1">
+                                      <div className="font-bold text-sm mb-1">Statistical Outlier</div>
+                                      <div className="text-xs text-muted-foreground mb-2">Office Supplies • ₹8,900 • 5 hours ago</div>
+                                      <div className="flex items-center gap-2 text-xs">
+                                        <Users className="w-3 h-3" />
+                                        <span>Sarah Miller (Operations)</span>
                                       </div>
                                     </div>
-                                    <p className="text-xs text-muted-foreground">245% higher than employee's average</p>
-                                  </CardContent>
-                                </Card>
+                                  </div>
+                                  <div className="bg-background/50 rounded-lg p-3 border border-orange-500/20">
+                                    <div className="flex items-center justify-between mb-2">
+                                      <span className="text-xs text-muted-foreground">Amount vs Average</span>
+                                      <span className="text-xs font-bold text-orange-600">+245%</span>
+                                    </div>
+                                    <div className="flex gap-2 items-end h-12">
+                                      <div className="flex-1 bg-muted rounded-t h-4 flex items-center justify-center">
+                                        <span className="text-xs font-semibold">₹2.8K</span>
+                                      </div>
+                                      <div className="flex-1 bg-gradient-to-t from-orange-500 to-orange-400 rounded-t h-full flex items-center justify-center">
+                                        <span className="text-xs font-bold text-white">₹8.9K</span>
+                                      </div>
+                                    </div>
+                                    <div className="flex justify-between mt-1 text-xs text-muted-foreground">
+                                      <span>Avg</span>
+                                      <span>Current</span>
+                                    </div>
+                                  </div>
+                                  <Button size="sm" variant="outline" className="w-full mt-3 text-xs">
+                                    Request Explanation
+                                  </Button>
+                                </CardContent>
+                              </Card>
 
-                                <Card className="border-2 border-yellow-500/30 bg-yellow-500/5">
-                                  <CardContent className="p-4">
-                                    <div className="flex items-start justify-between mb-2">
-                                      <div className="flex-1">
-                                        <div className="font-semibold text-sm">Policy Violation</div>
-                                        <div className="text-xs text-muted-foreground">Taxi Fare - ₹1,200</div>
-                                      </div>
-                                      <div className="px-2 py-1 rounded-full bg-yellow-500/20 text-yellow-500 text-xs font-bold">
-                                        LOW
+                              {/* Low Risk Alert */}
+                              <Card className="border-2 border-yellow-500 bg-yellow-500/5 shadow-sm overflow-hidden animate-fade-in" style={{ animationDelay: '400ms' }}>
+                                <div className="bg-yellow-500/20 px-4 py-2 border-b border-yellow-500/30 flex items-center justify-between">
+                                  <div className="flex items-center gap-2">
+                                    <FileX className="w-4 h-4 text-yellow-600" />
+                                    <span className="text-xs font-bold text-yellow-600">POLICY ISSUE</span>
+                                  </div>
+                                  <span className="px-2 py-1 rounded-md bg-yellow-600 text-white text-xs font-bold">LOW</span>
+                                </div>
+                                <CardContent className="p-4">
+                                  <div className="flex items-start gap-3">
+                                    <div className="w-10 h-10 rounded-lg bg-yellow-500/20 flex items-center justify-center flex-shrink-0">
+                                      <Camera className="w-5 h-5 text-yellow-600" />
+                                    </div>
+                                    <div className="flex-1">
+                                      <div className="font-bold text-sm mb-1">Missing Receipt</div>
+                                      <div className="text-xs text-muted-foreground mb-2">Taxi Fare • ₹1,200 • 1 day ago</div>
+                                      <div className="text-xs bg-background/50 rounded-lg p-2 border border-yellow-500/20">
+                                        Policy requires receipt for expenses over ₹1,000
                                       </div>
                                     </div>
-                                    <p className="text-xs text-muted-foreground">Missing required receipt attachment</p>
-                                  </CardContent>
-                                </Card>
-                              </div>
-                            </div>
-                          )}
-                        </CardContent>
-                      </Card>
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            </CardContent>
+                          </Card>
+                        )}
+                      </div>
                     </div>
                   </div>
                 );
