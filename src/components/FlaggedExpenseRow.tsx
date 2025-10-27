@@ -343,30 +343,32 @@ export const FlaggedExpenseRow = ({ expense, onClick, onReject }: FlaggedExpense
               <AlertTriangle className="w-5 h-5 text-destructive" />
               Reject Flagged Expense?
             </AlertDialogTitle>
-            <AlertDialogDescription className="space-y-3 pt-2">
-              <div className="text-foreground">
-                You are about to reject this expense:
-              </div>
-              <div className="bg-muted p-3 rounded-lg space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Vendor:</span>
-                  <span className="font-semibold">{expense.vendor}</span>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3 pt-2">
+                <p className="text-foreground">
+                  You are about to reject this expense:
+                </p>
+                <div className="bg-muted p-3 rounded-lg space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Vendor:</span>
+                    <span className="font-semibold">{expense.vendor}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Amount:</span>
+                    <span className="font-semibold">₹{Number(expense.amount).toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Employee:</span>
+                    <span className="font-semibold">{employeeName || "Unknown"}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Reason:</span>
+                    <span className="font-semibold text-destructive">{getReasonLabel(primaryReason)}</span>
+                  </div>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Amount:</span>
-                  <span className="font-semibold">₹{Number(expense.amount).toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Employee:</span>
-                  <span className="font-semibold">{employeeName || "Unknown"}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Reason:</span>
-                  <span className="font-semibold text-destructive">{getReasonLabel(primaryReason)}</span>
-                </div>
-              </div>
-              <div className="text-sm text-muted-foreground">
-                The employee will be notified of the rejection. This action cannot be undone.
+                <p className="text-sm text-muted-foreground">
+                  The employee will be notified of the rejection. This action cannot be undone.
+                </p>
               </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
