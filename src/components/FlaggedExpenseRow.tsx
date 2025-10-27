@@ -1,6 +1,23 @@
-import { AlertTriangle, TrendingUp, DollarSign, Calendar, Target, Copy, Clock } from "lucide-react";
+import { 
+  AlertTriangle, 
+  TrendingUp, 
+  DollarSign, 
+  Calendar, 
+  Target, 
+  Copy, 
+  Clock, 
+  Receipt,
+  CheckCircle,
+  Users,
+  AlertCircle,
+  FileX
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { formatDistanceToNow } from "date-fns";
 
 interface FlaggedExpenseRowProps {
   expense: any;
@@ -29,91 +46,246 @@ const getReasonIcon = (code: string) => {
 const getReasonLabel = (code: string) => {
   const labels: Record<string, string> = {
     statistical_outlier: "Statistical Outlier",
-    duplicate_claim: "Duplicate Claim",
-    date_mismatch: "Date Mismatch",
-    round_number: "Round Number",
-    weekend_office: "Weekend Office",
-    threshold_gaming: "Threshold Gaming"
+    duplicate_claim: "Duplicate Transaction Detected",
+    date_mismatch: "Date Mismatch Detected",
+    round_number: "Suspicious Round Number",
+    weekend_office: "Weekend Office Expense",
+    threshold_gaming: "Threshold Gaming Detected"
   };
   return labels[code] || code;
 };
 
+const getReasonDetails = (code: string, expense: any) => {
+  switch (code) {
+    case "duplicate_claim":
+      return [
+        `Same vendor: "${expense.vendor}"`,
+        `Identical amount: ₹${Number(expense.amount).toFixed(0)}`,
+        `Same date: ${new Date(expense.date).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' })}`
+      ];
+    case "statistical_outlier":
+      return [
+        `Amount significantly above average`,
+        `Statistical deviation detected`,
+        `Requires additional verification`
+      ];
+    case "date_mismatch":
+      return [
+        `Bill date differs from submission`,
+        `Delayed submission detected`,
+        `Verify transaction authenticity`
+      ];
+    case "round_number":
+      return [
+        `Suspiciously round amount`,
+        `No fractional components`,
+        `May lack supporting receipt`
+      ];
+    case "weekend_office":
+      return [
+        `Office expense on weekend`,
+        `Unusual transaction timing`,
+        `Requires manager approval`
+      ];
+    case "threshold_gaming":
+      return [
+        `Amount close to approval limit`,
+        `Possible threshold avoidance`,
+        `Review authorization policy`
+      ];
+    default:
+      return [];
+  }
+};
+
 export const FlaggedExpenseRow = ({ expense, onClick }: FlaggedExpenseRowProps) => {
+  const [employeeName, setEmployeeName] = useState<string>("");
+  const [employeeDepartment, setEmployeeDepartment] = useState<string>("");
+  
   const score = expense.suspicionScore || 0;
   const severity = score >= 50 ? "high" : score >= 30 ? "medium" : "low";
-  const severityColors = {
-    high: "border-red-500/50 bg-red-500/10 hover:bg-red-500/15",
-    medium: "border-yellow-500/50 bg-yellow-500/10 hover:bg-yellow-500/15",
-    low: "border-blue-500/50 bg-blue-500/10 hover:bg-blue-500/15"
+  
+  const severityConfig = {
+    high: {
+      border: "border-red-500",
+      bg: "bg-red-500/5",
+      headerBg: "bg-red-500/20",
+      headerBorder: "border-red-500/30",
+      iconBg: "bg-red-500/20",
+      iconColor: "text-red-600",
+      badgeBg: "bg-red-600",
+      textColor: "text-red-600",
+      label: "CRITICAL RISK",
+      badge: "HIGH"
+    },
+    medium: {
+      border: "border-orange-500",
+      bg: "bg-orange-500/5",
+      headerBg: "bg-orange-500/20",
+      headerBorder: "border-orange-500/30",
+      iconBg: "bg-orange-500/20",
+      iconColor: "text-orange-600",
+      badgeBg: "bg-orange-600",
+      textColor: "text-orange-600",
+      label: "UNUSUAL PATTERN",
+      badge: "MEDIUM"
+    },
+    low: {
+      border: "border-yellow-500",
+      bg: "bg-yellow-500/5",
+      headerBg: "bg-yellow-500/20",
+      headerBorder: "border-yellow-500/30",
+      iconBg: "bg-yellow-500/20",
+      iconColor: "text-yellow-600",
+      badgeBg: "bg-yellow-600",
+      textColor: "text-yellow-600",
+      label: "POLICY ISSUE",
+      badge: "LOW"
+    }
   };
 
-  const hasDuplicate = expense.reasonCodes?.includes("duplicate_claim");
+  const config = severityConfig[severity];
+  const primaryReason = expense.reasonCodes?.[0] || "statistical_outlier";
+  const ReasonIcon = getReasonIcon(primaryReason);
+  const reasonDetails = getReasonDetails(primaryReason, expense);
   const duplicateCount = expense.duplicateInfo?.count || 0;
+  const timeAgo = formatDistanceToNow(new Date(expense.created_at), { addSuffix: true });
+
+  useEffect(() => {
+    const fetchEmployeeInfo = async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("full_name, email")
+        .eq("id", expense.user_id)
+        .maybeSingle();
+      
+      if (data) {
+        setEmployeeName(data.full_name || data.email || "Unknown Employee");
+        // You can add department field to profiles table if needed
+        setEmployeeDepartment(""); // Placeholder
+      }
+    };
+    
+    if (expense.user_id) {
+      fetchEmployeeInfo();
+    }
+  }, [expense.user_id]);
+
+  const handleReject = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    // Handle rejection logic
+    onClick();
+  };
+
+  const handleReview = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onClick();
+  };
 
   return (
     <Card
-      className={`p-4 cursor-pointer hover:shadow-lg transition-all ${severityColors[severity]} border-2`}
-      onClick={onClick}
+      className={`border-2 ${config.border} ${config.bg} shadow-lg overflow-hidden hover:shadow-2xl transition-all duration-300 animate-fade-in`}
     >
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex-1">
-          <div className="flex items-center gap-2 mb-2">
-            <Badge
-              variant={severity === "high" ? "destructive" : severity === "medium" ? "default" : "secondary"}
-              className="font-semibold"
-            >
-              {severity.toUpperCase()} RISK
-            </Badge>
-            <span className="text-sm font-medium text-muted-foreground">Score: {score}/100</span>
-            {hasDuplicate && (
-              <Badge variant="destructive" className="animate-pulse">
-                <Copy className="w-3 h-3 mr-1" />
-                {duplicateCount}x Duplicate
-              </Badge>
+      {/* Header */}
+      <div className={`${config.headerBg} px-4 py-3 border-b ${config.headerBorder} flex items-center justify-between`}>
+        <div className="flex items-center gap-2">
+          <AlertCircle className={`w-5 h-5 ${config.iconColor}`} />
+          <span className={`text-sm font-bold ${config.textColor}`}>
+            {config.label}
+          </span>
+        </div>
+        <Badge className={`${config.badgeBg} text-white border-0 font-bold px-3 py-1`}>
+          {config.badge}
+        </Badge>
+      </div>
+
+      <CardContent className="p-6">
+        <div className="flex items-start gap-4 mb-4">
+          {/* Icon */}
+          <div className={`w-16 h-16 rounded-xl ${config.iconBg} flex items-center justify-center flex-shrink-0`}>
+            <ReasonIcon className={`w-8 h-8 ${config.iconColor}`} />
+          </div>
+
+          {/* Main Content */}
+          <div className="flex-1">
+            <h3 className="text-xl font-bold text-foreground mb-2">
+              {getReasonLabel(primaryReason)}
+            </h3>
+            <p className="text-sm text-muted-foreground mb-3">
+              {expense.category} • ₹{Number(expense.amount).toFixed(0)} • {timeAgo}
+            </p>
+            {employeeName && (
+              <div className="flex items-center gap-2 text-sm text-foreground">
+                <Users className="w-4 h-4" />
+                <span>
+                  {employeeName}
+                  {employeeDepartment && ` (${employeeDepartment})`}
+                </span>
+              </div>
             )}
           </div>
+        </div>
 
-          <div className="flex items-center gap-4 mb-3">
-            <div className="flex-1">
-              <p className="font-semibold text-lg text-foreground">{expense.vendor}</p>
-              <p className="text-sm text-muted-foreground">
-                {expense.category} • {new Date(expense.date).toLocaleDateString()} • ID: {expense.id.slice(0, 8)}
-              </p>
-              {hasDuplicate && expense.duplicateInfo && (
-                <p className="text-sm text-red-500 font-medium mt-1">
-                  ⚠️ {duplicateCount} identical claims found (Total: ₹{expense.duplicateInfo.totalAmount.toFixed(2)})
-                </p>
-              )}
-            </div>
-            <div className="text-right">
-              <p className="text-2xl font-bold text-foreground">₹{Number(expense.amount).toFixed(2)}</p>
-              <Badge variant="outline" className="mt-1">
-                {expense.status}
-              </Badge>
+        {/* Details Section */}
+        {reasonDetails.length > 0 && (
+          <div className="bg-background/50 rounded-lg p-4 border border-border mb-4">
+            <div className="space-y-2">
+              {reasonDetails.map((detail, idx) => (
+                <div key={idx} className="flex items-start gap-2">
+                  <CheckCircle className={`w-4 h-4 ${config.iconColor} mt-0.5 flex-shrink-0`} />
+                  <span className="text-sm text-foreground">{detail}</span>
+                </div>
+              ))}
             </div>
           </div>
+        )}
 
-          <div className="flex flex-wrap gap-2">
-            {(expense.reasonCodes || []).map((code: string) => {
+        {/* Warning Message */}
+        {primaryReason === "duplicate_claim" && duplicateCount > 1 && (
+          <div className={`flex items-start gap-2 mb-4 p-3 rounded-lg ${config.headerBg} border ${config.headerBorder}`}>
+            <AlertTriangle className={`w-4 h-4 ${config.iconColor} mt-0.5 flex-shrink-0`} />
+            <span className={`text-sm font-semibold ${config.textColor}`}>
+              ⚠️ Matches {duplicateCount - 1} other expense{duplicateCount > 2 ? 's' : ''} with identical details
+            </span>
+          </div>
+        )}
+
+        {/* Secondary Reasons */}
+        {expense.reasonCodes && expense.reasonCodes.length > 1 && (
+          <div className="flex flex-wrap gap-2 mb-4">
+            {expense.reasonCodes.slice(1).map((code: string) => {
               const Icon = getReasonIcon(code);
-              const isHighSeverity = code === "duplicate_claim" || code === "statistical_outlier";
               return (
                 <div
                   key={code}
-                  className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border transition-colors ${
-                    isHighSeverity 
-                      ? "bg-red-500/20 border-red-500/50 text-red-500" 
-                      : "bg-background/50 border-border text-muted-foreground"
-                  }`}
+                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-muted border border-border text-xs"
                 >
-                  <Icon className="w-3.5 h-3.5" />
-                  <span className="text-xs font-medium">{getReasonLabel(code)}</span>
+                  <Icon className="w-3 h-3" />
+                  <span className="font-medium">{getReasonLabel(code)}</span>
                 </div>
               );
             })}
           </div>
+        )}
+
+        {/* Action Buttons */}
+        <div className="flex gap-3">
+          <Button
+            variant="destructive"
+            className="flex-1 font-semibold"
+            onClick={handleReject}
+          >
+            Flag & Reject
+          </Button>
+          <Button
+            variant="outline"
+            className="flex-1 font-semibold border-2"
+            onClick={handleReview}
+          >
+            Review Details
+          </Button>
         </div>
-      </div>
+      </CardContent>
     </Card>
   );
 };
