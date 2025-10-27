@@ -29,6 +29,7 @@ import { FlaggedExpenseRow } from "@/components/FlaggedExpenseRow";
 import { ExpenseDetailModal } from "@/components/ExpenseDetailModal";
 import { ReasonGlossary } from "@/components/ReasonGlossary";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { AnalyticsChatbot } from "@/components/AnalyticsChatbot";
 
 const AnomalyDashboard = () => {
   const { user, userRole } = useAuth();
@@ -369,6 +370,8 @@ const AnomalyDashboard = () => {
         open={showGlossary}
         onOpenChange={setShowGlossary}
       />
+
+      <AnalyticsChatbot />
     </div>
   );
 };

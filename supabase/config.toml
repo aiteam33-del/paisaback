@@ -3,6 +3,9 @@ project_id = "dwxrdgimwuhlcjsdugzu"
 [functions.analyze-expenses]
 verify_jwt = true
 
+[functions.analytics-chatbot]
+verify_jwt = true
+
 [functions.extract-receipt-ocr]
 verify_jwt = false
 
