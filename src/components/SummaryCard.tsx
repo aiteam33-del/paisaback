@@ -70,9 +70,9 @@ export const SummaryCard = ({
   return (
     <Card className={`shadow-card border-primary/20 hover:border-primary/40 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 ${highlight ? "bg-gradient-primary text-primary-foreground" : ""}`}>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{title}</CardTitle>
+        <CardTitle className={`text-xs font-medium uppercase tracking-wide ${highlight ? "text-primary-foreground/90" : "text-muted-foreground"}`}>{title}</CardTitle>
         <div className={`p-2 rounded-lg ${highlight ? "bg-white/20" : "bg-gradient-primary"}`}>
-          <Icon className={`h-4 w-4 ${highlight ? "" : "text-primary-foreground"}`} />
+          <Icon className={`h-4 w-4 ${highlight ? "text-primary-foreground" : "text-primary-foreground"}`} />
         </div>
       </CardHeader>
       <CardContent className="space-y-3">
