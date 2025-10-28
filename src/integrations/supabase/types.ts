@@ -344,6 +344,14 @@ export type Database = {
     }
     Functions: {
       approve_join_request: { Args: { request_id: string }; Returns: boolean }
+      get_join_request_applicants: {
+        Args: { _org_id: string }
+        Returns: {
+          email: string
+          full_name: string
+          id: string
+        }[]
+      }
       get_organizations_for_joining: {
         Args: never
         Returns: {
