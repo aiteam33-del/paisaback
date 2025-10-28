@@ -221,6 +221,21 @@ export const IntegrationHub = ({ organizationId }: IntegrationHubProps) => {
               <CardDescription>
                 Download approved expenses in formats compatible with Tally, QuickBooks, and Zoho Books
               </CardDescription>
+              <Alert className="mt-4">
+                <AlertDescription className="text-sm">
+                  <p className="font-medium mb-2">📋 Tally Import Instructions:</p>
+                  <ol className="list-decimal list-inside space-y-1 text-xs">
+                    <li>Export XML file below</li>
+                    <li>Open Tally → Gateway of Tally → Import Data → Vouchers</li>
+                    <li>Select the downloaded XML file</li>
+                    <li>Review and confirm import</li>
+                  </ol>
+                  <p className="text-xs mt-2 text-muted-foreground">
+                    ⚠️ <strong>Important:</strong> Ensure ledger names like "Expense Reimbursement" and category-based ledgers 
+                    (e.g., "Food Expenses", "Travel Expenses") exist in your Tally company before importing.
+                  </p>
+                </AlertDescription>
+              </Alert>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
