@@ -6,8 +6,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Building2, Users, Clock, CheckCircle, Loader2, BarChart3, Shield, FileText, UserCheck } from "lucide-react";
 import { SummaryCard } from "@/components/SummaryCard";
-import { Button } from "@/components/ui/button";
 import { AnalyticsChatbot } from "@/components/AnalyticsChatbot";
+import { ModeToggle } from "@/components/ModeToggle";
 
 const OrganizationAdmin = () => {
   const { user } = useAuth();
@@ -119,26 +119,22 @@ const OrganizationAdmin = () => {
                 <p className="text-lg text-muted-foreground">Admin Dashboard - Action Center</p>
               </div>
             </div>
-            <div className="flex gap-2 bg-card/50 backdrop-blur-sm border border-border/50 rounded-lg p-2 shadow-md">
-              <Button
-                onClick={() => navigate("/admin/analytics")}
-                size="lg"
-                variant="outline"
-                className="shadow-sm hover:shadow-md transition-all"
-              >
-                <BarChart3 className="w-5 h-5 mr-2" />
-                Analytics
-              </Button>
-              <Button
-                onClick={() => navigate("/admin/anomalies")}
-                size="lg"
-                variant={stats.joinRequestCount > 0 ? "destructive" : "outline"}
-                className="shadow-sm hover:shadow-md transition-all"
-              >
-                <Shield className="w-5 h-5 mr-2" />
-                Anomaly Detection
-              </Button>
-            </div>
+            <ModeToggle
+              modes={[
+                {
+                  label: "Analytics",
+                  icon: BarChart3,
+                  onClick: () => navigate("/admin/analytics"),
+                },
+                {
+                  label: "Anomaly Detection",
+                  icon: Shield,
+                  onClick: () => navigate("/admin/anomalies"),
+                  variant: "alert",
+                  badge: stats.joinRequestCount,
+                },
+              ]}
+            />
           </div>
         </div>
 
