@@ -128,6 +128,56 @@ export type Database = {
           },
         ]
       }
+      integration_exports: {
+        Row: {
+          created_at: string | null
+          date_range_end: string | null
+          date_range_start: string | null
+          expense_count: number
+          export_date: string | null
+          export_type: string
+          file_name: string
+          id: string
+          organization_id: string | null
+          total_amount: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          date_range_end?: string | null
+          date_range_start?: string | null
+          expense_count?: number
+          export_date?: string | null
+          export_type: string
+          file_name: string
+          id?: string
+          organization_id?: string | null
+          total_amount?: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          date_range_end?: string | null
+          date_range_start?: string | null
+          expense_count?: number
+          export_date?: string | null
+          export_type?: string
+          file_name?: string
+          id?: string
+          organization_id?: string | null
+          total_amount?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "integration_exports_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       join_requests: {
         Row: {
           created_at: string
@@ -228,6 +278,8 @@ export type Database = {
           created_at: string
           id: string
           name: string
+          slack_enabled: boolean | null
+          slack_webhook_url: string | null
           updated_at: string
         }
         Insert: {
@@ -235,6 +287,8 @@ export type Database = {
           created_at?: string
           id?: string
           name: string
+          slack_enabled?: boolean | null
+          slack_webhook_url?: string | null
           updated_at?: string
         }
         Update: {
@@ -242,6 +296,8 @@ export type Database = {
           created_at?: string
           id?: string
           name?: string
+          slack_enabled?: boolean | null
+          slack_webhook_url?: string | null
           updated_at?: string
         }
         Relationships: []

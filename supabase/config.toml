@@ -23,3 +23,15 @@ verify_jwt = false
 
 [functions.send-waitlist-notification]
 verify_jwt = false
+
+[functions.export-tally-xml]
+verify_jwt = true
+
+[functions.export-quickbooks-iif]
+verify_jwt = true
+
+[functions.export-zoho-csv]
+verify_jwt = true
+
+[functions.generate-calendar-ics]
+verify_jwt = true

@@ -15,6 +15,7 @@ import OrganizationAdmin from "./pages/OrganizationAdmin";
 import AdminExpenses from "./pages/AdminExpenses";
 import AdminEmployees from "./pages/AdminEmployees";
 import AdminJoinRequests from "./pages/AdminJoinRequests";
+import AdminIntegrations from "./pages/AdminIntegrations";
 import EmployeeExpenseView from "./pages/EmployeeExpenseView";
 import PendingRequest from "./pages/PendingRequest";
 import RejectedRequest from "./pages/RejectedRequest";
@@ -44,6 +45,7 @@ const App = () => (
               <Route path="/admin/expenses" element={<AdminExpenses />} />
               <Route path="/admin/employees" element={<AdminEmployees />} />
               <Route path="/admin/join-requests" element={<AdminJoinRequests />} />
+              <Route path="/admin/integrations" element={<AdminIntegrations />} />
               <Route path="/admin/analytics" element={<ExpenseAnalytics />} />
               <Route path="/admin/anomalies" element={<AnomalyDashboard />} />
               <Route path="/admin/employee/:employeeId" element={<EmployeeExpenseView />} />
