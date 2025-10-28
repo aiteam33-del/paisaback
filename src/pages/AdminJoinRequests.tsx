@@ -67,7 +67,7 @@ const AdminJoinRequests = () => {
         .single();
 
       if (orgData) {
-        // Get pending join requests
+        // Get pending join requests with employee details using security definer function
         const { data: joinRequestsData, error: jrError } = await supabase
           .from("join_requests")
           .select("*")
@@ -77,18 +77,21 @@ const AdminJoinRequests = () => {
 
         if (jrError) {
           console.error("Error loading join requests:", jrError);
+          setJoinRequests([]);
+          return;
         }
 
         if (joinRequestsData && joinRequestsData.length > 0) {
-          // Fetch employee profiles
-          const employeeIds = joinRequestsData.map(req => req.employee_id);
-          const { data: employeeProfiles } = await supabase
-            .from("profiles")
-            .select("id, full_name, email")
-            .in("id", employeeIds);
+          // Use the security definer function to get employee profiles (bypasses RLS)
+          const { data: applicants, error: applicantsError } = await supabase
+            .rpc('get_join_request_applicants', { _org_id: orgData.id });
+
+          if (applicantsError) {
+            console.error("Error loading applicants:", applicantsError);
+          }
 
           const profileMap = new Map(
-            (employeeProfiles || []).map(p => [p.id, { full_name: p.full_name || "Unknown", email: p.email }])
+            (applicants || []).map(p => [p.id, { full_name: p.full_name || "Unknown", email: p.email || "unknown" }])
           );
 
           setJoinRequests(joinRequestsData.map(req => ({
