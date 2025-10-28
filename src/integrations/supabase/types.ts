@@ -343,9 +343,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      approve_join_request: {
-        Args: { request_id: string }
-        Returns: boolean
+      approve_join_request: { Args: { request_id: string }; Returns: boolean }
+      get_organizations_for_joining: {
+        Args: never
+        Returns: {
+          id: string
+          name: string
+        }[]
       }
       get_user_highest_role: {
         Args: { _user_id: string }

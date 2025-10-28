@@ -71,10 +71,10 @@ const Auth = () => {
   const loadOrganizations = async () => {
     setLoadingOrgs(true);
     try {
+      // Use secure RPC function that only returns id and name
+      // This prevents exposure of admin_user_id and other sensitive fields
       const { data, error } = await supabase
-        .from("organizations")
-        .select("id, name")
-        .order("name");
+        .rpc("get_organizations_for_joining");
 
       if (error) throw error;
       setOrganizations(data || []);
