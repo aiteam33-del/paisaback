@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { Navigation } from "@/components/ui/navigation";
-import { Upload, Receipt, Clock, CheckCircle2, XCircle, Loader2, X, Camera, ChevronRight, Mail, Calendar as CalendarIcon, Settings, RefreshCw, BarChart } from "lucide-react";
+import { Upload, Receipt, Clock, CheckCircle2, XCircle, Loader2, X, Camera, ChevronRight, RefreshCw, BarChart } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
@@ -53,16 +53,7 @@ const Employee = () => {
   const [ocrError, setOcrError] = useState<string>("");
   const [extractedFields, setExtractedFields] = useState<{ amount?: number; date?: string; merchant?: string; transaction_id?: string; category?: string; payment_method?: string } | null>(null);
   const [ocrText, setOcrText] = useState<string>("");
-  const [isSendingEmail, setIsSendingEmail] = useState(false);
-  const [gmailConnected, setGmailConnected] = useState(false);
-  const [gmailAccessToken, setGmailAccessToken] = useState<string | null>(null);
   const [userName, setUserName] = useState<string>("");
-  const [emailFrequency, setEmailFrequency] = useState<string>("");
-  const [lastEmailSent, setLastEmailSent] = useState<string | null>(null);
-  const [nextEmailTime, setNextEmailTime] = useState<string>("");
-  const [customScheduleDate, setCustomScheduleDate] = useState<Date>();
-  const [customScheduleTime, setCustomScheduleTime] = useState<string>("09:00");
-  const [isUpdatingFrequency, setIsUpdatingFrequency] = useState(false);
   const [orgId, setOrgId] = useState<string | null>(null);
   const [orgName, setOrgName] = useState<string>("");
   const [pendingOrgName, setPendingOrgName] = useState<string>("");
@@ -184,7 +175,6 @@ const Employee = () => {
   useEffect(() => {
     if (user) {
       fetchExpenses();
-      checkGmailConnection();
       fetchUserProfile();
     }
   }, [user]);
@@ -194,13 +184,12 @@ const Employee = () => {
     
     const { data } = await supabase
       .from("profiles")
-      .select("full_name, email_frequency, last_email_sent, next_email_at, organization_id")
+      .select("full_name, organization_id")
       .eq("id", user.id)
       .maybeSingle();
     
     if (data) {
       if (data.full_name) setUserName(data.full_name);
-      if (data.email_frequency) setEmailFrequency(data.email_frequency);
       setOrgId(data.organization_id ?? null);
 
       // Fetch organization name
@@ -236,168 +225,9 @@ const Employee = () => {
         setJoinPending(false);
         setPendingOrgName("");
       }
-      
-      // For custom schedules, use next_email_at instead of last_email_sent
-      const timeToUse = data.email_frequency === 'custom' && data.next_email_at 
-        ? data.next_email_at 
-        : data.last_email_sent;
-      
-      if (timeToUse) setLastEmailSent(timeToUse);
-      
-      // Calculate next email time
-      calculateNextEmailTime(data.email_frequency, timeToUse);
     }
   };
 
-  const calculateNextEmailTime = (frequency: string, lastSent: string | null) => {
-    if (!frequency) {
-      setNextEmailTime("");
-      return;
-    }
-
-    const now = new Date();
-    let nextDate = new Date();
-
-    if (frequency === 'custom' && lastSent) {
-      // For custom frequency, the lastSent IS the scheduled time
-      nextDate = new Date(lastSent);
-    } else if (lastSent) {
-      const lastSentDate = new Date(lastSent);
-      
-      switch (frequency) {
-        case 'daily':
-          nextDate = new Date(lastSentDate.getTime() + 24 * 60 * 60 * 1000);
-          break;
-        case 'weekly':
-          nextDate = new Date(lastSentDate.getTime() + 7 * 24 * 60 * 60 * 1000);
-          break;
-        case 'monthly':
-          nextDate = new Date(lastSentDate);
-          nextDate.setMonth(nextDate.getMonth() + 1);
-          break;
-        default:
-          nextDate = new Date(now.getTime() + 24 * 60 * 60 * 1000);
-      }
-    } else {
-      // If never sent, schedule for tomorrow at 9 AM
-      nextDate.setDate(now.getDate() + 1);
-      nextDate.setHours(9, 0, 0, 0);
-    }
-
-    // Format the time
-    const timeUntil = nextDate.getTime() - now.getTime();
-    const hoursUntil = Math.floor(timeUntil / (1000 * 60 * 60));
-    const daysUntil = Math.floor(hoursUntil / 24);
-
-    let timeString = "";
-    if (daysUntil > 0) {
-      timeString = `${daysUntil} day${daysUntil > 1 ? 's' : ''}`;
-    } else if (hoursUntil > 0) {
-      timeString = `${hoursUntil} hour${hoursUntil > 1 ? 's' : ''}`;
-    } else {
-      timeString = "soon";
-    }
-
-    const dateString = nextDate.toLocaleDateString('en-US', { 
-      weekday: 'long', 
-      month: 'short', 
-      day: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit'
-    });
-
-    setNextEmailTime(`Next email in ${timeString} (${dateString})`);
-  };
-
-  // Check if Gmail is already connected
-  const checkGmailConnection = async () => {
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.provider_token) {
-        setGmailAccessToken(session.provider_token);
-        setGmailConnected(true);
-      }
-    } catch (error) {
-      console.error("Error checking Gmail connection:", error);
-    }
-  };
-
-  const handleUpdateEmailFrequency = async (newFrequency: string) => {
-    if (!user) return;
-    
-    setIsUpdatingFrequency(true);
-    try {
-      const { error } = await supabase
-        .from("profiles")
-        .update({ email_frequency: newFrequency })
-        .eq("id", user.id);
-      
-      if (error) throw error;
-      
-      setEmailFrequency(newFrequency);
-      calculateNextEmailTime(newFrequency, lastEmailSent);
-      toast.success("Email schedule updated!");
-    } catch (error: any) {
-      toast.error(error.message || "Failed to update schedule");
-    } finally {
-      setIsUpdatingFrequency(false);
-    }
-  };
-
-  const handleScheduleCustomEmail = async () => {
-    if (!customScheduleDate || !user) {
-      toast.error("Please select a date and time");
-      return;
-    }
-
-    // Combine date and time
-    const [hours, minutes] = customScheduleTime.split(':').map(Number);
-    const scheduledDateTime = new Date(customScheduleDate);
-    scheduledDateTime.setHours(hours, minutes, 0, 0);
-
-    // Check if the scheduled time is in the past
-    if (scheduledDateTime < new Date()) {
-      toast.error("Cannot schedule email in the past");
-      return;
-    }
-
-    try {
-      const { error } = await supabase
-        .from("profiles")
-        .update({ 
-          email_frequency: 'custom',
-          next_email_at: scheduledDateTime.toISOString()
-        })
-        .eq("id", user.id);
-      
-      if (error) throw error;
-      
-      setEmailFrequency('custom');
-      setLastEmailSent(scheduledDateTime.toISOString());
-      calculateNextEmailTime('custom', scheduledDateTime.toISOString());
-      toast.success(`Email scheduled for ${format(scheduledDateTime, "PPP 'at' p")}`);
-      setCustomScheduleDate(undefined);
-      setCustomScheduleTime("09:00");
-    } catch (error: any) {
-      toast.error(error.message || "Failed to schedule email");
-    }
-  };
-
-  // Handle OAuth callback after redirect
-  useEffect(() => {
-    const handleOAuthCallback = async () => {
-      const urlParams = new URLSearchParams(window.location.search);
-      const code = urlParams.get('code');
-      
-      if (code) {
-        // OAuth callback detected
-        await checkGmailConnection();
-        // Clean up URL
-        window.history.replaceState({}, document.title, window.location.pathname);
-      }
-    };
-    handleOAuthCallback();
-  }, []);
 
   const fetchExpenses = async () => {
     if (!user) return;
@@ -693,151 +523,6 @@ const processOCR = async (file: File) => {
     }
   };
 
-  const handleConnectGmail = async () => {
-    try {
-      if (!user) {
-        toast.error("Please log in");
-        return;
-      }
-
-      toast.info("Connecting to Gmail...");
-      
-      const { data, error: oauthError } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          scopes: 'https://www.googleapis.com/auth/gmail.send',
-          redirectTo: `${window.location.origin}/employee`,
-          queryParams: { 
-            access_type: 'offline',
-            prompt: 'consent'
-          },
-        },
-      });
-
-      if (oauthError) throw oauthError;
-    } catch (error: any) {
-      console.error("Error connecting Gmail:", error);
-      toast.error(error.message || "Failed to connect Gmail");
-    }
-  };
-
-  const handleSendEmail = async () => {
-    try {
-      setIsSendingEmail(true);
-      
-      if (!user) {
-        toast.error("Please log in");
-        return;
-      }
-
-      if (expenses.length === 0) {
-        toast.error("No expenses to send. Please add at least one expense.");
-        return;
-      }
-
-      if (!gmailAccessToken) {
-        toast.error("Please connect Gmail first");
-        return;
-      }
-
-      // Call edge function with access token
-      const { data: result, error: functionError } = await supabase.functions.invoke(
-        'send-gmail-expense',
-        {
-          body: {
-            userId: user.id,
-            accessToken: gmailAccessToken,
-          },
-        }
-      );
-
-      if (functionError) throw functionError;
-
-      toast.success("✅ Email sent successfully via Gmail!");
-      console.log("Email result:", result);
-    } catch (error: any) {
-      console.error("Error sending email:", error);
-      toast.error(error.message || "Failed to send email");
-    } finally {
-      setIsSendingEmail(false);
-    }
-  };
-
-  const handleDownloadEmailDraft = async () => {
-    if (!user) {
-      toast.error("Please log in to download email draft");
-      return;
-    }
-
-    // Fetch user profile to get superior email and full name
-    const { data: profile, error: profileError } = await supabase
-      .from("profiles")
-      .select("superior_email, full_name, email")
-      .eq("id", user.id)
-      .maybeSingle();
-
-    if (profileError) {
-      toast.error("Failed to load profile information");
-      return;
-    }
-
-    if (!profile) {
-      toast.error("No profile found. Please update your profile in the organization section.");
-      return;
-    }
-
-    // TEMPORARY: For testing with Resend free tier, use account owner email
-    const recipientEmail = "ai_team33@mesaschool.co";
-
-    if (expenses.length === 0) {
-      toast.error("No expenses to download. Please submit at least one expense.");
-      return;
-    }
-
-    setIsSendingEmail(true);
-    toast.info("Generating email draft...");
-
-    try {
-      const { data, error } = await supabase.functions.invoke('generate-email-eml', {
-        body: {
-          userId: user.id,
-          recipientEmail,
-          employeeName: profile.full_name || "Employee"
-        }
-      });
-
-      if (error) throw error;
-
-      // Create blob from the EML content
-      const blob = new Blob([data], { type: 'message/rfc822' });
-      const url = window.URL.createObjectURL(blob);
-      
-      // Try to open in a new window first (may trigger mail app on some systems)
-      const newWindow = window.open(url, '_blank');
-      
-      // Fallback to download if popup blocked or doesn't open mail app
-      setTimeout(() => {
-        if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
-          // Popup was blocked, download the file instead
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = `expense_reimbursement_${Date.now()}.eml`;
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-          toast.success("📧 Email draft downloaded! Double-click the .eml file to open in your mail app.");
-        } else {
-          toast.success("📧 Opening email in your mail app...");
-        }
-        window.URL.revokeObjectURL(url);
-      }, 100);
-    } catch (error: any) {
-      console.error("Email draft generation error:", error);
-      toast.error(error.message || "Failed to generate email draft. Please try again.");
-    } finally {
-      setIsSendingEmail(false);
-    }
-  };
 
   if (authLoading) {
     return (
@@ -1266,151 +951,6 @@ const processOCR = async (file: File) => {
               </CardContent>
             </Card>
 
-            <Card className="shadow-card">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Mail className="w-5 h-5 text-primary" />
-                  Send Reimbursement Request
-                </CardTitle>
-                <CardDescription>
-                  {gmailConnected ? "Send your expenses via Gmail" : "Connect Gmail to send expenses"}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {nextEmailTime && emailFrequency && (
-                  <div className="p-3 rounded-lg bg-primary/10 border border-primary/20">
-                    <p className="text-sm font-medium text-foreground flex items-center gap-2">
-                      <Clock className="w-4 h-4 text-primary" />
-                      {nextEmailTime}
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Based on your {emailFrequency} email schedule
-                    </p>
-                  </div>
-                )}
-
-                {/* Email Frequency Selector */}
-                <div className="space-y-2">
-                  <Label htmlFor="emailFrequency" className="flex items-center gap-2">
-                    <Settings className="w-4 h-4" />
-                    Email Schedule
-                  </Label>
-                  <Select 
-                    value={emailFrequency} 
-                    onValueChange={handleUpdateEmailFrequency}
-                    disabled={isUpdatingFrequency}
-                  >
-                    <SelectTrigger id="emailFrequency">
-                      <SelectValue placeholder="Select frequency" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="daily">Daily (Every 24 hours)</SelectItem>
-                      <SelectItem value="weekly">Weekly (Every 7 days)</SelectItem>
-                      <SelectItem value="monthly">Monthly (Every 30 days)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Custom Date/Time Scheduler */}
-                <div className="space-y-2">
-                  <Label>Or schedule for a specific time</Label>
-                  <div className="flex flex-col sm:flex-row gap-2">
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="outline"
-                          className={cn(
-                            "flex-1 justify-start text-left font-normal border-2 border-[hsl(var(--neon-green))] hover:shadow-[var(--neon-glow)] transition-shadow duration-300",
-                            !customScheduleDate && "text-muted-foreground"
-                          )}
-                        >
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          {customScheduleDate ? format(customScheduleDate, "PPP") : "Pick date"}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={customScheduleDate}
-                          onSelect={setCustomScheduleDate}
-                          disabled={(date) => {
-                            const today = new Date();
-                            today.setHours(0, 0, 0, 0);
-                            const checkDate = new Date(date);
-                            checkDate.setHours(0, 0, 0, 0);
-                            return checkDate < today;
-                          }}
-                          initialFocus
-                          className="pointer-events-auto"
-                        />
-                      </PopoverContent>
-                    </Popover>
-                    
-                    <Input
-                      type="time"
-                      value={customScheduleTime}
-                      onChange={(e) => setCustomScheduleTime(e.target.value)}
-                      className="w-full sm:w-32"
-                    />
-                    
-                    {customScheduleDate && (
-                      <Button 
-                        onClick={handleScheduleCustomEmail}
-                        size="sm"
-                        className="shrink-0 w-full sm:w-auto"
-                      >
-                        Schedule
-                      </Button>
-                    )}
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Schedule a one-time email for your chosen date and time
-                  </p>
-                </div>
-                
-                {!gmailConnected ? (
-                  <Button 
-                    onClick={handleConnectGmail}
-                    className="w-full bg-gradient-primary hover:opacity-90"
-                    size="lg"
-                  >
-                    <Mail className="w-5 h-5 mr-2" />
-                    Connect Gmail
-                  </Button>
-                ) : (
-                  <div className="flex flex-col sm:flex-row gap-3">
-                    <Button 
-                      onClick={handleSendEmail}
-                      disabled={isSendingEmail || expenses.length === 0}
-                      className="flex-1 bg-gradient-primary hover:opacity-90"
-                      size="lg"
-                    >
-                      {isSendingEmail ? (
-                        <>
-                          <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                          Sending...
-                        </>
-                      ) : (
-                        <>
-                          <Mail className="w-5 h-5 mr-2" />
-                          Send via Gmail
-                        </>
-                      )}
-                    </Button>
-                    <Button 
-                      onClick={handleDownloadEmailDraft}
-                      disabled={isSendingEmail || expenses.length === 0}
-                      variant="outline"
-                      className="flex-1"
-                      size="lg"
-                    >
-                      <Receipt className="w-5 h-5 mr-2" />
-                      Download Draft
-                    </Button>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
           </div>
         </div>
       </main>
