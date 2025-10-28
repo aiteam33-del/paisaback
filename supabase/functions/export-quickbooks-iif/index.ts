@@ -71,7 +71,9 @@ Deno.serve(async (req) => {
 
     expenses.forEach((exp: Expense, index: number) => {
       const expDate = new Date(exp.date);
-      const qbDate = `${String(expDate.getMonth() + 1).padStart(2, '0')}/${String(expDate.getDate()).padStart(2, '0')}/${expDate.getFullYear()}`;
+      const hours = String(expDate.getHours()).padStart(2, '0');
+      const minutes = String(expDate.getMinutes()).padStart(2, '0');
+      const qbDate = `${String(expDate.getMonth() + 1).padStart(2, '0')}/${String(expDate.getDate()).padStart(2, '0')}/${expDate.getFullYear()} ${hours}:${minutes}`;
       const docNum = `EXP${String(index + 1).padStart(4, '0')}`;
       const employeeName = exp.profiles?.full_name || 'Unknown Employee';
       const memo = `${exp.category} - ${exp.vendor}`;

@@ -68,6 +68,7 @@ Deno.serve(async (req) => {
     const vouchers = expenses.map((exp: Expense, index: number) => {
       const expDate = new Date(exp.date);
       const tallyDate = expDate.toISOString().split('T')[0].replace(/-/g, '');
+      const timeString = expDate.toTimeString().split(' ')[0]; // HH:MM:SS
       const voucherNum = `EXP${String(index + 1).padStart(4, '0')}`;
       const employeeName = exp.profiles?.full_name || 'Unknown Employee';
 
@@ -78,7 +79,7 @@ Deno.serve(async (req) => {
         <VOUCHERNUMBER>${voucherNum}</VOUCHERNUMBER>
         <PARTYLEDGERNAME>${employeeName}</PARTYLEDGERNAME>
         <EFFECTIVEDATE>${tallyDate}</EFFECTIVEDATE>
-        <NARRATION>${exp.category} - ${exp.vendor}: ${exp.description}</NARRATION>
+        <NARRATION>${exp.category} - ${exp.vendor}: ${exp.description} [Time: ${timeString}]</NARRATION>
         <ALLLEDGERENTRIES.LIST>
           <LEDGERNAME>Expense Reimbursement</LEDGERNAME>
           <ISDEEMEDPOSITIVE>Yes</ISDEEMEDPOSITIVE>

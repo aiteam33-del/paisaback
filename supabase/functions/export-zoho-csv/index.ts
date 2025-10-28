@@ -69,7 +69,9 @@ Deno.serve(async (req) => {
 
     expenses.forEach((exp: Expense, index: number) => {
       const expDate = new Date(exp.date);
-      const zohoDate = `${String(expDate.getDate()).padStart(2, '0')}/${String(expDate.getMonth() + 1).padStart(2, '0')}/${expDate.getFullYear()}`;
+      const hours = String(expDate.getHours()).padStart(2, '0');
+      const minutes = String(expDate.getMinutes()).padStart(2, '0');
+      const zohoDate = `${String(expDate.getDate()).padStart(2, '0')}/${String(expDate.getMonth() + 1).padStart(2, '0')}/${expDate.getFullYear()} ${hours}:${minutes}`;
       const employeeName = (exp.profiles?.full_name || 'Unknown Employee').replace(/,/g, '');
       const description = exp.description.replace(/,/g, ' ').replace(/"/g, '""');
       const vendor = exp.vendor.replace(/,/g, ' ');
