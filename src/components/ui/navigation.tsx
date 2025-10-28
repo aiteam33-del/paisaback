@@ -66,9 +66,9 @@ export const Navigation = () => {
                 <Link to="/auth">
                   <Button variant="ghost" className="hidden sm:inline-flex hover:scale-105 transition-transform">Sign In</Button>
                 </Link>
-                <a href="#get-started">
+                <Link to="/auth">
                   <Button variant="hero" className="shadow-md hover:shadow-xl hover:scale-105 transition-all">Get Started</Button>
-                </a>
+                </Link>
               </>
             )}
           </div>
