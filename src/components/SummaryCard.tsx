@@ -1,7 +1,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { LucideIcon } from "lucide-react";
+import { LucideIcon, TrendingUp, TrendingDown } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
 
 interface SummaryCardProps {
   title: string;
@@ -9,7 +10,13 @@ interface SummaryCardProps {
   icon: LucideIcon;
   linkTo: string;
   actionText: string;
+  actionIcon?: LucideIcon;
   highlight?: boolean;
+  trend?: {
+    value: number;
+    label: string;
+  };
+  count?: number;
 }
 
 export const SummaryCard = ({
@@ -18,25 +25,77 @@ export const SummaryCard = ({
   icon: Icon,
   linkTo,
   actionText,
+  actionIcon: ActionIcon,
   highlight = false,
+  trend,
+  count,
 }: SummaryCardProps) => {
   const navigate = useNavigate();
+  const [displayValue, setDisplayValue] = useState(0);
+
+  // Animate number count-up
+  useEffect(() => {
+    const numericValue = typeof value === 'string' 
+      ? parseFloat(value.replace(/[^0-9.-]/g, '')) 
+      : value;
+    
+    if (isNaN(numericValue)) return;
+
+    const duration = 1000;
+    const steps = 60;
+    const increment = numericValue / steps;
+    let current = 0;
+
+    const timer = setInterval(() => {
+      current += increment;
+      if (current >= numericValue) {
+        setDisplayValue(numericValue);
+        clearInterval(timer);
+      } else {
+        setDisplayValue(current);
+      }
+    }, duration / steps);
+
+    return () => clearInterval(timer);
+  }, [value]);
+
+  const formattedValue = typeof value === 'string' && value.startsWith('₹')
+    ? `₹${displayValue.toFixed(2)}`
+    : Math.round(displayValue);
+
+  const buttonText = count !== undefined ? `${actionText} (${count})` : actionText;
+  const trendColor = trend && trend.value > 0 ? "text-success" : "text-muted-foreground";
+  const TrendIcon = trend && trend.value > 0 ? TrendingUp : TrendingDown;
 
   return (
-    <Card className={`shadow-card border-primary/20 hover:border-primary/40 transition-all ${highlight ? "bg-gradient-primary text-primary-foreground" : ""}`}>
+    <Card className={`shadow-card border-primary/20 hover:border-primary/40 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 ${highlight ? "bg-gradient-primary text-primary-foreground" : ""}`}>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium">{title}</CardTitle>
-        <Icon className={`h-4 w-4 ${highlight ? "" : "text-primary"}`} />
+        <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{title}</CardTitle>
+        <div className={`p-2 rounded-lg ${highlight ? "bg-white/20" : "bg-gradient-primary"}`}>
+          <Icon className={`h-4 w-4 ${highlight ? "" : "text-primary-foreground"}`} />
+        </div>
       </CardHeader>
-      <CardContent className="space-y-4">
-        <div className={`text-3xl font-bold ${highlight ? "" : "text-primary"}`}>{value}</div>
+      <CardContent className="space-y-3">
+        <div className="space-y-1">
+          <div className={`text-3xl font-bold ${highlight ? "" : "text-foreground"} drop-shadow-sm`}>
+            {formattedValue}
+          </div>
+          {trend && (
+            <div className={`flex items-center gap-1 text-xs ${trendColor}`}>
+              <TrendIcon className="h-3 w-3" />
+              <span>{trend.value > 0 ? '+' : ''}{trend.value}%</span>
+              <span className="text-muted-foreground">{trend.label}</span>
+            </div>
+          )}
+        </div>
         <Button
           variant={highlight ? "secondary" : "outline"}
           size="sm"
           onClick={() => navigate(linkTo)}
-          className={`w-full ${!highlight ? "border-primary/50 hover:bg-primary hover:text-primary-foreground" : ""}`}
+          className={`w-full gap-2 ${!highlight ? "border-primary/50 hover:bg-primary hover:text-primary-foreground" : ""}`}
         >
-          {actionText}
+          {ActionIcon && <ActionIcon className="h-4 w-4" />}
+          {buttonText}
         </Button>
       </CardContent>
     </Card>

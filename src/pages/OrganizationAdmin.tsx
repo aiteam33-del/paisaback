@@ -4,7 +4,7 @@ import { Navigation } from "@/components/ui/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Building2, Users, Clock, CheckCircle, Loader2, BarChart3, Shield } from "lucide-react";
+import { Building2, Users, Clock, CheckCircle, Loader2, BarChart3, Shield, FileText, UserCheck } from "lucide-react";
 import { SummaryCard } from "@/components/SummaryCard";
 import { Button } from "@/components/ui/button";
 import { AnalyticsChatbot } from "@/components/AnalyticsChatbot";
@@ -119,12 +119,12 @@ const OrganizationAdmin = () => {
                 <p className="text-lg text-muted-foreground">Admin Dashboard - Action Center</p>
               </div>
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 bg-card/50 backdrop-blur-sm border border-border/50 rounded-lg p-2 shadow-md">
               <Button
                 onClick={() => navigate("/admin/analytics")}
                 size="lg"
                 variant="outline"
-                className="shadow-elegant"
+                className="shadow-sm hover:shadow-md transition-all"
               >
                 <BarChart3 className="w-5 h-5 mr-2" />
                 Analytics
@@ -132,7 +132,8 @@ const OrganizationAdmin = () => {
               <Button
                 onClick={() => navigate("/admin/anomalies")}
                 size="lg"
-                className="bg-destructive hover:bg-destructive/90 text-white shadow-elegant"
+                variant={stats.joinRequestCount > 0 ? "destructive" : "outline"}
+                className="shadow-sm hover:shadow-md transition-all"
               >
                 <Shield className="w-5 h-5 mr-2" />
                 Anomaly Detection
@@ -149,6 +150,8 @@ const OrganizationAdmin = () => {
             icon={Clock}
             linkTo="/admin/expenses?status=pending"
             actionText="Review Expenses"
+            actionIcon={FileText}
+            trend={{ value: 5, label: "from last week" }}
           />
           <SummaryCard
             title="Total Approved"
@@ -156,6 +159,8 @@ const OrganizationAdmin = () => {
             icon={CheckCircle}
             linkTo="/admin/expenses?status=approved"
             actionText="View Approved"
+            actionIcon={UserCheck}
+            trend={{ value: 12, label: "from last month" }}
           />
           <SummaryCard
             title="Employees"
@@ -163,6 +168,8 @@ const OrganizationAdmin = () => {
             icon={Users}
             linkTo="/admin/employees"
             actionText="Manage Team"
+            actionIcon={Users}
+            trend={{ value: 3, label: "new this month" }}
           />
           <SummaryCard
             title="Join Requests"
@@ -170,6 +177,8 @@ const OrganizationAdmin = () => {
             icon={Users}
             linkTo="/admin/join-requests"
             actionText="Review Now"
+            actionIcon={Clock}
+            count={stats.joinRequestCount}
             highlight={stats.joinRequestCount > 0}
           />
         </div>
