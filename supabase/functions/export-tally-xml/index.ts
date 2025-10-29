@@ -75,28 +75,55 @@ Deno.serve(async (req) => {
     // Generate Tally XML vouchers
     const vouchers = expenses.map((exp: Expense, index: number) => {
       const expDate = new Date(exp.date);
-      const tallyDate = expDate.toISOString().split('T')[0].replace(/-/g, '');
-      const timeString = expDate.toTimeString().split(' ')[0]; // HH:MM:SS
+      const tallyDate = `${expDate.getFullYear()}${String(expDate.getMonth() + 1).padStart(2, '0')}${String(expDate.getDate()).padStart(2, '0')}`;
       const voucherNum = `EXP${String(index + 1).padStart(4, '0')}`;
       const employeeName = profileMap.get(exp.user_id) || 'Unknown Employee';
+      const categoryLedger = `${exp.category.charAt(0).toUpperCase() + exp.category.slice(1)} Expenses`;
 
       return `    <TALLYMESSAGE xmlns:UDF="TallyUDF">
-      <VOUCHER VCHTYPE="${voucher_type}" ACTION="Create">
+      <VOUCHER REMOTEID="" VCHKEY="" VCHTYPE="${voucher_type}" ACTION="Create" OBJVIEW="Invoice Voucher View">
+        <OLDAUDITENTRYIDS.LIST TYPE="Number">
+          <OLDAUDITENTRYIDS>-1</OLDAUDITENTRYIDS>
+        </OLDAUDITENTRYIDS.LIST>
         <DATE>${tallyDate}</DATE>
+        <GUID></GUID>
+        <NARRATION>${exp.description} - ${exp.vendor} (${exp.category})</NARRATION>
         <VOUCHERTYPENAME>${voucher_type}</VOUCHERTYPENAME>
         <VOUCHERNUMBER>${voucherNum}</VOUCHERNUMBER>
-        <PARTYLEDGERNAME>${employeeName}</PARTYLEDGERNAME>
+        <REFERENCE>${voucherNum}</REFERENCE>
+        <REFERENCEDATE>${tallyDate}</REFERENCEDATE>
         <EFFECTIVEDATE>${tallyDate}</EFFECTIVEDATE>
-        <NARRATION>${exp.category} - ${exp.vendor}: ${exp.description} [Time: ${timeString}]</NARRATION>
+        <PARTYLEDGERNAME>${employeeName}</PARTYLEDGERNAME>
+        <CSTFORMISSUETYPE/>
+        <CSTFORMRECVTYPE/>
+        <FBTPAYMENTTYPE>Default</FBTPAYMENTTYPE>
+        <PERSISTEDVIEW>Invoice Voucher View</PERSISTEDVIEW>
         <ALLLEDGERENTRIES.LIST>
-          <LEDGERNAME>Expense Reimbursement</LEDGERNAME>
+          <OLDAUDITENTRYIDS.LIST TYPE="Number">
+            <OLDAUDITENTRYIDS>-1</OLDAUDITENTRYIDS>
+          </OLDAUDITENTRYIDS.LIST>
+          <LEDGERNAME>${categoryLedger}</LEDGERNAME>
+          <GSTCLASS/>
           <ISDEEMEDPOSITIVE>Yes</ISDEEMEDPOSITIVE>
-          <AMOUNT>-${exp.amount}</AMOUNT>
+          <LEDGERFROMITEM>No</LEDGERFROMITEM>
+          <REMOVEZEROENTRIES>No</REMOVEZEROENTRIES>
+          <ISPARTYLEDGER>No</ISPARTYLEDGER>
+          <ISLASTDEEMEDPOSITIVE>Yes</ISLASTDEEMEDPOSITIVE>
+          <AMOUNT>${exp.amount}</AMOUNT>
+          <VATEXPAMOUNT>${exp.amount}</VATEXPAMOUNT>
         </ALLLEDGERENTRIES.LIST>
         <ALLLEDGERENTRIES.LIST>
-          <LEDGERNAME>${exp.category} Expenses</LEDGERNAME>
+          <OLDAUDITENTRYIDS.LIST TYPE="Number">
+            <OLDAUDITENTRYIDS>-1</OLDAUDITENTRYIDS>
+          </OLDAUDITENTRYIDS.LIST>
+          <LEDGERNAME>Expense Reimbursement</LEDGERNAME>
+          <GSTCLASS/>
           <ISDEEMEDPOSITIVE>No</ISDEEMEDPOSITIVE>
-          <AMOUNT>${exp.amount}</AMOUNT>
+          <LEDGERFROMITEM>No</LEDGERFROMITEM>
+          <REMOVEZEROENTRIES>No</REMOVEZEROENTRIES>
+          <ISPARTYLEDGER>Yes</ISPARTYLEDGER>
+          <ISLASTDEEMEDPOSITIVE>No</ISLASTDEEMEDPOSITIVE>
+          <AMOUNT>-${exp.amount}</AMOUNT>
         </ALLLEDGERENTRIES.LIST>
       </VOUCHER>
     </TALLYMESSAGE>`;
