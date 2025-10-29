@@ -50,6 +50,11 @@ serve(async (req) => {
 
     const expenses = allExpenses || [];
 
+    console.log(`Total expenses fetched: ${expenses.length}`);
+    if (expenses.length > 0) {
+      console.log('Sample expense categories:', expenses.slice(0, 10).map(e => ({ category: e.category, status: e.status, vendor: e.vendor, amount: e.amount })));
+    }
+
     // Fetch all profiles
     const { data: profiles } = await supabase
       .from('profiles')
@@ -104,16 +109,22 @@ serve(async (req) => {
       vendor.total += Number(e.amount);
     });
 
-    // Category breakdown
+    // Category breakdown with status filtering
     const categoryMap = new Map();
     expenses.forEach(e => {
-      if (!categoryMap.has(e.category)) {
-        categoryMap.set(e.category, { count: 0, total: 0 });
+      const category = (e.category || 'Uncategorized').toLowerCase(); // Normalize to lowercase
+      if (!categoryMap.has(category)) {
+        categoryMap.set(category, { count: 0, total: 0, pending: 0, approved: 0, rejected: 0 });
       }
-      const cat = categoryMap.get(e.category);
+      const cat = categoryMap.get(category);
       cat.count++;
       cat.total += Number(e.amount);
+      if (e.status === 'pending') cat.pending++;
+      if (e.status === 'approved') cat.approved++;
+      if (e.status === 'rejected') cat.rejected++;
     });
+    
+    console.log('Categories found:', Array.from(categoryMap.keys()));
 
     // Get recent expenses for detailed queries
     const recentExpenses = expenses.slice(0, 20).map(e => ({
@@ -220,7 +231,7 @@ ${expenseSummary.vendors.slice(0, 15).map((v, i) => `${i + 1}. ${v.name}: ₹${v
 ${expenseSummary.employees.slice(0, 15).map((e, i) => `${i + 1}. ${e.name}: ₹${e.total.toFixed(2)} (${e.count} expenses, ${e.pending.toFixed(2)} pending, ${e.approved.toFixed(2)} approved)`).join('\n')}
 
 📂 **All Categories (sorted by total):**
-${expenseSummary.categories.slice(0, 15).map((c, i) => `${i + 1}. ${c.name}: ₹${c.total.toFixed(2)} (${c.count} expenses)`).join('\n')}
+${expenseSummary.categories.slice(0, 20).map((c, i) => `${i + 1}. ${c.name}: ₹${c.total.toFixed(2)} (${c.count} expenses, ${c.pending} pending, ${c.approved} approved, ${c.rejected} rejected)`).join('\n')}
 
 YOUR CAPABILITIES:
 1. **Detailed Queries**: Answer specific questions like "last 3 expenses", "expenses in last 3 hours"
@@ -282,6 +293,8 @@ Query: "Top vendors this month"
 Always be helpful, accurate, and actionable. Provide strategic insights beyond just data reporting.`;
 
     console.log('Calling OpenAI API...');
+    console.log('Food category data:', expenseSummary.categories.find(c => c.name.toLowerCase().includes('food')));
+    console.log('Pending food expenses:', expenses.filter(e => e.category?.toLowerCase() === 'food' && e.status === 'pending').length);
     
     // Call OpenAI API
     const aiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
