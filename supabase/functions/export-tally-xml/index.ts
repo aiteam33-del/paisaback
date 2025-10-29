@@ -13,7 +13,7 @@ interface Expense {
   vendor: string;
   description: string;
   user_id: string;
-  profiles: {
+  profiles?: {
     full_name: string;
   };
 }
@@ -41,7 +41,7 @@ Deno.serve(async (req) => {
     // Fetch expenses
     let query = supabaseClient
       .from('expenses')
-      .select('*, profiles!expenses_user_id_fkey(full_name)')
+      .select('*')
       .eq('status', 'approved');
 
     if (expense_ids && expense_ids.length > 0) {
@@ -64,13 +64,21 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Generate Tally XML
+    // Build employee name map for vouchers
+    const userIds = Array.from(new Set(expenses.map((e: any) => e.user_id)));
+    const { data: profiles } = await supabaseClient
+      .from('profiles')
+      .select('id, full_name')
+      .in('id', userIds);
+    const profileMap = new Map((profiles || []).map((p: any) => [p.id, p.full_name]));
+
+    // Generate Tally XML vouchers
     const vouchers = expenses.map((exp: Expense, index: number) => {
       const expDate = new Date(exp.date);
       const tallyDate = expDate.toISOString().split('T')[0].replace(/-/g, '');
       const timeString = expDate.toTimeString().split(' ')[0]; // HH:MM:SS
       const voucherNum = `EXP${String(index + 1).padStart(4, '0')}`;
-      const employeeName = exp.profiles?.full_name || 'Unknown Employee';
+      const employeeName = profileMap.get(exp.user_id) || 'Unknown Employee';
 
       return `    <TALLYMESSAGE xmlns:UDF="TallyUDF">
       <VOUCHER VCHTYPE="${voucher_type}" ACTION="Create">

@@ -7,13 +7,14 @@ const corsHeaders = {
 
 interface Expense {
   id: string;
+  user_id: string;
   date: string;
   amount: number;
   category: string;
   vendor: string;
   description: string;
   mode_of_payment: string;
-  profiles: {
+  profiles?: {
     full_name: string;
   };
 }
@@ -41,7 +42,7 @@ Deno.serve(async (req) => {
     // Fetch expenses
     let query = supabaseClient
       .from('expenses')
-      .select('*, profiles!expenses_user_id_fkey(full_name)')
+      .select('*')
       .eq('status', 'approved');
 
     if (expense_ids && expense_ids.length > 0) {
@@ -69,13 +70,21 @@ Deno.serve(async (req) => {
     iif += '!SPL\tSPLID\tTRNSTYPE\tDATE\tACCNT\tAMOUNT\tMEMO\n';
     iif += '!ENDTRNS\n';
 
+    // Build employee name map
+    const userIds = Array.from(new Set(expenses.map((e: any) => e.user_id)));
+    const { data: profiles } = await supabaseClient
+      .from('profiles')
+      .select('id, full_name')
+      .in('id', userIds);
+    const profileMap = new Map((profiles || []).map((p: any) => [p.id, p.full_name]));
+
     expenses.forEach((exp: Expense, index: number) => {
       const expDate = new Date(exp.date);
       const hours = String(expDate.getHours()).padStart(2, '0');
       const minutes = String(expDate.getMinutes()).padStart(2, '0');
       const qbDate = `${String(expDate.getMonth() + 1).padStart(2, '0')}/${String(expDate.getDate()).padStart(2, '0')}/${expDate.getFullYear()} ${hours}:${minutes}`;
       const docNum = `EXP${String(index + 1).padStart(4, '0')}`;
-      const employeeName = exp.profiles?.full_name || 'Unknown Employee';
+      const employeeName = profileMap.get(exp.user_id) || 'Unknown Employee';
       const memo = `${exp.category} - ${exp.vendor}`;
 
       // Transaction line

@@ -7,13 +7,14 @@ const corsHeaders = {
 
 interface Expense {
   id: string;
+  user_id: string;
   date: string;
   amount: number;
   category: string;
   vendor: string;
   description: string;
   mode_of_payment: string;
-  profiles: {
+  profiles?: {
     full_name: string;
   };
 }
@@ -41,7 +42,7 @@ Deno.serve(async (req) => {
     // Fetch expenses
     let query = supabaseClient
       .from('expenses')
-      .select('*, profiles!expenses_user_id_fkey(full_name)')
+      .select('*')
       .eq('status', 'approved');
 
     if (expense_ids && expense_ids.length > 0) {
@@ -67,12 +68,20 @@ Deno.serve(async (req) => {
     // Generate Zoho Books CSV format
     let csv = 'Date,Account Name,Description,Vendor,Amount,Category,Payment Mode,Reference\n';
 
+    // Build employee name map
+    const userIds = Array.from(new Set(expenses.map((e: any) => e.user_id)));
+    const { data: profiles } = await supabaseClient
+      .from('profiles')
+      .select('id, full_name')
+      .in('id', userIds);
+    const profileMap = new Map((profiles || []).map((p: any) => [p.id, p.full_name]));
+
     expenses.forEach((exp: Expense, index: number) => {
       const expDate = new Date(exp.date);
       const hours = String(expDate.getHours()).padStart(2, '0');
       const minutes = String(expDate.getMinutes()).padStart(2, '0');
       const zohoDate = `${String(expDate.getDate()).padStart(2, '0')}/${String(expDate.getMonth() + 1).padStart(2, '0')}/${expDate.getFullYear()} ${hours}:${minutes}`;
-      const employeeName = (exp.profiles?.full_name || 'Unknown Employee').replace(/,/g, '');
+      const employeeName = (profileMap.get(exp.user_id) || 'Unknown Employee').replace(/,/g, '');
       const description = exp.description.replace(/,/g, ' ').replace(/"/g, '""');
       const vendor = exp.vendor.replace(/,/g, ' ');
       const category = exp.category.replace(/,/g, ' ');
