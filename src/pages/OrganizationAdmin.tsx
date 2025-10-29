@@ -4,7 +4,7 @@ import { Navigation } from "@/components/ui/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Building2, Users, Clock, CheckCircle, Loader2, BarChart3, Shield, FileText, UserCheck } from "lucide-react";
+import { Building2, Users, Clock, CheckCircle, Loader2, BarChart3, Shield, FileText, UserCheck, Package } from "lucide-react";
 import { SummaryCard } from "@/components/SummaryCard";
 import { AnalyticsChatbot } from "@/components/AnalyticsChatbot";
 import { ModeToggle } from "@/components/ModeToggle";
@@ -176,6 +176,14 @@ const OrganizationAdmin = () => {
             actionIcon={Clock}
             count={stats.joinRequestCount}
             highlight={stats.joinRequestCount > 0}
+          />
+          <SummaryCard
+            title="Integrations"
+            value="Export"
+            icon={Package}
+            linkTo="/admin/integrations"
+            actionText="Export & Integrate"
+            actionIcon={FileText}
           />
         </div>
       </main>
