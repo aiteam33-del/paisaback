@@ -66,7 +66,7 @@ Deno.serve(async (req) => {
     }
 
     // Generate Zoho Books CSV format
-    let csv = 'Date,Account Name,Description,Vendor,Amount,Category,Payment Mode,Reference\n';
+    let csv = 'Date,Employee Name,Account Name,Description,Vendor,Amount,Category,Payment Mode,Reference\n';
 
     // Build employee name map
     const userIds = Array.from(new Set(expenses.map((e: any) => e.user_id)));
@@ -88,7 +88,7 @@ Deno.serve(async (req) => {
       const paymentMode = exp.mode_of_payment || 'Cash';
       const reference = `EXP${String(index + 1).padStart(4, '0')}`;
 
-      csv += `${zohoDate},Expense Reimbursement,"${description}",${vendor},${exp.amount},${category},${paymentMode},${reference}\n`;
+      csv += `${zohoDate},${employeeName},Expense Reimbursement,"${description}",${vendor},${exp.amount},${category},${paymentMode},${reference}\n`;
     });
 
     // Get user and org info for tracking
