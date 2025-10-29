@@ -248,7 +248,16 @@ export const AnalyticsChatbot = () => {
                 <div className="flex items-center gap-2">
                   <Sparkles className="w-5 h-5 text-primary animate-pulse" />
                   <div>
-                    <h3 className="font-semibold">Paisaback Copilot</h3>
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-semibold">Paisaback Copilot</h3>
+                      <div className="flex items-center gap-1 px-2 py-0.5 bg-background/80 rounded-full border border-border/50">
+                        <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none">
+                          <path d="M22 12C22 17.5228 17.5228 22 12 22C6.47715 22 2 17.5228 2 12C2 6.47715 6.47715 2 12 2C17.5228 2 22 6.47715 22 12Z" stroke="currentColor" strokeWidth="2"/>
+                          <path d="M12 8V12L15 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                        </svg>
+                        <span className="text-[10px] font-medium text-muted-foreground">Powered by ChatGPT</span>
+                      </div>
+                    </div>
                     <p className="text-xs text-muted-foreground">AI Analytics Assistant</p>
                   </div>
                 </div>
@@ -348,10 +357,19 @@ export const AnalyticsChatbot = () => {
                     {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                   </Button>
                 </div>
-                <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
-                  <Sparkles className="w-3 h-3" />
-                  Try time filters: "last 24h", "this month", "last quarter"
-                </p>
+                <div className="flex items-center justify-between mt-2">
+                  <p className="text-xs text-muted-foreground flex items-center gap-1">
+                    <Sparkles className="w-3 h-3" />
+                    Try time filters: "last 24h", "this month", "last quarter"
+                  </p>
+                  <div className="flex items-center gap-1 px-2 py-0.5 bg-muted/50 rounded-full">
+                    <svg className="w-3 h-3 text-primary" viewBox="0 0 24 24" fill="none">
+                      <path d="M22 12C22 17.5228 17.5228 22 12 22C6.47715 22 2 17.5228 2 12C2 6.47715 6.47715 2 12 2C17.5228 2 22 6.47715 22 12Z" stroke="currentColor" strokeWidth="2"/>
+                      <path d="M12 8V12L15 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                    </svg>
+                    <span className="text-[9px] font-medium text-muted-foreground">Powered by ChatGPT</span>
+                  </div>
+                </div>
               </div>
             </Card>
           </motion.div>
