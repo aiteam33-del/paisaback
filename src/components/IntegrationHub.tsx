@@ -220,10 +220,9 @@ export const IntegrationHub = ({ organizationId }: IntegrationHubProps) => {
   return (
     <div className="space-y-6">
       <Tabs defaultValue="export" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="export">Export</TabsTrigger>
           <TabsTrigger value="notifications">Notifications</TabsTrigger>
-          <TabsTrigger value="calendar">Calendar</TabsTrigger>
         </TabsList>
 
         <TabsContent value="export" className="space-y-4">
@@ -354,44 +353,6 @@ export const IntegrationHub = ({ organizationId }: IntegrationHubProps) => {
 
         <TabsContent value="notifications">
           <SlackWebhookSetup organizationId={organizationId} currentWebhook={slackWebhook} slackEnabled={slackEnabled} />
-        </TabsContent>
-
-        <TabsContent value="calendar" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Calendar Reminders</CardTitle>
-              <CardDescription>
-                Download calendar events for expense approval deadlines. Import the .ics file into Google Calendar.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <Button onClick={() => handleCalendarExport("weekly")} disabled={loading} variant="outline">
-                  <CalendarIcon className="h-4 w-4 mr-2" />
-                  Weekly Reminders (Every Friday)
-                </Button>
-                <Button onClick={() => handleCalendarExport("monthly")} disabled={loading} variant="outline">
-                  <CalendarIcon className="h-4 w-4 mr-2" />
-                  Monthly Reminders (30th of Month)
-                </Button>
-              </div>
-
-              <Alert>
-                <AlertDescription className="text-sm">
-                  <p className="font-medium mb-2">How to import to Google Calendar:</p>
-                  <ol className="list-decimal list-inside space-y-1 text-xs">
-                    <li>Download the .ics file</li>
-                    <li>Open Google Calendar</li>
-                    <li>Click Settings (gear icon) → Import & Export</li>
-                    <li>Click "Select file from your computer"</li>
-                    <li>Choose the downloaded .ics file</li>
-                    <li>Select which calendar to add it to</li>
-                    <li>Click "Import"</li>
-                  </ol>
-                </AlertDescription>
-              </Alert>
-            </CardContent>
-          </Card>
         </TabsContent>
       </Tabs>
     </div>
