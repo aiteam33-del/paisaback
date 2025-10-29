@@ -73,14 +73,25 @@ export const IntegrationHub = ({ organizationId }: IntegrationHubProps) => {
     setLoading(true);
 
     try {
+      // First get approved expenses
       const { data: expenses, error } = await supabase
         .from("expenses")
-        .select("*, profiles!expenses_user_id_fkey(full_name)")
+        .select("*")
         .eq("status", "approved")
         .gte("date", startDate.toISOString())
         .lte("date", endDate.toISOString());
 
       if (error) throw error;
+
+      // Then get user profiles for these expenses
+      const userIds = [...new Set(expenses?.map(exp => exp.user_id) || [])];
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("id, full_name")
+        .in("id", userIds);
+
+      // Create a map for easy lookup
+      const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
 
       const categories: Record<string, number> = {};
       const employees: Record<string, number> = {};
@@ -88,7 +99,8 @@ export const IntegrationHub = ({ organizationId }: IntegrationHubProps) => {
 
       expenses?.forEach((exp: any) => {
         categories[exp.category] = (categories[exp.category] || 0) + 1;
-        const empName = exp.profiles?.full_name || "Unknown";
+        const profile = profileMap.get(exp.user_id);
+        const empName = profile?.full_name || "Unknown";
         employees[empName] = (employees[empName] || 0) + 1;
         totalAmount += Number(exp.amount);
       });
