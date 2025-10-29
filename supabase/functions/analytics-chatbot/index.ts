@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import "https://deno.land/x/xhr@0.1.0/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -16,7 +17,7 @@ serve(async (req) => {
     
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const lovableApiKey = Deno.env.get('LOVABLE_API_KEY')!;
+    const openAiKey = Deno.env.get('OPENAI_API_KEY')!;
     
     const supabase = createClient(supabaseUrl, supabaseKey);
 
@@ -29,45 +30,67 @@ serve(async (req) => {
       throw new Error('Unauthorized');
     }
 
-    // Fetch comprehensive analytics context (read-only)
+    console.log('Fetching comprehensive database data...');
+
+    // Fetch ALL relevant data from database
     const now = new Date();
+    const last1h = new Date(now.getTime() - 60 * 60 * 1000);
+    const last3h = new Date(now.getTime() - 3 * 60 * 60 * 1000);
+    const last6h = new Date(now.getTime() - 6 * 60 * 60 * 1000);
     const last24h = new Date(now.getTime() - 24 * 60 * 60 * 1000);
     const last7d = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
     const last30d = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
     const last90d = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
 
+    // Fetch ALL expenses (no limit)
     const { data: allExpenses } = await supabase
       .from('expenses')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .limit(1000);
+      .select('*, profiles!expenses_user_id_fkey(id, full_name, email)')
+      .order('date', { ascending: false });
 
     const expenses = allExpenses || [];
 
+    // Fetch all profiles
     const { data: profiles } = await supabase
       .from('profiles')
-      .select('id, full_name, email')
-      .limit(200);
+      .select('*');
 
-    // Calculate time-based metrics
-    const expenses24h = expenses.filter(e => new Date(e.created_at) >= last24h);
-    const expenses7d = expenses.filter(e => new Date(e.created_at) >= last7d);
-    const expenses30d = expenses.filter(e => new Date(e.created_at) >= last30d);
-    const expenses90d = expenses.filter(e => new Date(e.created_at) >= last90d);
+    // Fetch organization data
+    const { data: organizations } = await supabase
+      .from('organizations')
+      .select('*');
+
+    // Fetch notifications
+    const { data: notifications } = await supabase
+      .from('notifications')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(50);
+
+    // Calculate granular time-based metrics
+    const expenses1h = expenses.filter(e => new Date(e.date) >= last1h);
+    const expenses3h = expenses.filter(e => new Date(e.date) >= last3h);
+    const expenses6h = expenses.filter(e => new Date(e.date) >= last6h);
+    const expenses24h = expenses.filter(e => new Date(e.date) >= last24h);
+    const expenses7d = expenses.filter(e => new Date(e.date) >= last7d);
+    const expenses30d = expenses.filter(e => new Date(e.date) >= last30d);
+    const expenses90d = expenses.filter(e => new Date(e.date) >= last90d);
 
     // Employee breakdown
     const employeeMap = new Map();
     expenses.forEach(e => {
-      const profile = profiles?.find(p => p.id === e.user_id);
+      const profile = e.profiles || profiles?.find(p => p.id === e.user_id);
       const name = profile?.full_name || 'Unknown';
+      const email = profile?.email || 'unknown';
       if (!employeeMap.has(name)) {
-        employeeMap.set(name, { count: 0, total: 0, pending: 0, approved: 0 });
+        employeeMap.set(name, { count: 0, total: 0, pending: 0, approved: 0, rejected: 0, email });
       }
       const emp = employeeMap.get(name);
       emp.count++;
       emp.total += Number(e.amount);
       if (e.status === 'pending') emp.pending += Number(e.amount);
       if (e.status === 'approved') emp.approved += Number(e.amount);
+      if (e.status === 'rejected') emp.rejected += Number(e.amount);
     });
 
     // Vendor breakdown
@@ -92,76 +115,132 @@ serve(async (req) => {
       cat.total += Number(e.amount);
     });
 
+    // Get recent expenses for detailed queries
+    const recentExpenses = expenses.slice(0, 20).map(e => ({
+      id: e.id,
+      employee: e.profiles?.full_name || 'Unknown',
+      amount: Number(e.amount),
+      category: e.category,
+      vendor: e.vendor,
+      date: e.date,
+      description: e.description,
+      status: e.status,
+      modeOfPayment: e.mode_of_payment
+    }));
+
     // Build rich context for AI
     const expenseSummary = {
-      total: expenses.length,
-      totalAmount: expenses.reduce((sum, e) => sum + Number(e.amount), 0),
-      pending: expenses.filter(e => e.status === 'pending').length,
-      approved: expenses.filter(e => e.status === 'approved').length,
-      rejected: expenses.filter(e => e.status === 'rejected').length,
-      last24h: {
-        count: expenses24h.length,
-        total: expenses24h.reduce((sum, e) => sum + Number(e.amount), 0),
-        approved: expenses24h.filter(e => e.status === 'approved').reduce((sum, e) => sum + Number(e.amount), 0)
+      current_time: now.toISOString(),
+      database_stats: {
+        total_expenses: expenses.length,
+        total_profiles: profiles?.length || 0,
+        total_organizations: organizations?.length || 0
       },
-      last7d: {
-        count: expenses7d.length,
-        total: expenses7d.reduce((sum, e) => sum + Number(e.amount), 0)
+      overall: {
+        total: expenses.length,
+        totalAmount: expenses.reduce((sum, e) => sum + Number(e.amount), 0),
+        pending: expenses.filter(e => e.status === 'pending').length,
+        pendingAmount: expenses.filter(e => e.status === 'pending').reduce((sum, e) => sum + Number(e.amount), 0),
+        approved: expenses.filter(e => e.status === 'approved').length,
+        approvedAmount: expenses.filter(e => e.status === 'approved').reduce((sum, e) => sum + Number(e.amount), 0),
+        rejected: expenses.filter(e => e.status === 'rejected').length,
+        rejectedAmount: expenses.filter(e => e.status === 'rejected').reduce((sum, e) => sum + Number(e.amount), 0),
       },
-      last30d: {
-        count: expenses30d.length,
-        total: expenses30d.reduce((sum, e) => sum + Number(e.amount), 0)
+      time_ranges: {
+        last_1_hour: {
+          count: expenses1h.length,
+          total: expenses1h.reduce((sum, e) => sum + Number(e.amount), 0)
+        },
+        last_3_hours: {
+          count: expenses3h.length,
+          total: expenses3h.reduce((sum, e) => sum + Number(e.amount), 0)
+        },
+        last_6_hours: {
+          count: expenses6h.length,
+          total: expenses6h.reduce((sum, e) => sum + Number(e.amount), 0)
+        },
+        last_24_hours: {
+          count: expenses24h.length,
+          total: expenses24h.reduce((sum, e) => sum + Number(e.amount), 0),
+          approved: expenses24h.filter(e => e.status === 'approved').reduce((sum, e) => sum + Number(e.amount), 0)
+        },
+        last_7_days: {
+          count: expenses7d.length,
+          total: expenses7d.reduce((sum, e) => sum + Number(e.amount), 0)
+        },
+        last_30_days: {
+          count: expenses30d.length,
+          total: expenses30d.reduce((sum, e) => sum + Number(e.amount), 0)
+        },
+        last_90_days: {
+          count: expenses90d.length,
+          total: expenses90d.reduce((sum, e) => sum + Number(e.amount), 0)
+        }
       },
-      last90d: {
-        count: expenses90d.length,
-        total: expenses90d.reduce((sum, e) => sum + Number(e.amount), 0)
-      },
+      recent_expenses: recentExpenses,
       categories: Array.from(categoryMap.entries())
         .sort((a, b) => b[1].total - a[1].total)
-        .slice(0, 10)
         .map(([name, data]) => ({ name, ...data })),
-      topVendors: Array.from(vendorMap.entries())
+      vendors: Array.from(vendorMap.entries())
         .sort((a, b) => b[1].total - a[1].total)
-        .slice(0, 10)
         .map(([name, data]) => ({ name, ...data })),
-      topEmployees: Array.from(employeeMap.entries())
+      employees: Array.from(employeeMap.entries())
         .sort((a, b) => b[1].total - a[1].total)
-        .slice(0, 10)
         .map(([name, data]) => ({ name, ...data }))
     };
 
-    const systemPrompt = `You are the Paisaback Copilot — an intelligent analytics assistant for expense management.
+    const systemPrompt = `You are the Paisaback Copilot — an advanced AI analytics assistant with complete access to the expense management database.
 
-CURRENT DATA SNAPSHOT:
-📊 **Overall Stats**
-- Total expenses: ${expenseSummary.total} (₹${expenseSummary.totalAmount.toFixed(2)})
-- Status: ${expenseSummary.pending} pending, ${expenseSummary.approved} approved, ${expenseSummary.rejected} rejected
+COMPLETE DATABASE ACCESS:
+You have full read access to ALL expense data, employee profiles, and organizational information. You can answer ANY question about expenses, trends, employees, vendors, categories, and provide strategic financial advice.
 
-📅 **Time-Based Metrics**
-- Last 24h: ${expenseSummary.last24h.count} expenses (₹${expenseSummary.last24h.total.toFixed(2)}, ₹${expenseSummary.last24h.approved.toFixed(2)} approved)
-- Last 7 days: ${expenseSummary.last7d.count} expenses (₹${expenseSummary.last7d.total.toFixed(2)})
-- Last 30 days: ${expenseSummary.last30d.count} expenses (₹${expenseSummary.last30d.total.toFixed(2)})
-- Last 90 days: ${expenseSummary.last90d.count} expenses (₹${expenseSummary.last90d.total.toFixed(2)})
+CURRENT DATA SNAPSHOT (${now.toISOString()}):
+📊 **Overall Statistics**
+- Total Expenses: ${expenseSummary.overall.total} (₹${expenseSummary.overall.totalAmount.toFixed(2)})
+- Pending: ${expenseSummary.overall.pending} (₹${expenseSummary.overall.pendingAmount.toFixed(2)})
+- Approved: ${expenseSummary.overall.approved} (₹${expenseSummary.overall.approvedAmount.toFixed(2)})
+- Rejected: ${expenseSummary.overall.rejected} (₹${expenseSummary.overall.rejectedAmount.toFixed(2)})
 
-🏪 **Top Vendors:**
-${expenseSummary.topVendors.map((v, i) => `${i + 1}. ${v.name}: ₹${v.total.toFixed(2)} (${v.count} transactions)`).join('\n')}
+📅 **Granular Time-Based Metrics**
+- Last 1 hour: ${expenseSummary.time_ranges.last_1_hour.count} expenses (₹${expenseSummary.time_ranges.last_1_hour.total.toFixed(2)})
+- Last 3 hours: ${expenseSummary.time_ranges.last_3_hours.count} expenses (₹${expenseSummary.time_ranges.last_3_hours.total.toFixed(2)})
+- Last 6 hours: ${expenseSummary.time_ranges.last_6_hours.count} expenses (₹${expenseSummary.time_ranges.last_6_hours.total.toFixed(2)})
+- Last 24 hours: ${expenseSummary.time_ranges.last_24_hours.count} expenses (₹${expenseSummary.time_ranges.last_24_hours.total.toFixed(2)})
+- Last 7 days: ${expenseSummary.time_ranges.last_7_days.count} expenses (₹${expenseSummary.time_ranges.last_7_days.total.toFixed(2)})
+- Last 30 days: ${expenseSummary.time_ranges.last_30_days.count} expenses (₹${expenseSummary.time_ranges.last_30_days.total.toFixed(2)})
+- Last 90 days: ${expenseSummary.time_ranges.last_90_days.count} expenses (₹${expenseSummary.time_ranges.last_90_days.total.toFixed(2)})
 
-👥 **Top Employees:**
-${expenseSummary.topEmployees.map((e, i) => `${i + 1}. ${e.name}: ₹${e.total.toFixed(2)} (${e.count} expenses, ₹${e.approved.toFixed(2)} approved)`).join('\n')}
+📝 **Recent Expenses (Most Recent 20):**
+${recentExpenses.map((e, i) => `${i + 1}. ${e.employee} - ₹${e.amount} - ${e.category} - ${e.vendor} - ${new Date(e.date).toLocaleString()} - ${e.status}`).join('\n')}
 
-📂 **Top Categories:**
-${expenseSummary.categories.map((c, i) => `${i + 1}. ${c.name}: ₹${c.total.toFixed(2)} (${c.count} expenses)`).join('\n')}
+🏪 **All Vendors (sorted by total):**
+${expenseSummary.vendors.slice(0, 15).map((v, i) => `${i + 1}. ${v.name}: ₹${v.total.toFixed(2)} (${v.count} transactions)`).join('\n')}
 
-YOUR ROLE:
-- Answer analytical queries conversationally and intelligently
-- Support natural date filters (last 24h, this week, this month, Q1, etc.)
-- Provide insights, comparisons, and trend analysis
-- Use emojis subtly: 💰📊📈⚠️✅❌🔍
-- Format responses with **bold**, bullet points, and structure
-- Include data tables when listing multiple items
-- Suggest follow-up queries
+👥 **All Employees (sorted by total):**
+${expenseSummary.employees.slice(0, 15).map((e, i) => `${i + 1}. ${e.name}: ₹${e.total.toFixed(2)} (${e.count} expenses, ${e.pending.toFixed(2)} pending, ${e.approved.toFixed(2)} approved)`).join('\n')}
 
-CRITICAL RESPONSE FORMAT:
+📂 **All Categories (sorted by total):**
+${expenseSummary.categories.slice(0, 15).map((c, i) => `${i + 1}. ${c.name}: ₹${c.total.toFixed(2)} (${c.count} expenses)`).join('\n')}
+
+YOUR CAPABILITIES:
+1. **Detailed Queries**: Answer specific questions like "last 3 expenses", "expenses in last 3 hours"
+2. **Financial Advice**: Provide strategic insights on expense control, budget optimization, category management
+3. **Trend Analysis**: Identify patterns, anomalies, and opportunities for savings
+4. **Employee Analytics**: Deep dive into individual or team spending patterns
+5. **Time-based Filtering**: Support any time range (1h, 3h, 6h, 24h, week, month, quarter, year)
+6. **Comparative Analysis**: Compare periods, employees, categories, vendors
+7. **Recommendations**: Suggest cost-saving measures, policy improvements, approval workflows
+
+QUERY UNDERSTANDING:
+- "last N expenses" → List the N most recent expenses with details
+- "expenses in last X hours/days/weeks" → Filter by time range
+- "how to control [category] expenses" → Provide strategic advice and actionable recommendations
+- "spending by [employee/vendor/category]" → Detailed breakdown with insights
+- "compare [period A] vs [period B]" → Side-by-side comparison with % changes
+- "trends" → Identify patterns over time
+- "anomalies" or "unusual" → Flag outliers and suspicious patterns
+
+RESPONSE FORMAT:
 Return ONLY valid JSON (no markdown, no backticks, no extra text):
 {
   "response": "Natural language answer with **markdown** support. Use markdown tables for tabular data.",
@@ -188,40 +267,37 @@ Example table format:
 
 EXAMPLE RESPONSES:
 
+Query: "last 3 expenses"
+{"response":"📝 **Last 3 Expenses:**\\n\\n| # | Employee | Amount | Category | Vendor | Date | Status |\\n|---|----------|-------:|----------|--------|------|--------|\\n| 1 | John | ₹500 | Food | Cafe | 2025-10-29 02:30 | Pending |\\n| 2 | Jane | ₹1,200 | Travel | Uber | 2025-10-29 01:15 | Approved |\\n| 3 | Mike | ₹800 | Office | Amazon | 2025-10-28 23:45 | Pending |","metadata":{"type":"summary","links":[{"label":"View All","url":"/admin/expenses"}],"suggestions":["Show last 10 expenses","Filter by status"]}}
+
+Query: "expenses in last 3 hours"
+{"response":"⏱️ **Expenses in Last 3 Hours:**\\n\\n**Total: 5 expenses** worth **₹4,200**\\n\\n| Employee | Amount | Category | Time |\\n|----------|-------:|----------|------|\\n| John | ₹500 | Food | 45 min ago |\\n| Sarah | ₹1,800 | Travel | 1.5 hrs ago |\\n| Mike | ₹900 | Office | 2 hrs ago |\\n| Lisa | ₹600 | Meals | 2.5 hrs ago |\\n| Tom | ₹400 | Transport | 2.8 hrs ago |","metadata":{"type":"summary","suggestions":["Show by category","Compare with yesterday"]}}
+
+Query: "how do I control food expenses"
+{"response":"🍽️ **Strategies to Control Food Expenses:**\\n\\n**Current Situation:**\\n- Food category: ₹45,600 (18% of total spend)\\n- Average per expense: ₹380\\n- Top spender: John (₹8,900)\\n\\n**💡 Recommendations:**\\n\\n1. **Set Daily Limits**\\n   - Implement ₹300/day food allowance per employee\\n   - Current average is ₹380, this could save ~21%\\n\\n2. **Preferred Vendors**\\n   - Negotiate corporate rates with top 3 vendors\\n   - Potential savings: ₹5,000-8,000/month\\n\\n3. **Meal Plans**\\n   - Encourage team lunches (bulk discounts)\\n   - Restrict individual expensive restaurants\\n\\n4. **Approval Workflow**\\n   - Auto-approve: <₹300\\n   - Manager review: ₹300-500\\n   - Reject: >₹500 without justification\\n\\n5. **Monitor Trends**\\n   - Track weekly food spend\\n   - Alert when >20% increase detected\\n\\n**Expected Impact:** 15-25% reduction in food expenses (~₹7K-11K/month)","metadata":{"type":"insight","links":[{"label":"View Food Expenses","url":"/admin/expenses?category=Food"}],"suggestions":["Show food expense trends","Top food spenders","Compare with industry benchmarks"]}}
+
 Query: "Top vendors this month"
-{"response":"📊 **Top Vendors This Month:**\\n\\n| Vendor | Amount | Transactions |\\n|--------|-------:|---------:|\\n| Sharma | ₹24,900 | 8 |\\n| ZODIACAL OVERSEAS | ₹21,000 | 4 |\\n| Abhishek Sharma | ₹20,000 | 6 |\\n\\nThese 3 vendors account for **₹65,900** (~45% of total spend).","metadata":{"type":"insight","links":[{"label":"View All Vendors","url":"/admin/expenses"}],"suggestions":["Show vendor trends","Compare with last month"]}}
+{"response":"📊 **Top Vendors This Month:**\\n\\n| Vendor | Amount | Transactions | Avg/Transaction |\\n|--------|-------:|---------:|----------------:|\\n| Sharma | ₹24,900 | 8 | ₹3,113 |\\n| ZODIACAL OVERSEAS | ₹21,000 | 4 | ₹5,250 |\\n| Abhishek Sharma | ₹20,000 | 6 | ₹3,333 |\\n\\nThese 3 vendors account for **₹65,900** (~45% of total spend).","metadata":{"type":"insight","links":[{"label":"View All Vendors","url":"/admin/expenses"}],"suggestions":["Show vendor trends","Compare with last month","Negotiate better rates"]}}
 
-Query: "Total reimbursements by employee"
-{"response":"👥 **Total Reimbursements by Employee:**\\n\\n| Employee | Total Amount | Expense Count |\\n|----------|-------------:|--------------:|\\n| Lalit ji | ₹24,900.00 | 1 |\\n| employee12 | ₹20,519.55 | 3 |\\n| garvit | ₹16,110.00 | 2 |\\n| employee 2 | ₹12,812.50 | 4 |\\n\\n**Lalit ji** has the highest total reimbursements at **₹24,900.00**.","metadata":{"type":"summary","links":[{"label":"View All Employees","url":"/admin/employees"}],"suggestions":["Show by department","Filter by status"]}}
+Always be helpful, accurate, and actionable. Provide strategic insights beyond just data reporting.`;
 
-Query: "Approved expenses last 24 hours"
-{"response":"✅ **Last 24 Hours Approvals:**\\n\\nYou've approved **₹${expenseSummary.last24h.approved.toFixed(2)}** from ${expenseSummary.last24h.count} total expenses submitted.","metadata":{"type":"summary","links":[{"label":"Review Expenses","url":"/admin/expenses?status=approved"}],"suggestions":["Show pending expenses","See by employee"]}}
-
-QUERY UNDERSTANDING:
-- "last 24h/24 hours/today" → use last24h data
-- "this week/last 7 days" → use last7d data
-- "this month/last 30 days" → use last30d data
-- "this quarter/last 90 days" → use last90d data
-- When comparing periods, calculate percentage changes
-- When user references previous context, maintain continuity
-
-Always be helpful, accurate, and actionable.`;
-
-    // Call Lovable AI
-    const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    console.log('Calling OpenAI API...');
+    
+    // Call OpenAI API
+    const aiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${lovableApiKey}`,
+        'Authorization': `Bearer ${openAiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
+        model: 'gpt-5-mini-2025-08-07',
         messages: [
           { role: 'system', content: systemPrompt },
-          ...(conversationHistory || []).slice(-4),
+          ...(conversationHistory || []).slice(-6),
           { role: 'user', content: query }
         ],
-        temperature: 0.7,
+        max_completion_tokens: 2000,
       }),
     });
 
