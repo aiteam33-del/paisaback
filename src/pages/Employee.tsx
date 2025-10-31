@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { Navigation } from "@/components/ui/navigation";
-import { Upload, Receipt, Clock, CheckCircle2, XCircle, Loader2, X, Camera, ChevronRight, RefreshCw, BarChart } from "lucide-react";
+import { Upload, Receipt, Clock, CheckCircle2, XCircle, Loader2, X, Camera, ChevronRight, RefreshCw, BarChart, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
@@ -34,6 +34,7 @@ interface Expense {
   description?: string;
   attachments?: string[];
   manager_notes?: string;
+  created_at: string;
 }
 
 const Employee = () => {
@@ -244,6 +245,39 @@ const Employee = () => {
     }
 
     setExpenses(data || []);
+  };
+
+  const handleDeleteExpense = async (expenseId: string, createdAt: string) => {
+    const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
+    const expenseCreatedAt = new Date(createdAt);
+
+    if (expenseCreatedAt < tenMinutesAgo) {
+      toast.error("Cannot delete expense after 10 minutes");
+      return;
+    }
+
+    if (!confirm("Are you sure you want to delete this expense?")) {
+      return;
+    }
+
+    const { error } = await supabase
+      .from("expenses")
+      .delete()
+      .eq("id", expenseId);
+
+    if (error) {
+      toast.error("Failed to delete expense");
+      return;
+    }
+
+    toast.success("Expense deleted successfully");
+    fetchExpenses();
+  };
+
+  const canDeleteExpense = (createdAt: string) => {
+    const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
+    const expenseCreatedAt = new Date(createdAt);
+    return expenseCreatedAt >= tenMinutesAgo;
   };
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -918,7 +952,20 @@ const processOCR = async (file: File) => {
                           </div>
                         )}
                       </div>
-                      <p className="text-lg font-semibold text-foreground sm:ml-4">₹{expense.amount}</p>
+                      <div className="flex flex-col sm:flex-row items-end sm:items-center gap-2 sm:ml-4">
+                        <p className="text-lg font-semibold text-foreground">₹{expense.amount}</p>
+                        {canDeleteExpense(expense.created_at) && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleDeleteExpense(expense.id, expense.created_at)}
+                            className="h-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                          >
+                            <Trash2 className="w-3 h-3 mr-1" />
+                            Delete
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   ))
                 )}
