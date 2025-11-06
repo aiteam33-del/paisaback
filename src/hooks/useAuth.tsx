@@ -24,9 +24,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Set up auth state listener
+    // Set up auth state listener with token refresh handling
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log('Auth event:', event);
+        
+        // Handle token refresh
+        if (event === 'TOKEN_REFRESHED') {
+          console.log('Token refreshed, updating session');
+        }
+        
         setSession(session);
         setUser(session?.user ?? null);
         
@@ -45,10 +52,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     );
 
-    // Check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
+    // Check for existing session and refresh if needed
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      // If session exists but token is close to expiry, refresh it
+      if (session) {
+        const expiresAt = session.expires_at;
+        const now = Math.floor(Date.now() / 1000);
+        const timeUntilExpiry = expiresAt ? expiresAt - now : 0;
+        
+        // Refresh if token expires in less than 5 minutes
+        if (timeUntilExpiry < 300) {
+          console.log('Token close to expiry, refreshing...');
+          const { data: { session: refreshedSession } } = await supabase.auth.refreshSession();
+          setSession(refreshedSession);
+          setUser(refreshedSession?.user ?? null);
+        } else {
+          setSession(session);
+          setUser(session?.user ?? null);
+        }
+      }
       
       if (session?.user) {
         setTimeout(async () => {

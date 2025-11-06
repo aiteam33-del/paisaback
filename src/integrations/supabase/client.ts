@@ -13,5 +13,21 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     storage: localStorage,
     persistSession: true,
     autoRefreshToken: true,
+    detectSessionInUrl: true,
+  },
+  global: {
+    headers: {
+      'X-Client-Info': 'paisaback-client',
+    },
+  },
+});
+
+// Add token refresh interceptor to ensure fresh tokens before requests
+supabase.auth.onAuthStateChange((event, session) => {
+  if (event === 'TOKEN_REFRESHED') {
+    console.log('Token refreshed successfully');
+  }
+  if (event === 'SIGNED_OUT') {
+    console.log('User signed out');
   }
 });

@@ -100,10 +100,10 @@ const handler = async (req: Request): Promise<Response> => {
                 
                 const fileName = match[1];
                 
-                // Generate a fresh signed URL (30 days expiration)
+                // Generate a fresh signed URL (1 year expiration for persistent access)
                 const { data: signedData, error: signError } = await supabase.storage
                   .from('receipts')
-                  .createSignedUrl(fileName, 60 * 60 * 24 * 30);
+                  .createSignedUrl(fileName, 60 * 60 * 24 * 365);
                 
                 if (signError || !signedData) {
                   console.error('Error generating signed URL:', signError);
