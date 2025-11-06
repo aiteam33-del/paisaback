@@ -23,6 +23,7 @@ import { OCRProgressIndicator } from "@/components/OCRProgressIndicator";
 import { SmartDatePicker } from "@/components/SmartDatePicker";
 import { CategorySuggester } from "@/components/CategorySuggester";
 import { PreviewThumbnail } from "@/components/PreviewThumbnail";
+import { getReceiptPublicUrl } from "@/lib/attachments";
 
 interface Expense {
   id: string;
@@ -228,7 +229,6 @@ const Employee = () => {
       }
     }
   };
-import { getReceiptPublicUrl } from "@/lib/attachments";
 
   const fetchExpenses = async () => {
     if (!user) return;
