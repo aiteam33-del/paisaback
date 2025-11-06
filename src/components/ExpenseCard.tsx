@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ChevronDown, ChevronUp, ExternalLink } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
-import { supabase } from "@/integrations/supabase/client";
+import { getReceiptPublicUrl } from "@/lib/attachments";
 interface ExpenseCardProps {
   expense: {
     id: string;
@@ -114,25 +114,9 @@ export const ExpenseCard = ({ expense, onAction, onViewDetails }: ExpenseCardPro
                     
                     try {
                       const raw = expense.attachments![0];
-                      let filePath = '';
-                      const match = typeof raw === 'string' ? raw.match(/\/receipts\/([^?]+)/) : null;
-                      if (match && match[1]) {
-                        filePath = match[1];
-                      } else {
-                        filePath = raw;
-                      }
-                      const { data, error } = await supabase.storage
-                        .from('receipts')
-                        .createSignedUrl(filePath, 60 * 60 * 24 * 30);
-                      
-                      if (error || !data) {
-                        console.error('Signed URL error:', error);
-                        newWindow.opener = null;
-                        newWindow.location.replace(raw as string);
-                      } else {
-                        newWindow.opener = null;
-                        newWindow.location.replace(data.signedUrl);
-                      }
+                      const finalUrl = getReceiptPublicUrl(raw as string);
+                      newWindow.opener = null;
+                      newWindow.location.replace(finalUrl);
                     } catch (err) {
                       console.error('Receipt open failed:', err);
                       newWindow.opener = null;

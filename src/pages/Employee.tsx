@@ -228,7 +228,7 @@ const Employee = () => {
       }
     }
   };
-
+import { getReceiptPublicUrl } from "@/lib/attachments";
 
   const fetchExpenses = async () => {
     if (!user) return;
@@ -470,16 +470,8 @@ const processOCR = async (file: File) => {
           continue;
         }
 
-        const { data: signedData, error: signedErr } = await supabase.storage
-          .from('receipts')
-          .createSignedUrl(fileName, 60 * 60 * 24 * 7); // 7 days
-
-        if (signedErr) {
-          toast.error(`Failed to get secure URL for ${file.name}`);
-          continue;
-        }
-
-        urls.push(signedData.signedUrl);
+        // Store only the file path; we will resolve to a public URL when viewing
+        urls.push(fileName);
         setUploadProgress(((i + 1) / uploadedFiles.length) * 100);
       } catch (error: any) {
         console.error("Upload error:", error);
@@ -942,7 +934,8 @@ const processOCR = async (file: File) => {
                                 className="h-8 px-3 text-xs font-medium"
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  window.open(url, '_blank', 'noopener,noreferrer');
+                                  const finalUrl = getReceiptPublicUrl(url);
+                                  window.open(finalUrl, '_blank', 'noopener,noreferrer');
                                 }}
                               >
                                 <Receipt className="w-3 h-3 mr-1.5" />

@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { getReceiptPublicUrl } from "@/lib/attachments";
 
 interface Expense {
   id: string;
@@ -303,7 +304,8 @@ const ExpenseHistory = () => {
                             className="h-8 px-3 text-xs font-medium"
                             onClick={(e) => {
                               e.stopPropagation();
-                              window.open(url, '_blank', 'noopener,noreferrer');
+                              const finalUrl = getReceiptPublicUrl(url);
+                              window.open(finalUrl, '_blank', 'noopener,noreferrer');
                             }}
                           >
                             <Receipt className="w-3 h-3 mr-1.5" />

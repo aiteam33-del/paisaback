@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Loader2, Receipt, FileText, AlertCircle, Search, Wallet, Clock } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { getReceiptPublicUrl } from "@/lib/attachments";
 
 interface Expense {
   id: string;
@@ -107,7 +108,8 @@ const ExpenseSummary = () => {
   }, [searchQuery, statusFilter, categoryFilter, expenses]);
 
   const handleViewAttachments = (attachments: string[]) => {
-    setSelectedAttachments(attachments);
+    const resolved = attachments.map((a) => getReceiptPublicUrl(a));
+    setSelectedAttachments(resolved);
     setIsAttachmentDialogOpen(true);
   };
 
