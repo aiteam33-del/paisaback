@@ -3,11 +3,17 @@ import { useNavigate } from "react-router-dom";
 import { Navigation } from "@/components/ui/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
-import { Building2, Users, Clock, CheckCircle, Loader2, BarChart3, Shield, FileText, UserCheck, Package } from "lucide-react";
-import { SummaryCard } from "@/components/SummaryCard";
+import { Building2, Loader2, BarChart3, Shield } from "lucide-react";
 import { AnalyticsChatbot } from "@/components/AnalyticsChatbot";
 import { ModeToggle } from "@/components/ModeToggle";
+import { PendingExpensesCard } from "@/components/dashboard/PendingExpensesCard";
+import { JoinRequestsCard } from "@/components/dashboard/JoinRequestsCard";
+import { FinancialOverviewCard } from "@/components/dashboard/FinancialOverviewCard";
+import { TeamOverviewCard } from "@/components/dashboard/TeamOverviewCard";
+import { RecentActivityCard } from "@/components/dashboard/RecentActivityCard";
+import { ApprovedExpensesCard } from "@/components/dashboard/ApprovedExpensesCard";
+import { QuickActionsCard } from "@/components/dashboard/QuickActionsCard";
+import { IntegrationsCard } from "@/components/dashboard/IntegrationsCard";
 
 const OrganizationAdmin = () => {
   const { user } = useAuth();
@@ -34,7 +40,6 @@ const OrganizationAdmin = () => {
 
     setIsLoading(true);
     try {
-      // Get organization
       const { data: orgData } = await supabase
         .from("organizations")
         .select("*")
@@ -44,50 +49,18 @@ const OrganizationAdmin = () => {
       if (orgData) {
         setOrganization(orgData);
 
-        // Get employees count
-        const { count: employeeCount } = await supabase
-          .from("profiles")
-          .select("*", { count: "exact", head: true })
-          .eq("organization_id", orgData.id)
-          .neq("id", user.id);
-
-        // Get join requests count
         const { count: joinRequestCount } = await supabase
           .from("join_requests")
           .select("*", { count: "exact", head: true })
           .eq("org_id", orgData.id)
           .eq("status", "pending");
 
-        // Get expense stats
-        const employeeIds = await supabase
-          .from("profiles")
-          .select("id")
-          .eq("organization_id", orgData.id);
-
-        const ids = (employeeIds.data || []).map(e => e.id);
-
-        const { data: expensesData } = await supabase
-          .from("expenses")
-          .select("amount, status")
-          .in("user_id", [...ids, user.id]);
-
-        const totalPending = (expensesData || [])
-          .filter(exp => exp.status === "pending")
-          .reduce((sum, exp) => sum + Number(exp.amount), 0);
-
-        const totalApproved = (expensesData || [])
-          .filter(exp => exp.status === "approved")
-          .reduce((sum, exp) => sum + Number(exp.amount), 0);
-
-        setStats({
-          totalPending,
-          totalApproved,
-          employeeCount: employeeCount || 0,
+        setStats(prev => ({
+          ...prev,
           joinRequestCount: joinRequestCount || 0,
-        });
+        }));
       }
     } catch (error: any) {
-      toast.error("Failed to load dashboard data");
       console.error(error);
     } finally {
       setIsLoading(false);
@@ -138,53 +111,37 @@ const OrganizationAdmin = () => {
           </div>
         </div>
 
-        {/* Actionable Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <SummaryCard
-            title="Total Pending"
-            value={`₹${stats.totalPending.toFixed(2)}`}
-            icon={Clock}
-            linkTo="/admin/expenses?status=pending"
-            actionText="Review Expenses"
-            actionIcon={FileText}
-            trend={{ value: 5, label: "from last week" }}
-          />
-          <SummaryCard
-            title="Total Approved"
-            value={`₹${stats.totalApproved.toFixed(2)}`}
-            icon={CheckCircle}
-            linkTo="/admin/expenses?status=approved"
-            actionText="View Approved"
-            actionIcon={UserCheck}
-            trend={{ value: 12, label: "from last month" }}
-          />
-          <SummaryCard
-            title="Employees"
-            value={stats.employeeCount}
-            icon={Users}
-            linkTo="/admin/employees"
-            actionText="Manage Team"
-            actionIcon={Users}
-            trend={{ value: 3, label: "new this month" }}
-          />
-          <SummaryCard
-            title="Join Requests"
-            value={stats.joinRequestCount}
-            icon={Users}
-            linkTo="/admin/join-requests"
-            actionText="Review Now"
-            actionIcon={Clock}
-            count={stats.joinRequestCount}
-            highlight={stats.joinRequestCount > 0}
-          />
-          <SummaryCard
-            title="Integrations"
-            value="Export"
-            icon={Package}
-            linkTo="/admin/integrations"
-            actionText="Export & Integrate"
-            actionIcon={FileText}
-          />
+        {/* Bento Grid Dashboard */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-6 auto-rows-fr">
+          {/* Row 1 - Large cards */}
+          <div className="lg:col-span-4">
+            <PendingExpensesCard />
+          </div>
+          <div className="lg:col-span-5">
+            <RecentActivityCard />
+          </div>
+          <div className="lg:col-span-3">
+            <JoinRequestsCard />
+          </div>
+
+          {/* Row 2 - Medium cards */}
+          <div className="lg:col-span-3">
+            <FinancialOverviewCard />
+          </div>
+          <div className="lg:col-span-3">
+            <TeamOverviewCard />
+          </div>
+          <div className="lg:col-span-3">
+            <ApprovedExpensesCard />
+          </div>
+          <div className="lg:col-span-3">
+            <QuickActionsCard />
+          </div>
+
+          {/* Row 3 - Integration card */}
+          <div className="lg:col-span-4">
+            <IntegrationsCard />
+          </div>
         </div>
       </main>
 
