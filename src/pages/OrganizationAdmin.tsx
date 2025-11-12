@@ -111,18 +111,34 @@ const OrganizationAdmin = () => {
           </div>
         </div>
 
-        {/* Bento Grid Dashboard */}
+        {/* Bento Grid Dashboard with dynamic ordering */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-6 auto-rows-fr">
-          {/* Row 1 - Large cards */}
-          <div className="lg:col-span-4">
-            <PendingExpensesCard />
-          </div>
-          <div className="lg:col-span-5">
-            <RecentActivityCard />
-          </div>
-          <div className="lg:col-span-3">
-            <JoinRequestsCard />
-          </div>
+          {/* Row 1 - Dynamic based on join requests */}
+          {stats.joinRequestCount > 0 ? (
+            <>
+              <div className="lg:col-span-3">
+                <JoinRequestsCard />
+              </div>
+              <div className="lg:col-span-4">
+                <PendingExpensesCard />
+              </div>
+              <div className="lg:col-span-5">
+                <RecentActivityCard />
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="lg:col-span-4">
+                <PendingExpensesCard />
+              </div>
+              <div className="lg:col-span-5">
+                <RecentActivityCard />
+              </div>
+              <div className="lg:col-span-3">
+                <JoinRequestsCard />
+              </div>
+            </>
+          )}
 
           {/* Row 2 - Medium cards */}
           <div className="lg:col-span-3">

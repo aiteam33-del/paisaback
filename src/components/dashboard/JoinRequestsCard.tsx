@@ -90,16 +90,17 @@ export const JoinRequestsCard = () => {
   };
 
   return (
-    <Card className="shadow-lg hover:shadow-xl transition-all duration-300 border-border/50 bg-gradient-card backdrop-blur-sm h-full flex flex-col">
-      <CardHeader className="pb-3">
+    <Card className="group relative shadow-lg hover:shadow-2xl transition-all duration-500 border-border/50 bg-gradient-card backdrop-blur-sm h-full flex flex-col overflow-hidden cursor-pointer hover:scale-[1.02] hover:border-primary/50">
+      <div className="absolute inset-0 bg-gradient-primary opacity-0 group-hover:opacity-10 transition-opacity duration-500" />
+      <CardHeader className="pb-3 relative z-10">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="p-2 rounded-lg bg-primary/20">
+            <div className="p-2 rounded-lg bg-primary/20 group-hover:bg-primary/30 transition-colors duration-300">
               <UserPlus className="w-4 h-4 text-primary" />
             </div>
             <CardTitle className="text-lg">Join Requests</CardTitle>
             {requests.length > 0 && (
-              <Badge className="bg-primary text-primary-foreground h-5 px-2 text-xs">
+              <Badge className="bg-primary text-primary-foreground h-5 px-2 text-xs animate-pulse">
                 {requests.length}
               </Badge>
             )}
@@ -107,15 +108,18 @@ export const JoinRequestsCard = () => {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => navigate("/admin/join-requests")}
-            className="h-8 text-xs"
+            onClick={(e) => {
+              e.stopPropagation();
+              navigate("/admin/join-requests");
+            }}
+            className="h-8 text-xs hover:bg-primary/20"
           >
             View All
             <ChevronRight className="w-3 h-3 ml-1" />
           </Button>
         </div>
       </CardHeader>
-      <CardContent className="flex-1 flex flex-col">
+      <CardContent className="flex-1 flex flex-col relative z-10">
         {isLoading ? (
           <div className="flex items-center justify-center py-8">
             <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
@@ -129,10 +133,14 @@ export const JoinRequestsCard = () => {
             {requests.map((request) => (
               <div
                 key={request.id}
-                className="p-3 rounded-lg border border-border/50 bg-background/50 hover:bg-accent/5 transition-colors"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigate("/admin/join-requests");
+                }}
+                className="p-3 rounded-lg border border-border/50 bg-background/50 hover:bg-gradient-card-hover hover:border-primary/30 transition-all duration-300 hover:shadow-md cursor-pointer hover:scale-[1.01]"
               >
                 <div className="flex items-start gap-3 mb-2">
-                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 group-hover:bg-primary/20 transition-colors">
                     <span className="text-xs font-semibold text-primary">
                       {request.employee_name.charAt(0).toUpperCase()}
                     </span>
@@ -149,8 +157,11 @@ export const JoinRequestsCard = () => {
                   <Button
                     variant="outline"
                     size="sm"
-                    className="flex-1 h-7 text-xs hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30"
-                    onClick={() => handleAction(request.id, "reject")}
+                    className="flex-1 h-7 text-xs hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30 transition-all duration-300"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleAction(request.id, "reject");
+                    }}
                     disabled={actioningId === request.id}
                   >
                     {actioningId === request.id ? (
@@ -164,8 +175,11 @@ export const JoinRequestsCard = () => {
                   </Button>
                   <Button
                     size="sm"
-                    className="flex-1 h-7 text-xs bg-success hover:bg-success/90 text-white"
-                    onClick={() => handleAction(request.id, "approve")}
+                    className="flex-1 h-7 text-xs bg-success hover:bg-success/90 text-white transition-all duration-300"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleAction(request.id, "approve");
+                    }}
                     disabled={actioningId === request.id}
                   >
                     {actioningId === request.id ? (

@@ -13,11 +13,12 @@ export const IntegrationsCard = () => {
   ];
 
   return (
-    <Card className="shadow-lg hover:shadow-xl transition-all duration-300 border-border/50 bg-gradient-card backdrop-blur-sm h-full flex flex-col">
-      <CardHeader className="pb-3">
+    <Card className="group relative shadow-lg hover:shadow-2xl transition-all duration-500 border-border/50 bg-gradient-card backdrop-blur-sm h-full flex flex-col overflow-hidden cursor-pointer hover:scale-[1.02] hover:border-purple-500/50">
+      <div className="absolute inset-0 bg-gradient-purple opacity-0 group-hover:opacity-10 transition-opacity duration-500" />
+      <CardHeader className="pb-3 relative z-10">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="p-2 rounded-lg bg-purple-500/20">
+            <div className="p-2 rounded-lg bg-purple-500/20 group-hover:bg-purple-500/30 transition-colors duration-300">
               <Package className="w-4 h-4 text-purple-500" />
             </div>
             <CardTitle className="text-lg">Integrations</CardTitle>
@@ -25,8 +26,11 @@ export const IntegrationsCard = () => {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => navigate("/admin/integrations")}
-            className="h-8 text-xs"
+            onClick={(e) => {
+              e.stopPropagation();
+              navigate("/admin/integrations");
+            }}
+            className="h-8 text-xs hover:bg-purple-500/20"
           >
             Manage
             <ChevronRight className="w-3 h-3 ml-1" />
@@ -34,15 +38,18 @@ export const IntegrationsCard = () => {
         </div>
       </CardHeader>
       
-      <CardContent className="flex-1 flex flex-col">
+      <CardContent className="flex-1 flex flex-col relative z-10">
         <div className="space-y-2.5 flex-1">
           {integrations.map((integration, index) => {
             const Icon = integration.icon;
             return (
               <div
                 key={index}
-                className="flex items-center gap-3 p-3 rounded-lg border border-border/50 bg-background/50 hover:bg-accent/5 transition-colors cursor-pointer"
-                onClick={() => navigate("/admin/integrations")}
+                className="flex items-center gap-3 p-3 rounded-lg border border-border/50 bg-background/50 hover:bg-gradient-card-hover hover:border-purple-500/30 transition-all duration-300 cursor-pointer hover:scale-[1.01]"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigate("/admin/integrations");
+                }}
               >
                 <div className={`p-2 rounded-lg bg-background/80 ${integration.color}`}>
                   <Icon className="w-4 h-4" />
@@ -51,7 +58,7 @@ export const IntegrationsCard = () => {
                   <p className="font-medium text-sm truncate">{integration.name}</p>
                   <p className="text-xs text-muted-foreground">{integration.status}</p>
                 </div>
-                <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-purple-500 transition-colors" />
               </div>
             );
           })}
@@ -60,8 +67,11 @@ export const IntegrationsCard = () => {
         <Button
           variant="outline"
           size="sm"
-          className="mt-3 w-full"
-          onClick={() => navigate("/admin/integrations")}
+          className="mt-3 w-full hover:bg-purple-500/10 hover:border-purple-500/50 transition-all duration-300"
+          onClick={(e) => {
+            e.stopPropagation();
+            navigate("/admin/integrations");
+          }}
         >
           <Package className="w-3 h-3 mr-2" />
           Export Data

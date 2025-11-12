@@ -72,6 +72,11 @@ All colors MUST be HSL.
     --gradient-card: linear-gradient(145deg, hsl(0 0% 100%) 0%, hsl(160 20% 99%) 100%);
     --gradient-analytics: linear-gradient(135deg, hsl(161 70% 96%) 0%, hsl(217 70% 96%) 100%);
     --gradient-chart: linear-gradient(135deg, hsl(0 0% 100%) 0%, hsl(160 15% 99%) 50%, hsl(217 15% 99%) 100%);
+    --gradient-hover: linear-gradient(135deg, hsl(161 85% 32% / 0.05) 0%, hsl(217 91% 60% / 0.05) 100%);
+    --gradient-card-hover: linear-gradient(135deg, hsl(161 85% 95%) 0%, hsl(217 91% 95%) 100%);
+    --gradient-purple: linear-gradient(135deg, hsl(270 70% 60%) 0%, hsl(270 80% 50%) 100%);
+    --gradient-blue: linear-gradient(135deg, hsl(217 91% 60%) 0%, hsl(217 91% 50%) 100%);
+    --gradient-warning: linear-gradient(135deg, hsl(42 100% 62%) 0%, hsl(30 100% 58%) 100%);
     
     --chart-1: 161 85% 38%;
     --chart-2: 217 91% 60%;
@@ -144,6 +149,11 @@ All colors MUST be HSL.
     --gradient-card: linear-gradient(145deg, hsl(161 25% 12%) 0%, hsl(161 20% 14%) 100%);
     --gradient-analytics: linear-gradient(135deg, hsl(161 25% 14%) 0%, hsl(217 25% 14%) 100%);
     --gradient-chart: linear-gradient(135deg, hsl(161 25% 12%) 0%, hsl(161 20% 14%) 50%, hsl(217 20% 14%) 100%);
+    --gradient-hover: linear-gradient(135deg, hsl(161 70% 40% / 0.1) 0%, hsl(217 80% 50% / 0.1) 100%);
+    --gradient-card-hover: linear-gradient(135deg, hsl(161 25% 16%) 0%, hsl(217 25% 16%) 100%);
+    --gradient-purple: linear-gradient(135deg, hsl(270 60% 50%) 0%, hsl(270 70% 40%) 100%);
+    --gradient-blue: linear-gradient(135deg, hsl(217 80% 50%) 0%, hsl(217 80% 40%) 100%);
+    --gradient-warning: linear-gradient(135deg, hsl(42 100% 70%) 0%, hsl(30 100% 65%) 100%);
     
     --chart-1: 161 70% 45%;
     --chart-2: 217 80% 55%;

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TrendingUp, TrendingDown, DollarSign, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from "react-router-dom";
 
 export const FinancialOverviewCard = () => {
   const [data, setData] = useState({
@@ -13,6 +14,7 @@ export const FinancialOverviewCard = () => {
     approvedTrend: 12,
   });
   const [isLoading, setIsLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
     loadFinancialData();
@@ -65,13 +67,15 @@ export const FinancialOverviewCard = () => {
   };
 
   return (
-    <Card className="shadow-lg hover:shadow-xl transition-all duration-300 border-border/50 bg-gradient-card backdrop-blur-sm h-full overflow-hidden relative group">
-      <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-primary opacity-5 rounded-full blur-2xl group-hover:opacity-10 transition-opacity" />
-      
+    <Card 
+      onClick={() => navigate("/admin/analytics")}
+      className="group relative shadow-lg hover:shadow-2xl transition-all duration-500 border-border/50 bg-gradient-card backdrop-blur-sm h-full overflow-hidden cursor-pointer hover:scale-[1.02] hover:border-success/50"
+    >
+      <div className="absolute inset-0 bg-gradient-primary opacity-0 group-hover:opacity-10 transition-opacity duration-500" />
       <CardHeader className="pb-3 relative z-10">
         <div className="flex items-center gap-2">
-          <div className="p-2 rounded-lg bg-gradient-primary shadow-md">
-            <DollarSign className="w-4 h-4 text-primary-foreground" />
+          <div className="p-2 rounded-lg bg-success/20 group-hover:bg-success/30 transition-colors duration-300">
+            <DollarSign className="w-4 h-4 text-success" />
           </div>
           <CardTitle className="text-lg">Financial Overview</CardTitle>
         </div>
@@ -85,7 +89,7 @@ export const FinancialOverviewCard = () => {
         ) : (
           <>
             {/* Pending Section */}
-            <div className="p-3 rounded-lg bg-warning/5 border border-warning/20">
+            <div className="p-3 rounded-lg bg-warning/5 border border-warning/20 hover:bg-warning/10 transition-all duration-300 group/item">
               <div className="flex items-center justify-between mb-1">
                 <span className="text-xs text-muted-foreground font-medium">Pending</span>
                 <div className="flex items-center gap-1 text-xs text-warning">
@@ -94,13 +98,13 @@ export const FinancialOverviewCard = () => {
                 </div>
               </div>
               <div className="flex items-baseline gap-2">
-                <p className="text-2xl font-bold text-foreground">₹{data.totalPending.toLocaleString('en-IN')}</p>
+                <p className="text-2xl font-bold text-foreground group-hover/item:scale-105 transition-transform">₹{data.totalPending.toLocaleString('en-IN')}</p>
                 <p className="text-xs text-muted-foreground">{data.pendingCount} expenses</p>
               </div>
             </div>
 
             {/* Approved Section */}
-            <div className="p-3 rounded-lg bg-success/5 border border-success/20">
+            <div className="p-3 rounded-lg bg-success/5 border border-success/20 hover:bg-success/10 transition-all duration-300 group/item">
               <div className="flex items-center justify-between mb-1">
                 <span className="text-xs text-muted-foreground font-medium">Approved</span>
                 <div className="flex items-center gap-1 text-xs text-success">
@@ -109,7 +113,7 @@ export const FinancialOverviewCard = () => {
                 </div>
               </div>
               <div className="flex items-baseline gap-2">
-                <p className="text-2xl font-bold text-foreground">₹{data.totalApproved.toLocaleString('en-IN')}</p>
+                <p className="text-2xl font-bold text-foreground group-hover/item:scale-105 transition-transform">₹{data.totalApproved.toLocaleString('en-IN')}</p>
                 <p className="text-xs text-muted-foreground">{data.approvedCount} expenses</p>
               </div>
             </div>

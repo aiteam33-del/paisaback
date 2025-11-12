@@ -73,11 +73,12 @@ export const ApprovedExpensesCard = () => {
   };
 
   return (
-    <Card className="shadow-lg hover:shadow-xl transition-all duration-300 border-border/50 bg-gradient-card backdrop-blur-sm h-full flex flex-col">
-      <CardHeader className="pb-3">
+    <Card className="group relative shadow-lg hover:shadow-2xl transition-all duration-500 border-border/50 bg-gradient-card backdrop-blur-sm h-full flex flex-col overflow-hidden cursor-pointer hover:scale-[1.02] hover:border-success/50">
+      <div className="absolute inset-0 bg-gradient-primary opacity-0 group-hover:opacity-10 transition-opacity duration-500" />
+      <CardHeader className="pb-3 relative z-10">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="p-2 rounded-lg bg-success/20">
+            <div className="p-2 rounded-lg bg-success/20 group-hover:bg-success/30 transition-colors duration-300">
               <CheckCircle className="w-4 h-4 text-success" />
             </div>
             <CardTitle className="text-lg">Recently Approved</CardTitle>
@@ -85,8 +86,11 @@ export const ApprovedExpensesCard = () => {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => navigate("/admin/expenses?status=approved")}
-            className="h-8 text-xs"
+            onClick={(e) => {
+              e.stopPropagation();
+              navigate("/admin/expenses?status=approved");
+            }}
+            className="h-8 text-xs hover:bg-success/20"
           >
             View All
             <ChevronRight className="w-3 h-3 ml-1" />
@@ -94,7 +98,7 @@ export const ApprovedExpensesCard = () => {
         </div>
       </CardHeader>
       
-      <CardContent className="flex-1 flex flex-col">
+      <CardContent className="flex-1 flex flex-col relative z-10">
         {isLoading ? (
           <div className="flex items-center justify-center py-8">
             <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
@@ -108,7 +112,11 @@ export const ApprovedExpensesCard = () => {
             {expenses.map((expense) => (
               <div
                 key={expense.id}
-                className="p-3 rounded-lg border border-border/50 bg-background/50 hover:bg-accent/5 transition-colors"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigate(`/admin/expenses?highlight=${expense.id}`);
+                }}
+                className="p-3 rounded-lg border border-border/50 bg-background/50 hover:bg-gradient-card-hover hover:border-success/30 transition-all duration-300 cursor-pointer hover:scale-[1.01]"
               >
                 <div className="flex items-center justify-between mb-1.5">
                   <div className="flex-1 min-w-0">

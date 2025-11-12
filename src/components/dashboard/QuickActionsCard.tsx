@@ -14,11 +14,12 @@ export const QuickActionsCard = () => {
   ];
 
   return (
-    <Card className="shadow-lg hover:shadow-xl transition-all duration-300 border-border/50 bg-gradient-card backdrop-blur-sm h-full">
-      <CardHeader className="pb-3">
+    <Card className="group relative shadow-lg hover:shadow-2xl transition-all duration-500 border-border/50 bg-gradient-card backdrop-blur-sm h-full overflow-hidden hover:scale-[1.02]">
+      <div className="absolute inset-0 bg-gradient-hero opacity-0 group-hover:opacity-10 transition-opacity duration-500" />
+      <CardHeader className="pb-3 relative z-10">
         <CardTitle className="text-lg">Quick Actions</CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="relative z-10">
         <div className="grid grid-cols-2 gap-3">
           {actions.map((action, index) => {
             const Icon = action.icon;
@@ -26,10 +27,10 @@ export const QuickActionsCard = () => {
               <Button
                 key={index}
                 variant="outline"
-                className="h-auto flex flex-col items-center gap-2 p-4 hover:bg-accent/10 hover:border-primary/50 transition-all group"
+                className="h-auto flex flex-col items-center gap-2 p-4 hover:bg-gradient-card-hover hover:border-primary/50 transition-all duration-300 group/action hover:scale-105"
                 onClick={action.onClick}
               >
-                <div className={`p-2.5 rounded-lg bg-background/80 group-hover:scale-110 transition-transform ${action.color}`}>
+                <div className={`p-2.5 rounded-lg bg-background/80 group-hover/action:scale-110 transition-transform duration-300 ${action.color}`}>
                   <Icon className="w-5 h-5" />
                 </div>
                 <span className="text-xs font-medium text-center">{action.label}</span>
