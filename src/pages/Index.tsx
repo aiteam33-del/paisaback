@@ -330,14 +330,14 @@ const Index = () => {
               </h1>
               
               <p className="text-base sm:text-lg md:text-xl lg:text-2xl text-muted-foreground leading-relaxed max-w-2xl mx-auto lg:mx-0">
-                Upload your bills, let AI analyze them, and get your money back — instantly.
+                Snap your receipts, let AI handle the details, and streamline your reimbursement workflow with smart automation.
               </p>
               
-              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-2 sm:pt-4">
-                <Link to="/auth" className="w-full sm:w-auto">
+              <div className="flex justify-center lg:justify-start pt-2 sm:pt-4">
+                <Link to="/auth">
                   <Button 
                     size="lg" 
-                    className="w-full sm:w-auto bg-gradient-primary hover:opacity-90 active:scale-95 sm:hover:scale-105 text-base sm:text-lg px-8 sm:px-10 py-6 sm:py-7 shadow-2xl hover:shadow-glow transition-all duration-300 rounded-xl font-semibold touch-manipulation"
+                    className="bg-gradient-primary hover:opacity-90 active:scale-95 sm:hover:scale-105 text-base sm:text-lg px-8 sm:px-10 py-6 sm:py-7 shadow-2xl hover:shadow-glow transition-all duration-300 rounded-xl font-semibold touch-manipulation"
                   >
                     Get Started with PAISABACK
                     <ArrowRight className="ml-2 w-4 h-4 sm:w-5 sm:h-5" />
