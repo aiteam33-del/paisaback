@@ -515,16 +515,22 @@ const processOCR = async (file: File) => {
 
       if (attachmentUrls.length > 0) {
         const firstImagePath = attachmentUrls[0];
-        const publicUrl = getReceiptPublicUrl(firstImagePath);
         
         try {
+          // Pass bucket and path directly for better reliability with private storage
           const { data: detectionData, error: detectionError } = await supabase.functions.invoke('detect-ai-image', {
-            body: { imageUrl: publicUrl }
+            body: { 
+              bucket: 'receipts',
+              path: firstImagePath
+            }
           });
 
           if (!detectionError && detectionData) {
             aiDetectionResult = detectionData.detectionResult;
             isAiGenerated = detectionData.isAiGenerated || false;
+            console.log('AI Detection result:', { isAiGenerated, score: detectionData.detectionResult?.score });
+          } else if (detectionError) {
+            console.error('AI detection error:', detectionError);
           }
         } catch (detectError) {
           console.error('AI detection error (non-blocking):', detectError);

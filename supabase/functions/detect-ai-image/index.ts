@@ -8,13 +8,18 @@ const corsHeaders = {
 };
 
 interface DetectionRequest {
-  imageUrl: string;
+  imageUrl?: string;
+  bucket?: string;
+  path?: string;
 }
 
 interface SightEngineResponse {
   status: string;
-  type: {
-    ai_generated: number;
+  type?: {
+    ai_generated?: number;
+  };
+  genai?: {
+    ai_generated?: number;
   };
   media?: {
     id: string;
@@ -25,17 +30,24 @@ interface SightEngineResponse {
   };
 }
 
+async function arrayBufferToBase64(buf: ArrayBuffer): Promise<string> {
+  const bytes = new Uint8Array(buf);
+  const binary = bytes.reduce((acc, byte) => acc + String.fromCharCode(byte), '');
+  return btoa(binary);
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { imageUrl } = await req.json() as DetectionRequest;
+    const body = await req.json() as DetectionRequest;
+    const { imageUrl, bucket, path } = body;
 
-    if (!imageUrl) {
+    if (!imageUrl && (!bucket || !path)) {
       return new Response(
-        JSON.stringify({ error: 'imageUrl is required' }),
+        JSON.stringify({ error: 'Either imageUrl or (bucket and path) is required' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -57,18 +69,72 @@ serve(async (req) => {
       );
     }
 
+    let imageData: ArrayBuffer;
+    let imageUrlForSightEngine: string | null = null;
+    let mimeType = 'image/jpeg'; // Default MIME type
+
+    // If bucket and path are provided, download from storage
+    if (bucket && path) {
+      const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
+      const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+      const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
+      const { data, error } = await supabase.storage.from(bucket).download(path);
+      if (error || !data) {
+        console.error('Failed to download image from storage:', error);
+        throw new Error(`Failed to download image from storage: ${error?.message}`);
+      }
+      imageData = await data.arrayBuffer();
+      mimeType = data.type || mimeType;
+      console.log('Downloaded image from storage bucket:', bucket, 'path:', path, 'mimeType:', mimeType);
+    } else if (imageUrl) {
+      // Try to fetch the image URL
+      const resp = await fetch(imageUrl);
+      if (!resp.ok) {
+        console.error('Failed to fetch image URL:', resp.status, resp.statusText);
+        // If URL fetch fails, try using the URL directly with SightEngine
+        imageUrlForSightEngine = imageUrl;
+      } else {
+        imageData = await resp.arrayBuffer();
+        mimeType = resp.headers.get('content-type') || mimeType;
+        console.log('Fetched image from URL:', imageUrl, 'mimeType:', mimeType);
+      }
+    } else {
+      throw new Error('No valid image source provided');
+    }
+
     // Call SightEngine API
-    const sightEngineUrl = new URL('https://api.sightengine.com/1.0/check.json');
-    sightEngineUrl.searchParams.append('url', imageUrl);
-    sightEngineUrl.searchParams.append('models', 'genai');
-    sightEngineUrl.searchParams.append('api_user', apiUser);
-    sightEngineUrl.searchParams.append('api_secret', apiKey);
+    let response: Response;
 
-    console.log('Calling SightEngine API for image:', imageUrl);
-
-    const response = await fetch(sightEngineUrl.toString(), {
-      method: 'GET',
-    });
+    if (imageUrlForSightEngine) {
+      // Use URL method if we have a public URL
+      const sightEngineUrl = new URL('https://api.sightengine.com/1.0/check.json');
+      sightEngineUrl.searchParams.append('url', imageUrlForSightEngine);
+      sightEngineUrl.searchParams.append('models', 'genai');
+      sightEngineUrl.searchParams.append('api_user', apiUser);
+      sightEngineUrl.searchParams.append('api_secret', apiKey);
+      
+      console.log('Calling SightEngine API with URL:', imageUrlForSightEngine);
+      response = await fetch(sightEngineUrl.toString(), { method: 'GET' });
+    } else {
+      // Use file upload method
+      const sightEngineUrl = new URL('https://api.sightengine.com/1.0/check.json');
+      sightEngineUrl.searchParams.append('models', 'genai');
+      sightEngineUrl.searchParams.append('api_user', apiUser);
+      sightEngineUrl.searchParams.append('api_secret', apiKey);
+      
+      const formData = new FormData();
+      // Determine file extension from MIME type
+      const extension = mimeType.includes('png') ? 'png' : mimeType.includes('gif') ? 'gif' : 'jpg';
+      const blob = new Blob([imageData], { type: mimeType });
+      formData.append('media', blob, `image.${extension}`);
+      
+      console.log('Calling SightEngine API with file upload');
+      response = await fetch(sightEngineUrl.toString(), {
+        method: 'POST',
+        body: formData,
+      });
+    }
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -80,7 +146,7 @@ serve(async (req) => {
           success: true, 
           detectionResult: null,
           isAiGenerated: false,
-          error: 'API call failed'
+          error: `API call failed: ${response.status} - ${errorText}`
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
@@ -89,8 +155,12 @@ serve(async (req) => {
     const data = await response.json() as SightEngineResponse;
     console.log('SightEngine API response:', JSON.stringify(data, null, 2));
 
-    const aiGeneratedScore = data.type?.ai_generated || 0;
-    const threshold = 0.5; // Consider as AI-generated if confidence > 50%
+    // Check both possible response structures
+    const aiGeneratedScore = data.type?.ai_generated ?? data.genai?.ai_generated ?? 0;
+    
+    // Lower threshold to be more sensitive - flag if confidence > 30%
+    // This ensures we catch more AI-generated images
+    const threshold = 0.3;
     const isAiGenerated = aiGeneratedScore >= threshold;
 
     const detectionResult = {
@@ -100,9 +170,10 @@ serve(async (req) => {
       timestamp: new Date().toISOString(),
       requestId: data.request?.id,
       mediaId: data.media?.id,
+      rawResponse: data, // Include full response for debugging
     };
 
-    console.log(`AI Detection: score=${aiGeneratedScore}, flagged=${isAiGenerated}`);
+    console.log(`AI Detection: score=${aiGeneratedScore}, threshold=${threshold}, flagged=${isAiGenerated}`);
 
     return new Response(
       JSON.stringify({
