@@ -509,9 +509,13 @@ const processOCR = async (file: File) => {
       // Upload files first
       const attachmentUrls = await uploadFiles();
 
-      // Check for AI-generated images (only for first image)
+      // Check for AI-generated/manipulated images (only for first image)
+      // This runs server-side and does NOT notify the employee
       let aiDetectionResult = null;
-      let isAiGenerated = false;
+      let aiChecked = false;
+      let aiFlagged = false;
+      let aiConfidence: number | null = null;
+      let aiDetails: any = null;
 
       if (attachmentUrls.length > 0) {
         const firstImagePath = attachmentUrls[0];
@@ -527,18 +531,35 @@ const processOCR = async (file: File) => {
 
           if (!detectionError && detectionData) {
             aiDetectionResult = detectionData.detectionResult;
-            isAiGenerated = detectionData.isAiGenerated || false;
-            console.log('AI Detection result:', { isAiGenerated, score: detectionData.detectionResult?.score });
+            aiChecked = detectionData.aiChecked || false;
+            aiFlagged = detectionData.aiFlagged || false;
+            aiConfidence = detectionData.aiConfidence || null;
+            aiDetails = detectionData.aiDetails || null;
+            
+            // Keep backward compatibility
+            const isAiGenerated = detectionData.isAiGenerated || aiFlagged;
+            
+            // Log only for debugging (not shown to employee)
+            console.log('AI Detection result:', { 
+              aiChecked, 
+              aiFlagged, 
+              aiConfidence,
+              reason: aiDetails?.reason 
+            });
           } else if (detectionError) {
             console.error('AI detection error:', detectionError);
+            // Set error details but don't block submission
+            aiDetails = { error: 'Detection failed' };
           }
         } catch (detectError) {
           console.error('AI detection error (non-blocking):', detectError);
           // Continue with expense submission even if detection fails
+          aiDetails = { error: 'Detection service unavailable' };
         }
       }
 
       // Create expense record
+      const now = new Date().toISOString();
       const { error } = await supabase
         .from("expenses")
         .insert({
@@ -548,11 +569,17 @@ const processOCR = async (file: File) => {
           category,
           description,
           mode_of_payment: modeOfPayment,
-          date: date ? new Date(date).toISOString() : new Date().toISOString(),
+          date: date ? new Date(date).toISOString() : now,
           attachments: attachmentUrls,
           status: 'pending',
+          // Store comprehensive AI detection data
           ai_detection_result: aiDetectionResult,
-          is_ai_generated: isAiGenerated,
+          ai_checked: aiChecked,
+          ai_flagged: aiFlagged,
+          ai_confidence: aiConfidence,
+          ai_checked_at: aiChecked ? now : null,
+          // Keep backward compatibility
+          is_ai_generated: aiFlagged,
         });
 
       if (error) throw error;

@@ -75,12 +75,24 @@ const getReasonLabel = (code: string) => {
 const getReasonDetails = (code: string, expense: any) => {
   switch (code) {
     case "ai_generated":
-      const confidence = expense.ai_detection_result?.score 
-        ? (expense.ai_detection_result.score * 100).toFixed(1) 
+      // Use new ai_confidence field if available, otherwise extract from detection result
+      const confidence = expense.ai_confidence !== null && expense.ai_confidence !== undefined
+        ? (expense.ai_confidence * 100).toFixed(1)
+        : expense.ai_detection_result?.confidence
+        ? (expense.ai_detection_result.confidence * 100).toFixed(1)
+        : expense.ai_detection_result?.score
+        ? (expense.ai_detection_result.score * 100).toFixed(1)
         : "Unknown";
+      
+      const reason = expense.ai_details?.reason || 
+        (expense.ai_detection_result ? 
+          `AI-generated: ${((expense.ai_detection_result.aiGeneratedScore || 0) * 100).toFixed(1)}%, manipulation: ${((expense.ai_detection_result.manipulationScore || 0) * 100).toFixed(1)}%` :
+          "AI-generated or altered image detected");
+      
       return [
         `🤖 Receipt detected as AI-generated or digitally altered`,
         `Detection confidence: ${confidence}%`,
+        `Details: ${reason}`,
         `⚠️ CRITICAL: Possible fraudulent activity - immediate action required`
       ];
     case "duplicate_claim":

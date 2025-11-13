@@ -157,8 +157,9 @@ const AnomalyDashboard = () => {
       let suspicionScore = 0;
       let duplicateInfo: any = null;
 
-      // AI-GENERATED IMAGE DETECTION (CRITICAL - HIGHEST PRIORITY)
-      if (expense.is_ai_generated) {
+      // AI-GENERATED/MANIPULATED IMAGE DETECTION (CRITICAL - HIGHEST PRIORITY)
+      // Check both new ai_flagged field and backward-compatible is_ai_generated
+      if (expense.ai_flagged === true || expense.is_ai_generated === true) {
         reasonCodes.push("ai_generated");
         suspicionScore += 100; // Maximum severity - automatic critical flag
       }
@@ -244,7 +245,8 @@ const AnomalyDashboard = () => {
     return matchesSearch && matchesSeverity && expense.suspicionScore > 0;
   });
 
-  const criticalExpenses = expenses.filter(e => e.is_ai_generated === true);
+  // Critical expenses: AI-flagged images (highest priority)
+  const criticalExpenses = expenses.filter(e => e.ai_flagged === true || e.is_ai_generated === true);
   const flaggedCount = expenses.filter(e => (e.suspicionScore || 0) >= 30).length;
   const highRiskCount = expenses.filter(e => (e.suspicionScore || 0) >= 50).length;
   const avgSuspicionScore = expenses.length > 0

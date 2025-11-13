@@ -17,10 +17,13 @@ interface SightEngineResponse {
   status: string;
   type?: {
     ai_generated?: number;
+    manipulation?: number;
   };
   genai?: {
     ai_generated?: number;
   };
+  manipulation?: number;
+  ai_generated?: number;
   // Alternative response structures from SightEngine
   [key: string]: any;
 }
@@ -47,18 +50,21 @@ serve(async (req) => {
       );
     }
 
+    // Read credentials from Lovable's secure environment
     const apiUser = Deno.env.get('SIGHTENGINE_API_USER');
-    const apiKey = Deno.env.get('SIGHTENGINE_API_KEY');
+    const apiSecret = Deno.env.get('SIGHTENGINE_API_SECRET');
 
-    if (!apiUser || !apiKey) {
-      console.error('SightEngine credentials not configured');
+    if (!apiUser || !apiSecret) {
+      console.error('SightEngine credentials not configured - Lovable secret access blocked');
       // Return success but with null result to not block expense submission
       return new Response(
         JSON.stringify({ 
           success: true, 
           detectionResult: null,
           isAiGenerated: false,
-          error: 'API not configured'
+          aiChecked: false,
+          aiFlagged: false,
+          error: 'Lovable secret access blocked — cannot read SIGHTENGINE_API_USER/SECRET from environment'
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
@@ -105,18 +111,18 @@ serve(async (req) => {
       // Use URL method if we have a public URL
       const sightEngineUrl = new URL('https://api.sightengine.com/1.0/check.json');
       sightEngineUrl.searchParams.append('url', imageUrlForSightEngine);
-      sightEngineUrl.searchParams.append('models', 'genai');
+      sightEngineUrl.searchParams.append('models', 'manipulation,genai');
       sightEngineUrl.searchParams.append('api_user', apiUser);
-      sightEngineUrl.searchParams.append('api_secret', apiKey);
+      sightEngineUrl.searchParams.append('api_secret', apiSecret);
       
-      console.log('Calling SightEngine API with URL:', imageUrlForSightEngine);
+      console.log('Calling SightEngine API with URL (models: manipulation,genai)');
       response = await fetch(sightEngineUrl.toString(), { method: 'GET' });
     } else {
       // Use file upload method
       const sightEngineUrl = new URL('https://api.sightengine.com/1.0/check.json');
-      sightEngineUrl.searchParams.append('models', 'genai');
+      sightEngineUrl.searchParams.append('models', 'manipulation,genai');
       sightEngineUrl.searchParams.append('api_user', apiUser);
-      sightEngineUrl.searchParams.append('api_secret', apiKey);
+      sightEngineUrl.searchParams.append('api_secret', apiSecret);
       
       const formData = new FormData();
       // Determine file extension from MIME type
@@ -124,7 +130,7 @@ serve(async (req) => {
       const blob = new Blob([imageData], { type: mimeType });
       formData.append('media', blob, `image.${extension}`);
       
-      console.log('Calling SightEngine API with file upload');
+      console.log('Calling SightEngine API with file upload (models: manipulation,genai)');
       response = await fetch(sightEngineUrl.toString(), {
         method: 'POST',
         body: formData,
@@ -136,75 +142,108 @@ serve(async (req) => {
       console.error('SightEngine API error:', response.status, errorText);
       
       // Don't block expense submission on API failure
+      // Log error server-side but don't expose details
+      console.error('SightEngine API call failed:', response.status);
       return new Response(
         JSON.stringify({ 
           success: true, 
           detectionResult: null,
+          aiChecked: false,
+          aiFlagged: false,
+          aiConfidence: null,
+          aiDetails: { error: 'API call failed' },
           isAiGenerated: false,
-          error: `API call failed: ${response.status} - ${errorText}`
+          error: 'API call failed'
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     const data = await response.json() as SightEngineResponse;
-    console.log('SightEngine API response:', JSON.stringify(data, null, 2));
+    // Do NOT log the full response to avoid exposing sensitive data
+    console.log('SightEngine API response received');
 
-    // Parse AI-generated score from various possible response structures
-    // SightEngine genai model can return the score in different formats
+    // Parse AI-generated and manipulation scores from SightEngine response
+    // Check multiple possible response structures
     let aiGeneratedScore = 0;
+    let manipulationScore = 0;
     
-    // Try different possible response structures
+    // Try different possible response structures for AI-generated
     if (data.type?.ai_generated !== undefined) {
       aiGeneratedScore = data.type.ai_generated;
     } else if (data.genai?.ai_generated !== undefined) {
       aiGeneratedScore = data.genai.ai_generated;
     } else if (data.ai_generated !== undefined) {
       aiGeneratedScore = data.ai_generated;
-    } else if (typeof data.type === 'number') {
-      // Sometimes the response might be just a number
-      aiGeneratedScore = data.type;
     }
     
-    // Ensure score is between 0 and 1
-    aiGeneratedScore = Math.max(0, Math.min(1, Number(aiGeneratedScore) || 0));
+    // Try different possible response structures for manipulation
+    if (data.type?.manipulation !== undefined) {
+      manipulationScore = data.type.manipulation;
+    } else if (data.manipulation !== undefined) {
+      manipulationScore = data.manipulation;
+    }
     
-    // Lower threshold to be more sensitive - flag if confidence > 30%
-    // This ensures we catch more AI-generated images
-    const threshold = 0.3;
-    const isAiGenerated = aiGeneratedScore >= threshold;
+    // Ensure scores are between 0 and 1
+    aiGeneratedScore = Math.max(0, Math.min(1, Number(aiGeneratedScore) || 0));
+    manipulationScore = Math.max(0, Math.min(1, Number(manipulationScore) || 0));
+    
+    // Use 70% threshold as specified in requirements
+    const threshold = 0.70;
+    const isAiFlagged = aiGeneratedScore >= threshold || manipulationScore >= threshold;
+    
+    // Use the higher of the two scores as the confidence
+    const confidence = Math.max(aiGeneratedScore, manipulationScore);
 
     const detectionResult = {
-      score: aiGeneratedScore,
+      aiGeneratedScore,
+      manipulationScore,
+      confidence,
       threshold,
-      flagged: isAiGenerated,
+      flagged: isAiFlagged,
       timestamp: new Date().toISOString(),
       requestId: data.request?.id,
       mediaId: data.media?.id,
-      rawResponse: data, // Include full response for debugging
+      // Store raw response for audit (redacted in logs)
+      rawResponse: data,
     };
 
-    console.log(`AI Detection: score=${aiGeneratedScore}, threshold=${threshold}, flagged=${isAiGenerated}`);
+    // Log only scores, not full response
+    console.log(`AI Detection: ai_generated=${aiGeneratedScore.toFixed(2)}, manipulation=${manipulationScore.toFixed(2)}, confidence=${confidence.toFixed(2)}, threshold=${threshold}, flagged=${isAiFlagged}`);
 
     return new Response(
       JSON.stringify({
         success: true,
         detectionResult,
-        isAiGenerated,
+        aiChecked: true,
+        aiFlagged: isAiFlagged,
+        aiConfidence: confidence,
+        aiDetails: {
+          aiGenerated: aiGeneratedScore,
+          manipulation: manipulationScore,
+          reason: `AI-generated: ${aiGeneratedScore.toFixed(2)}, manipulation: ${manipulationScore.toFixed(2)}`
+        },
+        // Keep backward compatibility
+        isAiGenerated: isAiFlagged,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (error) {
-    console.error('Error in detect-ai-image function:', error);
+    // Log error server-side for monitoring
+    console.error('Error in detect-ai-image function:', error instanceof Error ? error.message : 'Unknown error');
     
     // Don't block expense submission on errors
     return new Response(
       JSON.stringify({ 
         success: true, 
         detectionResult: null,
+        aiChecked: false,
+        aiFlagged: false,
+        aiConfidence: null,
+        aiDetails: { error: error instanceof Error ? error.message : 'Unknown error' },
         isAiGenerated: false,
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: 'Detection failed'
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
