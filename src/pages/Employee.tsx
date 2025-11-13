@@ -573,7 +573,7 @@ const processOCR = async (file: File) => {
       }
 
       // Create expense record
-      const now = new Date().toISOString();
+      // Use only existing columns for backward compatibility
       const { error } = await supabase
         .from("expenses")
         .insert({
@@ -583,16 +583,11 @@ const processOCR = async (file: File) => {
           category,
           description,
           mode_of_payment: modeOfPayment,
-          date: date ? new Date(date).toISOString() : now,
+          date: date ? new Date(date).toISOString() : new Date().toISOString(),
           attachments: attachmentUrls,
           status: 'pending',
-          // Store comprehensive AI detection data
+          // Use existing columns only (ai_checked, ai_flagged, etc. will be added via migration)
           ai_detection_result: aiDetectionResult,
-          ai_checked: aiChecked,
-          ai_flagged: aiFlagged,
-          ai_confidence: aiConfidence,
-          ai_checked_at: aiChecked ? now : null,
-          // Keep backward compatibility
           is_ai_generated: aiFlagged,
         });
 
