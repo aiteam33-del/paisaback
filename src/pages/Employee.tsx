@@ -509,6 +509,29 @@ const processOCR = async (file: File) => {
       // Upload files first
       const attachmentUrls = await uploadFiles();
 
+      // Check for AI-generated images (only for first image)
+      let aiDetectionResult = null;
+      let isAiGenerated = false;
+
+      if (attachmentUrls.length > 0) {
+        const firstImagePath = attachmentUrls[0];
+        const publicUrl = getReceiptPublicUrl(firstImagePath);
+        
+        try {
+          const { data: detectionData, error: detectionError } = await supabase.functions.invoke('detect-ai-image', {
+            body: { imageUrl: publicUrl }
+          });
+
+          if (!detectionError && detectionData) {
+            aiDetectionResult = detectionData.detectionResult;
+            isAiGenerated = detectionData.isAiGenerated || false;
+          }
+        } catch (detectError) {
+          console.error('AI detection error (non-blocking):', detectError);
+          // Continue with expense submission even if detection fails
+        }
+      }
+
       // Create expense record
       const { error } = await supabase
         .from("expenses")
@@ -521,7 +544,9 @@ const processOCR = async (file: File) => {
           mode_of_payment: modeOfPayment,
           date: date ? new Date(date).toISOString() : new Date().toISOString(),
           attachments: attachmentUrls,
-          status: 'pending'
+          status: 'pending',
+          ai_detection_result: aiDetectionResult,
+          is_ai_generated: isAiGenerated,
         });
 
       if (error) throw error;

@@ -1,6 +1,6 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { TrendingUp, DollarSign, Calendar, Target, AlertTriangle, Copy, Clock } from "lucide-react";
+import { TrendingUp, DollarSign, Calendar, Target, AlertTriangle, Copy, Clock, Bot } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface ReasonGlossaryProps {
@@ -9,6 +9,15 @@ interface ReasonGlossaryProps {
 }
 
 const reasons = [
+  {
+    code: "ai_generated",
+    title: "AI-Generated or Altered Image",
+    severity: "CRITICAL",
+    icon: Bot,
+    description: "Receipt image detected as AI-generated or digitally altered using advanced image forensics. This indicates potential fabrication or manipulation of the receipt.",
+    suggestion: "IMMEDIATE ACTION REQUIRED: Contact the employee for explanation and request original receipt. This is the highest severity flag and may indicate fraudulent activity.",
+    color: "text-red-600"
+  },
   {
     code: "statistical_outlier",
     title: "Statistical Outlier",
@@ -96,7 +105,12 @@ export const ReasonGlossary = ({ open, onOpenChange }: ReasonGlossaryProps) => {
                       <div className="flex items-center gap-2 mb-2">
                         <h3 className="font-semibold text-foreground text-base">{reason.title}</h3>
                         <Badge
-                          variant={reason.severity === "HIGH" ? "destructive" : reason.severity === "MEDIUM" ? "default" : "secondary"}
+                          variant={
+                            reason.severity === "CRITICAL" ? "destructive" :
+                            reason.severity === "HIGH" ? "destructive" : 
+                            reason.severity === "MEDIUM" ? "default" : 
+                            "secondary"
+                          }
                           className="font-medium"
                         >
                           {reason.severity}

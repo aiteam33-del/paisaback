@@ -10,7 +10,8 @@ import {
   CheckCircle,
   Users,
   AlertCircle,
-  FileX
+  FileX,
+  Bot
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -39,6 +40,8 @@ interface FlaggedExpenseRowProps {
 
 const getReasonIcon = (code: string) => {
   switch (code) {
+    case "ai_generated":
+      return Bot;
     case "statistical_outlier":
       return TrendingUp;
     case "duplicate_claim":
@@ -58,6 +61,7 @@ const getReasonIcon = (code: string) => {
 
 const getReasonLabel = (code: string) => {
   const labels: Record<string, string> = {
+    ai_generated: "AI-Generated or Altered Image",
     statistical_outlier: "Statistical Outlier",
     duplicate_claim: "Duplicate Transaction Detected",
     date_mismatch: "Date Mismatch Detected",
@@ -70,6 +74,15 @@ const getReasonLabel = (code: string) => {
 
 const getReasonDetails = (code: string, expense: any) => {
   switch (code) {
+    case "ai_generated":
+      const confidence = expense.ai_detection_result?.score 
+        ? (expense.ai_detection_result.score * 100).toFixed(1) 
+        : "Unknown";
+      return [
+        `🤖 Receipt detected as AI-generated or digitally altered`,
+        `Detection confidence: ${confidence}%`,
+        `⚠️ CRITICAL: Possible fraudulent activity - immediate action required`
+      ];
     case "duplicate_claim":
       return [
         `Same vendor: "${expense.vendor}"`,

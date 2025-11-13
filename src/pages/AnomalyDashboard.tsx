@@ -157,6 +157,12 @@ const AnomalyDashboard = () => {
       let suspicionScore = 0;
       let duplicateInfo: any = null;
 
+      // AI-GENERATED IMAGE DETECTION (CRITICAL - HIGHEST PRIORITY)
+      if (expense.is_ai_generated) {
+        reasonCodes.push("ai_generated");
+        suspicionScore += 100; // Maximum severity - automatic critical flag
+      }
+
       // Statistical outlier (HIGH WEIGHT - major anomaly)
       if (Math.abs(Number(expense.amount) - mean) > 2 * stdDev) {
         reasonCodes.push("statistical_outlier");
@@ -238,6 +244,7 @@ const AnomalyDashboard = () => {
     return matchesSearch && matchesSeverity && expense.suspicionScore > 0;
   });
 
+  const criticalExpenses = expenses.filter(e => e.is_ai_generated === true);
   const flaggedCount = expenses.filter(e => (e.suspicionScore || 0) >= 30).length;
   const highRiskCount = expenses.filter(e => (e.suspicionScore || 0) >= 50).length;
   const avgSuspicionScore = expenses.length > 0
@@ -372,8 +379,11 @@ const AnomalyDashboard = () => {
           </div>
 
           {/* Flagged Expenses List */}
-          <Tabs defaultValue="all" className="w-full">
+          <Tabs defaultValue="critical" className="w-full">
             <TabsList>
+              <TabsTrigger value="critical" className="data-[state=active]:bg-destructive data-[state=active]:text-destructive-foreground">
+                🚨 Critical ({criticalExpenses.length})
+              </TabsTrigger>
               <TabsTrigger value="all">
                 All Flagged ({filteredExpenses.length})
               </TabsTrigger>
@@ -387,6 +397,39 @@ const AnomalyDashboard = () => {
                 }).length})
               </TabsTrigger>
             </TabsList>
+
+            <TabsContent value="critical" className="space-y-3 mt-4">
+              {criticalExpenses.length === 0 ? (
+                <div className="text-center py-12 text-muted-foreground">
+                  <Shield className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                  <p className="text-lg font-medium mb-2">No critical issues detected</p>
+                  <p>All receipts passed AI-generation detection</p>
+                </div>
+              ) : (
+                <>
+                  <div className="bg-destructive/10 border-2 border-destructive/50 rounded-lg p-4 mb-4">
+                    <div className="flex items-start gap-3">
+                      <AlertTriangle className="w-5 h-5 text-destructive mt-0.5" />
+                      <div>
+                        <h3 className="font-semibold text-destructive mb-1">AI-Generated or Altered Images Detected</h3>
+                        <p className="text-sm text-muted-foreground">
+                          The following receipts have been flagged as potentially AI-generated or digitally altered. 
+                          Review them carefully before approval.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  {criticalExpenses.map(expense => (
+                    <FlaggedExpenseRow
+                      key={expense.id}
+                      expense={expense}
+                      onClick={() => setSelectedExpense(expense)}
+                      onReject={loadExpenses}
+                    />
+                  ))}
+                </>
+              )}
+            </TabsContent>
 
             <TabsContent value="all" className="space-y-3 mt-4">
               {filteredExpenses.length === 0 ? (

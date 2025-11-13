@@ -40,6 +40,7 @@ export type Database = {
       }
       expenses: {
         Row: {
+          ai_detection_result: Json | null
           amount: number
           approved_at: string | null
           approved_by: string | null
@@ -50,6 +51,7 @@ export type Database = {
           description: string
           finance_notes: string | null
           id: string
+          is_ai_generated: boolean | null
           manager_notes: string | null
           mode_of_payment: string | null
           ocr_confidence: number | null
@@ -64,6 +66,7 @@ export type Database = {
           vendor: string
         }
         Insert: {
+          ai_detection_result?: Json | null
           amount: number
           approved_at?: string | null
           approved_by?: string | null
@@ -74,6 +77,7 @@ export type Database = {
           description: string
           finance_notes?: string | null
           id?: string
+          is_ai_generated?: boolean | null
           manager_notes?: string | null
           mode_of_payment?: string | null
           ocr_confidence?: number | null
@@ -88,6 +92,7 @@ export type Database = {
           vendor: string
         }
         Update: {
+          ai_detection_result?: Json | null
           amount?: number
           approved_at?: string | null
           approved_by?: string | null
@@ -98,6 +103,7 @@ export type Database = {
           description?: string
           finance_notes?: string | null
           id?: string
+          is_ai_generated?: boolean | null
           manager_notes?: string | null
           mode_of_payment?: string | null
           ocr_confidence?: number | null
