@@ -509,71 +509,30 @@ const processOCR = async (file: File) => {
       // Upload files first
       const attachmentUrls = await uploadFiles();
 
-      // Check for AI-generated/manipulated images (only for first image)
-      // This runs server-side and does NOT notify the employee
+      // Check for AI-generated images (only for first image)
       let aiDetectionResult = null;
-      let aiChecked = false;
-      let aiFlagged = false;
-      let aiConfidence: number | null = null;
-      let aiDetails: any = null;
+      let isAiGenerated = false;
 
       if (attachmentUrls.length > 0) {
         const firstImagePath = attachmentUrls[0];
         
         try {
-          console.log('Invoking AI detection for image:', firstImagePath);
-          
-          // Pass bucket and path directly for better reliability with private storage
+          const publicUrl = getReceiptPublicUrl(firstImagePath);
           const { data: detectionData, error: detectionError } = await supabase.functions.invoke('detect-ai-image', {
-            body: { 
-              bucket: 'receipts',
-              path: firstImagePath
-            }
-          });
-
-          console.log('AI Detection response:', { 
-            hasData: !!detectionData, 
-            hasError: !!detectionError,
-            error: detectionError?.message || detectionData?.error
+            body: { imageUrl: publicUrl }
           });
 
           if (!detectionError && detectionData) {
             aiDetectionResult = detectionData.detectionResult;
-            aiChecked = detectionData.aiChecked || false;
-            aiFlagged = detectionData.aiFlagged || false;
-            aiConfidence = detectionData.aiConfidence || null;
-            aiDetails = detectionData.aiDetails || null;
-            
-            // Keep backward compatibility
-            const isAiGenerated = detectionData.isAiGenerated || aiFlagged;
-            
-            // Log only for debugging (not shown to employee)
-            console.log('AI Detection result:', { 
-              aiChecked, 
-              aiFlagged, 
-              aiConfidence,
-              reason: aiDetails?.reason,
-              error: detectionData.error
-            });
-            
-            // If there's an error in the response, log it
-            if (detectionData.error) {
-              console.error('SightEngine API error in response:', detectionData.error);
-            }
-          } else if (detectionError) {
-            console.error('AI detection function error:', detectionError);
-            // Set error details but don't block submission
-            aiDetails = { error: detectionError.message || 'Detection failed' };
+            isAiGenerated = detectionData.isAiGenerated || false;
           }
         } catch (detectError) {
-          console.error('AI detection exception (non-blocking):', detectError);
+          console.error('AI detection error (non-blocking):', detectError);
           // Continue with expense submission even if detection fails
-          aiDetails = { error: 'Detection service unavailable' };
         }
       }
 
       // Create expense record
-      // Use only existing columns for backward compatibility
       const { error } = await supabase
         .from("expenses")
         .insert({
@@ -586,9 +545,8 @@ const processOCR = async (file: File) => {
           date: date ? new Date(date).toISOString() : new Date().toISOString(),
           attachments: attachmentUrls,
           status: 'pending',
-          // Use existing columns only (ai_checked, ai_flagged, etc. will be added via migration)
           ai_detection_result: aiDetectionResult,
-          is_ai_generated: aiFlagged,
+          is_ai_generated: isAiGenerated,
         });
 
       if (error) throw error;
