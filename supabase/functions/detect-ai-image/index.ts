@@ -21,13 +21,8 @@ interface SightEngineResponse {
   genai?: {
     ai_generated?: number;
   };
-  media?: {
-    id: string;
-    uri: string;
-  };
-  request?: {
-    id: string;
-  };
+  // Alternative response structures from SightEngine
+  [key: string]: any;
 }
 
 async function arrayBufferToBase64(buf: ArrayBuffer): Promise<string> {
@@ -155,8 +150,24 @@ serve(async (req) => {
     const data = await response.json() as SightEngineResponse;
     console.log('SightEngine API response:', JSON.stringify(data, null, 2));
 
-    // Check both possible response structures
-    const aiGeneratedScore = data.type?.ai_generated ?? data.genai?.ai_generated ?? 0;
+    // Parse AI-generated score from various possible response structures
+    // SightEngine genai model can return the score in different formats
+    let aiGeneratedScore = 0;
+    
+    // Try different possible response structures
+    if (data.type?.ai_generated !== undefined) {
+      aiGeneratedScore = data.type.ai_generated;
+    } else if (data.genai?.ai_generated !== undefined) {
+      aiGeneratedScore = data.genai.ai_generated;
+    } else if (data.ai_generated !== undefined) {
+      aiGeneratedScore = data.ai_generated;
+    } else if (typeof data.type === 'number') {
+      // Sometimes the response might be just a number
+      aiGeneratedScore = data.type;
+    }
+    
+    // Ensure score is between 0 and 1
+    aiGeneratedScore = Math.max(0, Math.min(1, Number(aiGeneratedScore) || 0));
     
     // Lower threshold to be more sensitive - flag if confidence > 30%
     // This ensures we catch more AI-generated images
