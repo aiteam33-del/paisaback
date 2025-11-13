@@ -521,12 +521,20 @@ const processOCR = async (file: File) => {
         const firstImagePath = attachmentUrls[0];
         
         try {
+          console.log('Invoking AI detection for image:', firstImagePath);
+          
           // Pass bucket and path directly for better reliability with private storage
           const { data: detectionData, error: detectionError } = await supabase.functions.invoke('detect-ai-image', {
             body: { 
               bucket: 'receipts',
               path: firstImagePath
             }
+          });
+
+          console.log('AI Detection response:', { 
+            hasData: !!detectionData, 
+            hasError: !!detectionError,
+            error: detectionError?.message || detectionData?.error
           });
 
           if (!detectionError && detectionData) {
@@ -544,15 +552,21 @@ const processOCR = async (file: File) => {
               aiChecked, 
               aiFlagged, 
               aiConfidence,
-              reason: aiDetails?.reason 
+              reason: aiDetails?.reason,
+              error: detectionData.error
             });
+            
+            // If there's an error in the response, log it
+            if (detectionData.error) {
+              console.error('SightEngine API error in response:', detectionData.error);
+            }
           } else if (detectionError) {
-            console.error('AI detection error:', detectionError);
+            console.error('AI detection function error:', detectionError);
             // Set error details but don't block submission
-            aiDetails = { error: 'Detection failed' };
+            aiDetails = { error: detectionError.message || 'Detection failed' };
           }
         } catch (detectError) {
-          console.error('AI detection error (non-blocking):', detectError);
+          console.error('AI detection exception (non-blocking):', detectError);
           // Continue with expense submission even if detection fails
           aiDetails = { error: 'Detection service unavailable' };
         }

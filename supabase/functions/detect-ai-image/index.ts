@@ -51,11 +51,23 @@ serve(async (req) => {
     }
 
     // Read credentials from Lovable's secure environment
+    // Note: Lovable stores these as SIGHTENGINE_API_USER and SIGHTENGINE_API_KEY
+    // These MUST be synced to Supabase Edge Function secrets for the function to work
     const apiUser = Deno.env.get('SIGHTENGINE_API_USER');
-    const apiSecret = Deno.env.get('SIGHTENGINE_API_SECRET');
+    const apiSecret = Deno.env.get('SIGHTENGINE_API_KEY') || Deno.env.get('SIGHTENGINE_API_SECRET');
 
-    if (!apiUser || !apiSecret) {
-      console.error('SightEngine credentials not configured - Lovable secret access blocked');
+    // Debug logging to help identify if secrets are available
+    const hasUser = !!apiUser;
+    const hasSecret = !!apiSecret;
+    console.log(`[detect-ai-image] SightEngine credentials check: USER=${hasUser}, SECRET=${hasSecret}`);
+    
+    if (!hasUser || !hasSecret) {
+      const availableEnvKeys = Object.keys(Deno.env.toObject()).filter(k => 
+        k.includes('SIGHT') || k.includes('API')
+      );
+      console.error('[detect-ai-image] SightEngine credentials not configured');
+      console.error('[detect-ai-image] Available env vars with SIGHT/API:', availableEnvKeys);
+      
       // Return success but with null result to not block expense submission
       return new Response(
         JSON.stringify({ 
@@ -64,11 +76,13 @@ serve(async (req) => {
           isAiGenerated: false,
           aiChecked: false,
           aiFlagged: false,
-          error: 'Lovable secret access blocked — cannot read SIGHTENGINE_API_USER/SECRET from environment'
+          error: 'Lovable secret access blocked — cannot read SIGHTENGINE_API_USER/KEY from environment. Please ensure Lovable secrets are synced to Supabase Edge Function secrets.'
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    console.log('[detect-ai-image] SightEngine credentials found, proceeding with API call');
 
     let imageData: ArrayBuffer;
     let imageUrlForSightEngine: string | null = null;
