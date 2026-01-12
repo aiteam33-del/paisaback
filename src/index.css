@@ -34,11 +34,11 @@ All colors MUST be HSL.
     --popover: 0 0% 100%;
     --popover-foreground: 161 30% 15%;
 
-    --primary: 161 85% 32%;
+    --primary: 161 95% 42%;
     --primary-foreground: 0 0% 100%;
-    --primary-glow: 161 75% 45%;
+    --primary-glow: 161 85% 52%;
 
-    --secondary: 217 91% 60%;
+    --secondary: 217 100% 65%;
     --secondary-foreground: 0 0% 100%;
 
     --muted: 160 15% 96%;
@@ -46,11 +46,11 @@ All colors MUST be HSL.
 
     --accent: 42 100% 62%;
     --accent-foreground: 161 30% 15%;
-    
+
     --trust: 217 91% 60%;
     --trust-foreground: 0 0% 100%;
 
-    --destructive: 0 72% 51%;
+    --destructive: 0 82% 58%;
     --destructive-foreground: 0 0% 100%;
 
     --border: 160 20% 88%;
@@ -65,18 +65,23 @@ All colors MUST be HSL.
     --success: 161 85% 32%;
     --warning: 42 100% 62%;
     
-    --gradient-primary: linear-gradient(135deg, hsl(161 85% 32%) 0%, hsl(161 75% 45%) 100%);
-    --gradient-hero: linear-gradient(135deg, hsl(161 85% 32%) 0%, hsl(217 91% 60%) 100%);
+    --gradient-primary: linear-gradient(135deg, hsl(161 95% 42%) 0%, hsl(161 85% 52%) 100%);
+    --gradient-hero: linear-gradient(135deg, hsl(161 95% 42%) 0%, hsl(217 100% 65%) 100%);
     --gradient-accent: linear-gradient(135deg, hsl(42 100% 62%) 0%, hsl(42 100% 55%) 100%);
     --gradient-subtle: linear-gradient(180deg, hsl(0 0% 100%) 0%, hsl(160 25% 98%) 100%);
     --gradient-card: linear-gradient(145deg, hsl(0 0% 100%) 0%, hsl(160 20% 99%) 100%);
     --gradient-analytics: linear-gradient(135deg, hsl(161 70% 96%) 0%, hsl(217 70% 96%) 100%);
     --gradient-chart: linear-gradient(135deg, hsl(0 0% 100%) 0%, hsl(160 15% 99%) 50%, hsl(217 15% 99%) 100%);
-    --gradient-hover: linear-gradient(135deg, hsl(161 85% 32% / 0.05) 0%, hsl(217 91% 60% / 0.05) 100%);
+    --gradient-hover: linear-gradient(135deg, hsl(161 95% 42% / 0.05) 0%, hsl(217 100% 65% / 0.05) 100%);
     --gradient-card-hover: linear-gradient(135deg, hsl(161 85% 95%) 0%, hsl(217 91% 95%) 100%);
     --gradient-purple: linear-gradient(135deg, hsl(270 70% 60%) 0%, hsl(270 80% 50%) 100%);
     --gradient-blue: linear-gradient(135deg, hsl(217 91% 60%) 0%, hsl(217 91% 50%) 100%);
     --gradient-warning: linear-gradient(135deg, hsl(42 100% 62%) 0%, hsl(30 100% 58%) 100%);
+
+    --gradient-vibrant-primary: linear-gradient(135deg, hsl(161 95% 42%) 0%, hsl(161 85% 52%) 50%, hsl(177 95% 45%) 100%);
+    --gradient-vibrant-alert: linear-gradient(135deg, hsl(0 82% 58%) 0%, hsl(340 92% 60%) 100%);
+    --gradient-vibrant-analytics: linear-gradient(135deg, hsl(217 100% 65%) 0%, hsl(237 100% 70%) 100%);
+    --gradient-header-bold: linear-gradient(135deg, hsl(161 95% 42%) 0%, hsl(161 85% 52%) 50%, hsl(217 100% 65%) 100%);
     
     --chart-1: 161 85% 38%;
     --chart-2: 217 91% 60%;
@@ -90,6 +95,9 @@ All colors MUST be HSL.
     --shadow-xl: 0 20px 25px -5px hsl(161 30% 15% / 0.12), 0 8px 10px -6px hsl(161 30% 15% / 0.08);
     --shadow-card: 0 2px 8px hsl(161 30% 15% / 0.06);
     --shadow-glow: 0 0 40px hsl(161 75% 45% / 0.15);
+
+    --shadow-vibrant-primary: 0 4px 20px hsl(161 95% 42% / 0.35);
+    --shadow-vibrant-alert: 0 4px 20px hsl(0 82% 58% / 0.35);
     
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
@@ -190,5 +198,42 @@ All colors MUST be HSL.
 
   html {
     scroll-behavior: smooth;
+  }
+}
+
+/* Vibrant UI Animations */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@layer utilities {
+  .animate-float {
+    animation: float 3s ease-in-out infinite;
+  }
+
+  .animate-shimmer {
+    animation: shimmer 2s ease-in-out infinite;
+  }
+
+  .shadow-vibrant-primary {
+    box-shadow: var(--shadow-vibrant-primary);
+  }
+
+  .shadow-vibrant-alert {
+    box-shadow: var(--shadow-vibrant-alert);
   }
 }
