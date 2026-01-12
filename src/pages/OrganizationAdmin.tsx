@@ -80,44 +80,34 @@ const OrganizationAdmin = () => {
       <Navigation />
 
       <main className="container mx-auto px-4 pt-24 pb-16 max-w-7xl">
-        {/* Enhanced header with gradient background and animated orbs */}
-        <div className="mb-8 -mx-4 px-6 py-8 bg-gradient-to-br from-primary/15 via-secondary/10 to-accent/10 rounded-2xl border-2 border-primary/30 shadow-xl backdrop-blur-sm relative overflow-hidden">
-          {/* Animated background orb effects */}
-          <div className="absolute -top-20 -right-20 w-64 h-64 bg-primary/20 rounded-full blur-3xl animate-pulse"></div>
-          <div className="absolute -bottom-20 -left-20 w-64 h-64 bg-secondary/20 rounded-full blur-3xl animate-pulse" style={{animationDelay: '1s'}}></div>
-
-          <div className="relative z-10">
-            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-3">
-              <div className="flex-1">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="bg-gradient-to-br from-primary to-primary-glow p-3 rounded-xl shadow-lg border-2 border-primary/40">
-                    <Building2 className="w-9 h-9 text-white drop-shadow-md" />
-                  </div>
-                  <h1 className="text-5xl font-extrabold bg-gradient-to-r from-primary via-primary-glow to-secondary bg-clip-text text-transparent drop-shadow-lg">
-                    {organization?.name || "Organization"}
-                  </h1>
-                </div>
-                <div className="border-l-4 border-primary pl-4 bg-gradient-to-r from-primary/5 to-transparent py-2">
-                  <p className="text-xl font-semibold text-foreground/90 tracking-wide">Admin Dashboard - Action Center</p>
-                </div>
+        {/* Enhanced header with gradient background */}
+        <div className="mb-8 -mx-4 px-4 py-6 bg-gradient-to-b from-background/50 to-background rounded-lg">
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-3">
+            <div className="flex-1">
+              <div className="flex items-center gap-3 mb-2">
+                <Building2 className="w-8 h-8 text-primary" />
+                <h1 className="text-4xl font-bold text-primary">{organization?.name || "Organization"}</h1>
               </div>
-              <ModeToggle
-                modes={[
-                  {
-                    label: "Analytics",
-                    icon: BarChart3,
-                    onClick: () => navigate("/admin/analytics"),
-                  },
-                  {
-                    label: "Anomaly Detection",
-                    icon: Shield,
-                    onClick: () => navigate("/admin/anomalies"),
-                    variant: "alert",
-                    badge: stats.joinRequestCount,
-                  },
-                ]}
-              />
+              <div className="border-l-2 border-primary pl-3">
+                <p className="text-lg text-muted-foreground">Admin Dashboard - Action Center</p>
+              </div>
             </div>
+            <ModeToggle
+              modes={[
+                {
+                  label: "Analytics",
+                  icon: BarChart3,
+                  onClick: () => navigate("/admin/analytics"),
+                },
+                {
+                  label: "Anomaly Detection",
+                  icon: Shield,
+                  onClick: () => navigate("/admin/anomalies"),
+                  variant: "alert",
+                  badge: stats.joinRequestCount,
+                },
+              ]}
+            />
           </div>
         </div>
 
