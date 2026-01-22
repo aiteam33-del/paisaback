@@ -162,7 +162,7 @@ const EmployeeExpenseView = () => {
         </div>
 
         {/* Filters Section */}
-        <Card className="shadow-card mb-6">
+        <Card className="shadow-sm mb-6">
           <CardHeader>
             <CardTitle className="text-lg">Filters</CardTitle>
           </CardHeader>
@@ -217,7 +217,7 @@ const EmployeeExpenseView = () => {
         </Card>
 
         {/* Summary Card */}
-        <Card className="shadow-card mb-6 bg-gradient-primary text-primary-foreground">
+        <Card className="shadow-sm mb-6 bg-gradient-primary text-primary-foreground">
           <CardContent className="pt-6">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
               <div>
@@ -233,7 +233,7 @@ const EmployeeExpenseView = () => {
         </Card>
 
         {/* Expenses List */}
-        <Card className="shadow-card">
+        <Card className="shadow-sm">
           <CardHeader>
             <CardTitle>All Expenses</CardTitle>
             <CardDescription>

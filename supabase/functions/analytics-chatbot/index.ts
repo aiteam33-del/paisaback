@@ -139,13 +139,86 @@ serve(async (req) => {
       modeOfPayment: e.mode_of_payment
     }));
 
+    // Detect duplicate expenses (same vendor, amount, and date within 24 hours)
+    const duplicates: Array<{expense1: any, expense2: any, reason: string}> = [];
+    const potentialDuplicates: Array<{expense1: any, expense2: any, reason: string}> = [];
+
+    for (let i = 0; i < expenses.length; i++) {
+      for (let j = i + 1; j < expenses.length; j++) {
+        const e1 = expenses[i];
+        const e2 = expenses[j];
+        const date1 = new Date(e1.date).getTime();
+        const date2 = new Date(e2.date).getTime();
+        const timeDiff = Math.abs(date1 - date2);
+        const dayInMs = 24 * 60 * 60 * 1000;
+
+        // Exact duplicate: same amount, vendor, category
+        if (e1.amount === e2.amount && e1.vendor === e2.vendor && e1.category === e2.category && timeDiff < dayInMs) {
+          duplicates.push({
+            expense1: { id: e1.id, employee: e1.profiles?.full_name, amount: e1.amount, vendor: e1.vendor, date: e1.date },
+            expense2: { id: e2.id, employee: e2.profiles?.full_name, amount: e2.amount, vendor: e2.vendor, date: e2.date },
+            reason: 'Same amount, vendor, and category within 24 hours'
+          });
+        }
+        // Potential duplicate: same amount and vendor, different employee
+        else if (e1.amount === e2.amount && e1.vendor === e2.vendor && e1.user_id !== e2.user_id && timeDiff < dayInMs * 3) {
+          potentialDuplicates.push({
+            expense1: { id: e1.id, employee: e1.profiles?.full_name, amount: e1.amount, vendor: e1.vendor, date: e1.date },
+            expense2: { id: e2.id, employee: e2.profiles?.full_name, amount: e2.amount, vendor: e2.vendor, date: e2.date },
+            reason: 'Same amount and vendor, different employees within 3 days'
+          });
+        }
+      }
+    }
+
+    // Find highest single expense claims
+    const sortedByAmount = [...expenses].sort((a, b) => Number(b.amount) - Number(a.amount));
+    const highestClaims = sortedByAmount.slice(0, 10).map(e => ({
+      id: e.id,
+      employee: e.profiles?.full_name || 'Unknown',
+      amount: Number(e.amount),
+      vendor: e.vendor,
+      category: e.category,
+      date: e.date,
+      status: e.status
+    }));
+
+    // Employee with highest total reimbursement
+    const employeeRanking = Array.from(employeeMap.entries())
+      .sort((a, b) => b[1].total - a[1].total)
+      .map(([name, data], index) => ({
+        rank: index + 1,
+        name,
+        totalAmount: data.total,
+        expenseCount: data.count,
+        pendingAmount: data.pending,
+        approvedAmount: data.approved,
+        rejectedAmount: data.rejected,
+        email: data.email
+      }));
+
+    // Fetch join requests
+    const { data: joinRequests } = await supabase
+      .from('join_requests')
+      .select('*, profiles!join_requests_employee_id_fkey(full_name, email)')
+      .order('created_at', { ascending: false });
+
+    const pendingJoinRequests = (joinRequests || []).filter(jr => jr.status === 'pending');
+
+    // AI-detected expense analysis
+    const aiDetectedExpenses = expenses.filter(e => e.is_ai_generated === true);
+
+    // Round number expenses (potential anomaly)
+    const roundNumberExpenses = expenses.filter(e => Number(e.amount) % 100 === 0 && Number(e.amount) >= 1000);
+
     // Build rich context for AI
     const expenseSummary = {
       current_time: now.toISOString(),
       database_stats: {
         total_expenses: expenses.length,
         total_profiles: profiles?.length || 0,
-        total_organizations: organizations?.length || 0
+        total_organizations: organizations?.length || 0,
+        pending_join_requests: pendingJoinRequests.length
       },
       overall: {
         total: expenses.length,
@@ -189,6 +262,18 @@ serve(async (req) => {
         }
       },
       recent_expenses: recentExpenses,
+      duplicates: {
+        exact: duplicates.slice(0, 10),
+        potential: potentialDuplicates.slice(0, 10),
+        exactCount: duplicates.length,
+        potentialCount: potentialDuplicates.length
+      },
+      employee_ranking: employeeRanking.slice(0, 15),
+      highest_claims: highestClaims,
+      anomalies: {
+        ai_detected: aiDetectedExpenses.length,
+        round_numbers: roundNumberExpenses.length
+      },
       categories: Array.from(categoryMap.entries())
         .sort((a, b) => b[1].total - a[1].total)
         .map(([name, data]) => ({ name, ...data })),
@@ -200,10 +285,10 @@ serve(async (req) => {
         .map(([name, data]) => ({ name, ...data }))
     };
 
-    const systemPrompt = `You are the Paisaback Copilot — an advanced AI analytics assistant with complete access to the expense management database.
+    const systemPrompt = `You are the Paisaback Copilot — an advanced AI analytics assistant with COMPLETE access to the expense management database.
 
 COMPLETE DATABASE ACCESS:
-You have full read access to ALL expense data, employee profiles, and organizational information. You can answer ANY question about expenses, trends, employees, vendors, categories, and provide strategic financial advice.
+You have full read access to ALL expense data, employee profiles, organizational information, join requests, and anomaly detection. You can answer ANY question about expenses, duplicates, trends, employees, vendors, categories, anomalies, and provide strategic financial advice.
 
 CURRENT DATA SNAPSHOT (${now.toISOString()}):
 📊 **Overall Statistics**
@@ -211,6 +296,24 @@ CURRENT DATA SNAPSHOT (${now.toISOString()}):
 - Pending: ${expenseSummary.overall.pending} (₹${expenseSummary.overall.pendingAmount.toFixed(2)})
 - Approved: ${expenseSummary.overall.approved} (₹${expenseSummary.overall.approvedAmount.toFixed(2)})
 - Rejected: ${expenseSummary.overall.rejected} (₹${expenseSummary.overall.rejectedAmount.toFixed(2)})
+- Team Members: ${expenseSummary.database_stats.total_profiles}
+- Pending Join Requests: ${expenseSummary.database_stats.pending_join_requests}
+
+🔍 **DUPLICATE EXPENSE DETECTION:**
+- Exact Duplicates Found: ${expenseSummary.duplicates.exactCount} (same amount, vendor, category within 24h)
+- Potential Duplicates: ${expenseSummary.duplicates.potentialCount} (same amount/vendor, different employees)
+${expenseSummary.duplicates.exact.length > 0 ? `\nExact Duplicates:\n${expenseSummary.duplicates.exact.map((d: any, i: number) => `${i + 1}. ₹${d.expense1.amount} at ${d.expense1.vendor} - ${d.expense1.employee} vs ${d.expense2.employee} - ${d.reason}`).join('\n')}` : ''}
+${expenseSummary.duplicates.potential.length > 0 ? `\nPotential Duplicates:\n${expenseSummary.duplicates.potential.map((d: any, i: number) => `${i + 1}. ₹${d.expense1.amount} at ${d.expense1.vendor} - ${d.expense1.employee} (${new Date(d.expense1.date).toLocaleDateString()}) vs ${d.expense2.employee} (${new Date(d.expense2.date).toLocaleDateString()})`).join('\n')}` : ''}
+
+👑 **EMPLOYEE RANKING (by total reimbursements):**
+${expenseSummary.employee_ranking.map((e: any) => `#${e.rank}. ${e.name}: ₹${e.totalAmount.toFixed(2)} total (${e.expenseCount} claims, ₹${e.approvedAmount.toFixed(2)} approved, ₹${e.pendingAmount.toFixed(2)} pending)`).join('\n')}
+
+💰 **HIGHEST SINGLE CLAIMS (Top 10):**
+${expenseSummary.highest_claims.map((e: any, i: number) => `${i + 1}. ₹${e.amount.toFixed(2)} - ${e.employee} - ${e.vendor} - ${e.category} - ${e.status}`).join('\n')}
+
+⚠️ **ANOMALY DETECTION:**
+- AI-Generated Receipt Flags: ${expenseSummary.anomalies.ai_detected}
+- Round Number Expenses (≥₹1000): ${expenseSummary.anomalies.round_numbers}
 
 📅 **Granular Time-Based Metrics**
 - Last 1 hour: ${expenseSummary.time_ranges.last_1_hour.count} expenses (₹${expenseSummary.time_ranges.last_1_hour.total.toFixed(2)})
@@ -225,31 +328,38 @@ CURRENT DATA SNAPSHOT (${now.toISOString()}):
 ${recentExpenses.map((e, i) => `${i + 1}. ${e.employee} - ₹${e.amount} - ${e.category} - ${e.vendor} - ${new Date(e.date).toLocaleString()} - ${e.status}`).join('\n')}
 
 🏪 **All Vendors (sorted by total):**
-${expenseSummary.vendors.slice(0, 15).map((v, i) => `${i + 1}. ${v.name}: ₹${v.total.toFixed(2)} (${v.count} transactions)`).join('\n')}
+${expenseSummary.vendors.slice(0, 15).map((v: any, i: number) => `${i + 1}. ${v.name}: ₹${v.total.toFixed(2)} (${v.count} transactions)`).join('\n')}
 
 👥 **All Employees (sorted by total):**
-${expenseSummary.employees.slice(0, 15).map((e, i) => `${i + 1}. ${e.name}: ₹${e.total.toFixed(2)} (${e.count} expenses, ${e.pending.toFixed(2)} pending, ${e.approved.toFixed(2)} approved)`).join('\n')}
+${expenseSummary.employees.slice(0, 15).map((e: any, i: number) => `${i + 1}. ${e.name}: ₹${e.total.toFixed(2)} (${e.count} expenses, ₹${e.pending.toFixed(2)} pending, ₹${e.approved.toFixed(2)} approved)`).join('\n')}
 
 📂 **All Categories (sorted by total):**
-${expenseSummary.categories.slice(0, 20).map((c, i) => `${i + 1}. ${c.name}: ₹${c.total.toFixed(2)} (${c.count} expenses, ${c.pending} pending, ${c.approved} approved, ${c.rejected} rejected)`).join('\n')}
+${expenseSummary.categories.slice(0, 20).map((c: any, i: number) => `${i + 1}. ${c.name}: ₹${c.total.toFixed(2)} (${c.count} expenses, ${c.pending} pending, ${c.approved} approved, ${c.rejected} rejected)`).join('\n')}
 
 YOUR CAPABILITIES:
-1. **Detailed Queries**: Answer specific questions like "last 3 expenses", "expenses in last 3 hours"
-2. **Financial Advice**: Provide strategic insights on expense control, budget optimization, category management
-3. **Trend Analysis**: Identify patterns, anomalies, and opportunities for savings
-4. **Employee Analytics**: Deep dive into individual or team spending patterns
-5. **Time-based Filtering**: Support any time range (1h, 3h, 6h, 24h, week, month, quarter, year)
-6. **Comparative Analysis**: Compare periods, employees, categories, vendors
-7. **Recommendations**: Suggest cost-saving measures, policy improvements, approval workflows
+1. **ANY Question**: Answer literally ANY question about the expense database - no restrictions
+2. **Duplicate Detection**: Find exact duplicates (same expense submitted twice) and potential duplicates (similar expenses from different employees)
+3. **Employee Ranking**: Show who has the highest/lowest reimbursements, most claims, etc.
+4. **Highest Claims**: Identify the biggest single expense claims
+5. **Anomaly Detection**: Flag AI-generated receipts, round number expenses, suspicious patterns
+6. **Financial Advice**: Provide strategic insights on expense control, budget optimization
+7. **Trend Analysis**: Identify patterns over time and opportunities for savings
+8. **Time-based Filtering**: Support any time range (1h, 3h, 6h, 24h, week, month, quarter, year)
+9. **Comparative Analysis**: Compare periods, employees, categories, vendors
+10. **Join Requests**: Track pending team member join requests
 
 QUERY UNDERSTANDING:
+- "which employee has highest reimbursement/claims" → Use EMPLOYEE RANKING data
+- "how many duplicate claims/expenses" → Use DUPLICATE DETECTION data
+- "show duplicates" → List all exact and potential duplicates found
+- "highest/biggest expense" → Use HIGHEST SINGLE CLAIMS data
+- "anomalies" or "suspicious" → Show AI-detected issues, round numbers, duplicates
 - "last N expenses" → List the N most recent expenses with details
 - "expenses in last X hours/days/weeks" → Filter by time range
-- "how to control [category] expenses" → Provide strategic advice and actionable recommendations
 - "spending by [employee/vendor/category]" → Detailed breakdown with insights
 - "compare [period A] vs [period B]" → Side-by-side comparison with % changes
-- "trends" → Identify patterns over time
-- "anomalies" or "unusual" → Flag outliers and suspicious patterns
+- "who spent most on [category]" → Filter employee data by category
+- "pending join requests" → Show team member requests waiting for approval
 
 RESPONSE FORMAT:
 Return ONLY valid JSON (no markdown, no backticks, no extra text):
@@ -290,7 +400,16 @@ Query: "how do I control food expenses"
 Query: "Top vendors this month"
 {"response":"📊 **Top Vendors This Month:**\\n\\n| Vendor | Amount | Transactions | Avg/Transaction |\\n|--------|-------:|---------:|----------------:|\\n| Sharma | ₹24,900 | 8 | ₹3,113 |\\n| ZODIACAL OVERSEAS | ₹21,000 | 4 | ₹5,250 |\\n| Abhishek Sharma | ₹20,000 | 6 | ₹3,333 |\\n\\nThese 3 vendors account for **₹65,900** (~45% of total spend).","metadata":{"type":"insight","links":[{"label":"View All Vendors","url":"/admin/expenses"}],"suggestions":["Show vendor trends","Compare with last month","Negotiate better rates"]}}
 
-Always be helpful, accurate, and actionable. Provide strategic insights beyond just data reporting.`;
+Query: "which employee has highest reimbursement"
+{"response":"👑 **Employee with Highest Reimbursements:**\\n\\n| Rank | Employee | Total Claims | Expense Count | Approved | Pending |\\n|-----:|----------|-------------:|--------------:|---------:|--------:|\\n| 1 | John Doe | ₹45,600 | 15 | ₹38,200 | ₹7,400 |\\n| 2 | Jane Smith | ₹32,100 | 12 | ₹28,500 | ₹3,600 |\\n| 3 | Mike Johnson | ₹24,800 | 8 | ₹24,800 | ₹0 |\\n\\n**John Doe** leads with **₹45,600** in total reimbursement claims across 15 expenses.\\n\\n📊 Average claim size: ₹3,040","metadata":{"type":"insight","links":[{"label":"View John's Expenses","url":"/admin/expenses?employee=John"}],"suggestions":["Show John's expense breakdown","Compare with team average","Top spenders by category"]}}
+
+Query: "how many duplicate claims are there"
+{"response":"🔍 **Duplicate Expense Analysis:**\\n\\n**Exact Duplicates Found: 3**\\n(Same amount, vendor, category within 24 hours)\\n\\n| Amount | Vendor | Employee 1 | Employee 2 | Reason |\\n|-------:|--------|------------|------------|--------|\\n| ₹2,500 | Uber | John | John | Same expense submitted twice |\\n| ₹1,800 | Cafe XYZ | Jane | Jane | Duplicate submission |\\n| ₹3,200 | Amazon | Mike | Mike | Same receipt uploaded twice |\\n\\n**Potential Duplicates: 5**\\n(Same amount/vendor, different employees within 3 days)\\n\\n⚠️ **Action Required:** Review these 3 exact duplicates - they may need to be rejected to prevent double reimbursement.","metadata":{"type":"anomaly","links":[{"label":"View Anomalies","url":"/admin/anomalies"}],"suggestions":["Show all anomalies","Reject duplicates","Employee fraud patterns"]}}
+
+Query: "show anomalies"
+{"response":"⚠️ **Anomaly Report:**\\n\\n**1. AI-Generated Receipt Flags: 2**\\n- Receipts detected as potentially AI-generated\\n- Requires manual verification\\n\\n**2. Duplicate Expenses: 3 exact, 5 potential**\\n- Same expense may have been submitted multiple times\\n\\n**3. Round Number Expenses: 8**\\n- Expenses with suspiciously round amounts (₹1000, ₹5000, etc.)\\n\\n**4. High-Value Outliers:**\\n| Employee | Amount | Category | Date |\\n|----------|-------:|----------|------|\\n| John | ₹15,000 | Travel | 2025-10-28 |\\n| Jane | ₹12,500 | Office | 2025-10-25 |\\n\\n**Recommendation:** Review flagged expenses before approval.","metadata":{"type":"anomaly","links":[{"label":"Open Anomaly Dashboard","url":"/admin/anomalies"}],"suggestions":["Show duplicate details","Employee risk analysis","Weekly anomaly trends"]}}
+
+Always be helpful, accurate, and actionable. Provide strategic insights beyond just data reporting. Remember: you can answer ANY question about the expense database.`;
 
     console.log('Calling OpenAI API...');
     console.log('Food category data:', expenseSummary.categories.find(c => c.name.toLowerCase().includes('food')));
@@ -304,13 +423,13 @@ Always be helpful, accurate, and actionable. Provide strategic insights beyond j
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-5-mini-2025-08-07',
+        model: 'gpt-4o-mini',
         messages: [
           { role: 'system', content: systemPrompt },
           ...(conversationHistory || []).slice(-6),
           { role: 'user', content: query }
         ],
-        max_completion_tokens: 2000,
+        max_tokens: 2000,
       }),
     });
 

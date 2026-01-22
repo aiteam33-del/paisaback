@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { TrendingUp, TrendingDown, DollarSign, Loader2 } from "lucide-react";
+import { TrendingUp, TrendingDown, Wallet, Loader2, ArrowUpRight, Clock, CheckCircle2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 
@@ -66,63 +66,125 @@ export const FinancialOverviewCard = () => {
     }
   };
 
+  const totalVolume = data.totalPending + data.totalApproved;
+
+  // Format number to fit: use compact notation for large numbers
+  const formatAmount = (amount: number) => {
+    if (amount >= 10000000) {
+      return `${(amount / 10000000).toFixed(1)}Cr`;
+    } else if (amount >= 100000) {
+      return `${(amount / 100000).toFixed(1)}L`;
+    } else if (amount >= 1000) {
+      return `${(amount / 1000).toFixed(1)}K`;
+    }
+    return amount.toLocaleString('en-IN', { maximumFractionDigits: 0 });
+  };
+
   return (
-    <Card 
+    <Card
       onClick={() => navigate("/admin/analytics")}
-      className="group relative shadow-lg hover:shadow-2xl transition-all duration-500 border-border/50 bg-gradient-card backdrop-blur-sm h-full overflow-hidden cursor-pointer hover:scale-[1.02] hover:border-success/50"
+      className="h-full cursor-pointer relative overflow-hidden group hover:shadow-lg transition-all duration-300"
     >
-      <div className="absolute inset-0 bg-gradient-primary opacity-0 group-hover:opacity-10 transition-opacity duration-500" />
-      <CardHeader className="pb-3 relative z-10">
-        <div className="flex items-center gap-2">
-          <div className="p-2 rounded-lg bg-success/20 group-hover:bg-success/30 transition-colors duration-300">
-            <DollarSign className="w-4 h-4 text-success" />
+      {/* Gradient accent line */}
+      <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500" />
+
+      {/* Background decoration */}
+      <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-emerald-500/10 to-transparent rounded-full blur-2xl -translate-y-1/2 translate-x-1/2" />
+
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="relative">
+              <div className="absolute inset-0 bg-emerald-500/20 rounded-xl blur-md" />
+              <div className="relative p-2.5 rounded-xl bg-gradient-to-br from-emerald-500/20 to-teal-500/10 border border-emerald-500/20">
+                <Wallet className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+              </div>
+            </div>
+            <div>
+              <CardTitle className="text-base font-semibold">Financial Overview</CardTitle>
+              <p className="text-xs text-muted-foreground">Click to view analytics</p>
+            </div>
           </div>
-          <CardTitle className="text-lg">Financial Overview</CardTitle>
+          <ArrowUpRight className="w-5 h-5 text-muted-foreground group-hover:text-emerald-500 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all" />
         </div>
       </CardHeader>
-      
-      <CardContent className="space-y-4 relative z-10">
+
+      <CardContent className="space-y-4">
         {isLoading ? (
           <div className="flex items-center justify-center py-8">
-            <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+            <div className="relative">
+              <div className="w-10 h-10 rounded-full border-2 border-emerald-500/20 border-t-emerald-500 animate-spin" />
+            </div>
           </div>
         ) : (
           <>
-            {/* Pending Section */}
-            <div className="p-3 rounded-lg bg-warning/5 border border-warning/20 hover:bg-warning/10 transition-all duration-300 group/item">
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-xs text-muted-foreground font-medium">Pending</span>
-                <div className="flex items-center gap-1 text-xs text-warning">
-                  <TrendingUp className="w-3 h-3" />
-                  <span>+{data.pendingTrend}%</span>
-                </div>
-              </div>
-              <div className="flex items-baseline gap-2">
-                <p className="text-2xl font-bold text-foreground group-hover/item:scale-105 transition-transform">₹{data.totalPending.toLocaleString('en-IN')}</p>
-                <p className="text-xs text-muted-foreground">{data.pendingCount} expenses</p>
-              </div>
-            </div>
-
-            {/* Approved Section */}
-            <div className="p-3 rounded-lg bg-success/5 border border-success/20 hover:bg-success/10 transition-all duration-300 group/item">
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-xs text-muted-foreground font-medium">Approved</span>
-                <div className="flex items-center gap-1 text-xs text-success">
+            {/* Total Volume - Hero stat */}
+            <div className="relative p-4 rounded-xl bg-gradient-to-br from-emerald-500/10 via-teal-500/5 to-transparent border border-emerald-500/20">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Total Volume</span>
+                <div className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400 font-medium">
                   <TrendingUp className="w-3 h-3" />
                   <span>+{data.approvedTrend}%</span>
                 </div>
               </div>
-              <div className="flex items-baseline gap-2">
-                <p className="text-2xl font-bold text-foreground group-hover/item:scale-105 transition-transform">₹{data.totalApproved.toLocaleString('en-IN')}</p>
+              <p className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent truncate">
+                ₹{formatAmount(totalVolume)}
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                {data.pendingCount + data.approvedCount} total expenses
+              </p>
+            </div>
+
+            {/* Pending & Approved Grid */}
+            <div className="grid grid-cols-2 gap-3">
+              {/* Pending */}
+              <div className="p-3 rounded-xl bg-gradient-to-br from-amber-500/10 to-orange-500/5 border border-amber-500/20">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="p-1.5 rounded-lg bg-amber-500/20">
+                    <Clock className="w-3 h-3 text-amber-600 dark:text-amber-400" />
+                  </div>
+                  <span className="text-xs text-muted-foreground font-medium">Pending</span>
+                </div>
+                <p className="text-base sm:text-lg font-bold text-amber-600 dark:text-amber-400 truncate">
+                  ₹{formatAmount(data.totalPending)}
+                </p>
+                <p className="text-xs text-muted-foreground">{data.pendingCount} expenses</p>
+              </div>
+
+              {/* Approved */}
+              <div className="p-3 rounded-xl bg-gradient-to-br from-emerald-500/10 to-green-500/5 border border-emerald-500/20">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="p-1.5 rounded-lg bg-emerald-500/20">
+                    <CheckCircle2 className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+                  </div>
+                  <span className="text-xs text-muted-foreground font-medium">Approved</span>
+                </div>
+                <p className="text-base sm:text-lg font-bold text-emerald-600 dark:text-emerald-400 truncate">
+                  ₹{formatAmount(data.totalApproved)}
+                </p>
                 <p className="text-xs text-muted-foreground">{data.approvedCount} expenses</p>
               </div>
             </div>
 
-            {/* Quick Stats */}
-            <div className="pt-2 border-t border-border/50">
-              <div className="flex justify-between text-xs">
-                <span className="text-muted-foreground">Total Volume</span>
-                <span className="font-semibold">₹{(data.totalPending + data.totalApproved).toLocaleString('en-IN')}</span>
+            {/* Progress bar */}
+            <div className="pt-2">
+              <div className="flex justify-between text-xs text-muted-foreground mb-2">
+                <span>Approval Rate</span>
+                <span className="font-medium">
+                  {data.pendingCount + data.approvedCount > 0
+                    ? Math.round((data.approvedCount / (data.pendingCount + data.approvedCount)) * 100)
+                    : 0}%
+                </span>
+              </div>
+              <div className="h-2 rounded-full bg-muted overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 transition-all duration-500"
+                  style={{
+                    width: `${data.pendingCount + data.approvedCount > 0
+                      ? (data.approvedCount / (data.pendingCount + data.approvedCount)) * 100
+                      : 0}%`
+                  }}
+                />
               </div>
             </div>
           </>

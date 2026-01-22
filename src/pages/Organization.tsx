@@ -64,7 +64,7 @@ const Organization = () => {
           {stats.map((stat, index) => {
             const Icon = stat.icon;
             return (
-              <Card key={index} className="shadow-card">
+              <Card key={index} className="shadow-sm">
                 <CardContent className="pt-6">
                   <div className="flex items-center justify-between">
                     <div>
@@ -79,7 +79,7 @@ const Organization = () => {
           })}
         </div>
 
-        <Card className="shadow-card">
+        <Card className="shadow-sm">
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>

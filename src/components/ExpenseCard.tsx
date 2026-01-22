@@ -1,10 +1,24 @@
 import { useState } from "react";
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ChevronDown, ChevronUp, ExternalLink } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronUp,
+  ExternalLink,
+  Receipt,
+  Calendar,
+  User,
+  Tag,
+  Clock,
+  CheckCircle2,
+  XCircle,
+  AlertCircle,
+  Wallet,
+} from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { getReceiptPublicUrl } from "@/lib/attachments";
+import { cn } from "@/lib/utils";
+
 interface ExpenseCardProps {
   expense: {
     id: string;
@@ -25,153 +39,291 @@ interface ExpenseCardProps {
   onViewDetails?: (expense: any) => void;
 }
 
-export const ExpenseCard = ({ expense, onAction, onViewDetails }: ExpenseCardProps) => {
+const statusConfig = {
+  pending: {
+    variant: "pending" as const,
+    icon: AlertCircle,
+    bgColor: "bg-amber-500/10",
+    textColor: "text-amber-600 dark:text-amber-400",
+    gradient: "from-amber-500 to-orange-500",
+  },
+  approved: {
+    variant: "approved" as const,
+    icon: CheckCircle2,
+    bgColor: "bg-emerald-500/10",
+    textColor: "text-emerald-600 dark:text-emerald-400",
+    gradient: "from-emerald-500 to-green-500",
+  },
+  rejected: {
+    variant: "rejected" as const,
+    icon: XCircle,
+    bgColor: "bg-red-500/10",
+    textColor: "text-red-600 dark:text-red-400",
+    gradient: "from-red-500 to-rose-500",
+  },
+  paid: {
+    variant: "paid" as const,
+    icon: Wallet,
+    bgColor: "bg-primary/10",
+    textColor: "text-primary",
+    gradient: "from-primary to-cyan-500",
+  },
+};
+
+const categoryColors: Record<string, string> = {
+  travel: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
+  food: "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400",
+  lodging: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400",
+  office: "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300",
+  transport: "bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400",
+  other: "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300",
+};
+
+export const ExpenseCard = ({
+  expense,
+  onAction,
+  onViewDetails,
+}: ExpenseCardProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "pending": return "bg-warning/20 text-warning border-warning/30";
-      case "approved": return "bg-success/20 text-success border-success/30";
-      case "rejected": return "bg-destructive/20 text-destructive border-destructive/30";
-      case "paid": return "bg-primary/20 text-primary border-primary/30";
-      default: return "bg-muted/20 text-muted-foreground border-muted/30";
-    }
-  };
+  const status = statusConfig[expense.status as keyof typeof statusConfig] || statusConfig.pending;
+  const StatusIcon = status.icon;
+  const categoryColor = categoryColors[expense.category.toLowerCase()] || categoryColors.other;
 
   return (
-    <Card className="shadow-card hover:shadow-lg transition-shadow border-l-4 border-l-primary/50 hover:border-l-primary">
-      {/* Card Header - Always Visible */}
-      <CardContent className="p-4">
-        <div
-          className="flex items-start justify-between gap-4 cursor-pointer"
-          onClick={() => setIsExpanded(!isExpanded)}
-        >
-          <div className="flex-1 space-y-2">
-            <div className="flex items-center gap-2 flex-wrap">
-              <h3 className="font-semibold text-lg">{expense.vendor}</h3>
-              <Badge className={getStatusColor(expense.status)}>
-                {expense.status}
-              </Badge>
-            </div>
-            <div className="text-sm text-muted-foreground space-y-1">
-              <p>{expense.employee.full_name}</p>
-              <p>Submitted {formatDistanceToNow(new Date(expense.created_at), { addSuffix: true })}</p>
+    <div
+      className={cn(
+        "group relative overflow-hidden rounded-2xl border bg-card transition-all duration-300",
+        isExpanded
+          ? "border-primary/30 shadow-lg shadow-primary/5"
+          : "border-border/50 hover:border-border hover:shadow-md"
+      )}
+    >
+      {/* Status Accent Line */}
+      <div
+        className={cn(
+          "absolute top-0 left-0 right-0 h-1 bg-gradient-to-r",
+          status.gradient
+        )}
+      />
+
+      {/* Main Content */}
+      <div
+        className="p-5 cursor-pointer"
+        onClick={() => setIsExpanded(!isExpanded)}
+      >
+        <div className="flex items-start gap-4">
+          {/* Receipt Icon */}
+          <div
+            className={cn(
+              "hidden sm:flex flex-shrink-0 w-14 h-14 rounded-xl items-center justify-center transition-transform duration-300 group-hover:scale-105",
+              status.bgColor
+            )}
+          >
+            <Receipt className={cn("w-7 h-7", status.textColor)} />
+          </div>
+
+          {/* Details */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex-1 min-w-0">
+                {/* Vendor & Status */}
+                <div className="flex items-center gap-2 mb-1 flex-wrap">
+                  <h3 className="font-semibold text-base truncate">
+                    {expense.vendor}
+                  </h3>
+                  <Badge
+                    variant={status.variant}
+                    className="capitalize flex items-center gap-1"
+                  >
+                    <StatusIcon className="w-3 h-3" />
+                    {expense.status}
+                  </Badge>
+                </div>
+
+                {/* Meta Info */}
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
+                  <span className="flex items-center gap-1.5">
+                    <User className="w-3.5 h-3.5" />
+                    {expense.employee.full_name}
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <Clock className="w-3.5 h-3.5" />
+                    {formatDistanceToNow(new Date(expense.created_at), {
+                      addSuffix: true,
+                    })}
+                  </span>
+                </div>
+              </div>
+
+              {/* Amount */}
+              <div className="flex flex-col items-end gap-1">
+                <span className="text-xl font-bold text-foreground">
+                  ₹{expense.amount.toLocaleString("en-IN", {
+                    minimumFractionDigits: 2,
+                  })}
+                </span>
+                <Badge
+                  variant="outline"
+                  className={cn("capitalize text-xs border-0", categoryColor)}
+                >
+                  <Tag className="w-3 h-3 mr-1" />
+                  {expense.category}
+                </Badge>
+              </div>
             </div>
           </div>
-          <div className="flex flex-col items-end gap-2">
-            <span className="text-xl font-bold">₹{expense.amount.toFixed(2)}</span>
+
+          {/* Expand Toggle */}
+          <button className="flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center hover:bg-muted transition-colors">
             {isExpanded ? (
               <ChevronUp className="w-5 h-5 text-muted-foreground" />
             ) : (
               <ChevronDown className="w-5 h-5 text-muted-foreground" />
             )}
-          </div>
+          </button>
         </div>
+      </div>
 
-        {/* Expanded Details */}
-        {isExpanded && (
-          <div className="mt-4 pt-4 border-t space-y-4">
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              <div>
-                <span className="text-muted-foreground">Category:</span>
+      {/* Expanded Section */}
+      <div
+        className={cn(
+          "overflow-hidden transition-all duration-300",
+          isExpanded ? "max-h-[400px] opacity-100" : "max-h-0 opacity-0"
+        )}
+      >
+        <div className="px-5 pb-5 border-t border-border/50">
+          <div className="pt-4 space-y-4">
+            {/* Info Grid */}
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              <div className="p-3 rounded-xl bg-muted/50">
+                <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
+                  <Tag className="w-3.5 h-3.5" />
+                  Category
+                </div>
                 <p className="font-medium capitalize">{expense.category}</p>
               </div>
-              <div>
-                <span className="text-muted-foreground">Expense Date:</span>
+              <div className="p-3 rounded-xl bg-muted/50">
+                <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
+                  <Calendar className="w-3.5 h-3.5" />
+                  Expense Date
+                </div>
                 <p className="font-medium">
-                  {new Date(expense.date).toLocaleDateString()}
+                  {new Date(expense.date).toLocaleDateString("en-IN", {
+                    day: "numeric",
+                    month: "short",
+                    year: "numeric",
+                  })}
                 </p>
               </div>
-              <div className="col-span-2">
-                <span className="text-muted-foreground">Submitted:</span>
+              <div className="p-3 rounded-xl bg-muted/50">
+                <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
+                  <Clock className="w-3.5 h-3.5" />
+                  Submitted
+                </div>
                 <p className="font-medium">
-                  {new Date(expense.created_at).toLocaleDateString()} ({formatDistanceToNow(new Date(expense.created_at), { addSuffix: true })})
+                  {new Date(expense.created_at).toLocaleDateString("en-IN", {
+                    day: "numeric",
+                    month: "short",
+                    year: "numeric",
+                  })}
                 </p>
               </div>
             </div>
 
-            <div>
-              <span className="text-muted-foreground text-sm">Description:</span>
-              <p className="mt-1">{expense.description}</p>
-            </div>
+            {/* Description */}
+            {expense.description && (
+              <div className="p-3 rounded-xl bg-muted/50">
+                <div className="text-xs text-muted-foreground mb-1">
+                  Description
+                </div>
+                <p className="text-sm">{expense.description}</p>
+              </div>
+            )}
 
-            {expense.attachments && expense.attachments.length > 0 && (
-              <div>
-                <span className="text-muted-foreground text-sm">Receipt:</span>
+            {/* Actions */}
+            <div className="flex flex-wrap items-center gap-2 pt-2">
+              {expense.attachments && expense.attachments.length > 0 && (
                 <Button
                   variant="outline"
                   size="sm"
-                  className="mt-2"
+                  className="gap-2 rounded-xl"
                   onClick={async (e) => {
                     e.stopPropagation();
-                    // Open window immediately (synchronously) to avoid popup blocker
-                    const newWindow = window.open('about:blank', '_blank');
+                    const newWindow = window.open("about:blank", "_blank");
                     if (!newWindow) {
-                      alert('Please allow pop-ups to view receipts');
+                      alert("Please allow pop-ups to view receipts");
                       return;
                     }
-                    newWindow.document.write('<html><body style="margin:0;display:flex;align-items:center;justify-content:center;min-height:100vh;background:#1a1a1a;"><p style="color:#fff;">Loading receipt...</p></body></html>');
-                    
+                    newWindow.document.write(
+                      '<html><body style="margin:0;display:flex;align-items:center;justify-content:center;min-height:100vh;background:#0f172a;"><p style="color:#fff;font-family:system-ui;">Loading receipt...</p></body></html>'
+                    );
+
                     try {
                       const raw = expense.attachments![0];
                       const finalUrl = getReceiptPublicUrl(raw as string);
                       newWindow.opener = null;
                       newWindow.location.replace(finalUrl);
                     } catch (err) {
-                      console.error('Receipt open failed:', err);
+                      console.error("Receipt open failed:", err);
                       newWindow.opener = null;
-                      newWindow.location.replace(expense.attachments![0] as string);
+                      newWindow.location.replace(
+                        expense.attachments![0] as string
+                      );
                     }
                   }}
                 >
-                  <ExternalLink className="w-4 h-4 mr-2" />
+                  <ExternalLink className="w-4 h-4" />
                   View Receipt
                 </Button>
-              </div>
-            )}
+              )}
 
-            {expense.status === "pending" && onAction && (
-              <div className="flex gap-2 pt-2">
+              {onViewDetails && (
                 <Button
-                  variant="destructive"
+                  variant="outline"
                   size="sm"
-                  className="flex-1"
+                  className="gap-2 rounded-xl"
                   onClick={(e) => {
                     e.stopPropagation();
-                    onAction(expense.id, "rejected");
+                    onViewDetails(expense);
                   }}
                 >
-                  Reject
+                  View Details
                 </Button>
-                <Button
-                  size="sm"
-                  className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onAction(expense.id, "approved");
-                  }}
-                >
-                  Approve
-                </Button>
-              </div>
-            )}
+              )}
 
-            {onViewDetails && (
-              <Button
-                variant="outline"
-                size="sm"
-                className="w-full"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onViewDetails(expense);
-                }}
-              >
-                View Full Details
-              </Button>
-            )}
+              {expense.status === "pending" && onAction && (
+                <>
+                  <div className="flex-1" />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-2 rounded-xl text-destructive border-destructive/30 hover:bg-destructive hover:text-destructive-foreground"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onAction(expense.id, "rejected");
+                    }}
+                  >
+                    <XCircle className="w-4 h-4" />
+                    Reject
+                  </Button>
+                  <Button
+                    size="sm"
+                    className="gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white shadow-lg shadow-emerald-500/25"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onAction(expense.id, "approved");
+                    }}
+                  >
+                    <CheckCircle2 className="w-4 h-4" />
+                    Approve
+                  </Button>
+                </>
+              )}
+            </div>
           </div>
-        )}
-      </CardContent>
-    </Card>
+        </div>
+      </div>
+    </div>
   );
 };

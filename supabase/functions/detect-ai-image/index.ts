@@ -13,7 +13,12 @@ interface DetectionRequest {
 
 interface SightEngineResponse {
   status: string;
-  type: {
+  error?: {
+    type: string;
+    code: number;
+    message: string;
+  };
+  type?: {
     ai_generated: number;
   };
   media?: {
@@ -86,11 +91,47 @@ serve(async (req) => {
       );
     }
 
-    const data = await response.json() as SightEngineResponse;
-    console.log('SightEngine API response:', JSON.stringify(data, null, 2));
+    const responseText = await response.text();
+    console.log('SightEngine raw response:', responseText);
 
-    const aiGeneratedScore = data.type?.ai_generated || 0;
-    const threshold = 0.5; // Consider as AI-generated if confidence > 50%
+    let data: SightEngineResponse;
+    try {
+      data = JSON.parse(responseText);
+    } catch (parseError) {
+      console.error('Failed to parse SightEngine response:', parseError);
+      return new Response(
+        JSON.stringify({
+          success: true,
+          detectionResult: null,
+          isAiGenerated: false,
+          error: 'Failed to parse API response'
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    console.log('SightEngine parsed response:', JSON.stringify(data, null, 2));
+
+    // Check if SightEngine returned an error
+    if (data.status === 'failure' || data.error) {
+      console.error('SightEngine returned error:', data.error?.message || 'Unknown error');
+      return new Response(
+        JSON.stringify({
+          success: true,
+          detectionResult: {
+            error: data.error?.message || 'SightEngine API error',
+            errorCode: data.error?.code,
+            errorType: data.error?.type
+          },
+          isAiGenerated: false,
+          error: data.error?.message || 'SightEngine API error'
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const aiGeneratedScore = data.type?.ai_generated ?? 0;
+    const threshold = 0.3; // Consider as AI-generated if confidence > 30% (more sensitive)
     const isAiGenerated = aiGeneratedScore >= threshold;
 
     const detectionResult = {
@@ -100,9 +141,10 @@ serve(async (req) => {
       timestamp: new Date().toISOString(),
       requestId: data.request?.id,
       mediaId: data.media?.id,
+      rawResponse: data,
     };
 
-    console.log(`AI Detection: score=${aiGeneratedScore}, flagged=${isAiGenerated}`);
+    console.log(`AI Detection: score=${aiGeneratedScore}, threshold=${threshold}, flagged=${isAiGenerated}`);
 
     return new Response(
       JSON.stringify({

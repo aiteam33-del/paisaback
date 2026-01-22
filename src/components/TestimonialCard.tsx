@@ -11,7 +11,7 @@ interface TestimonialCardProps {
 export const TestimonialCard = ({ quote, name, role, delay = 0 }: TestimonialCardProps) => {
   return (
     <Card
-      className="bg-gradient-card border-border/50 shadow-card hover:shadow-xl transition-all duration-300 hover:-translate-y-1 h-full"
+      className="bg-card border-border/50 shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1 h-full"
       style={{ animationDelay: `${delay}ms` }}
     >
       <CardContent className="p-5 sm:pt-6 sm:pb-6 md:pt-8 md:pb-8 space-y-4 sm:space-y-5 md:space-y-6">

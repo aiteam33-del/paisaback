@@ -373,7 +373,7 @@ const ExpenseAnalytics = () => {
         <div className="space-y-6">
           {/* Top KPI Cards - Cleaner Design */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 animate-fade-in" style={{ animationDelay: '0.1s' }}>
-            <div className="relative overflow-hidden bg-gradient-card rounded-3xl p-6 shadow-[var(--shadow-card)] border border-border/30 hover:shadow-[var(--shadow-lg)] transition-all duration-300 group">
+            <div className="relative overflow-hidden bg-card rounded-3xl p-6 shadow-[var(--shadow-sm)] border border-border/30 hover:shadow-[var(--shadow-lg)] transition-all duration-300 group">
               <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-primary opacity-5 rounded-full blur-3xl group-hover:opacity-10 transition-opacity"></div>
               <div className="flex items-start justify-between mb-4 relative z-10">
                 <div className="p-3 rounded-xl bg-primary shadow-lg">
@@ -384,7 +384,7 @@ const ExpenseAnalytics = () => {
               <p className="text-3xl font-bold text-foreground relative z-10">₹{totalAmount.toFixed(2)}</p>
             </div>
 
-            <div className="relative overflow-hidden bg-gradient-card rounded-3xl p-6 shadow-[var(--shadow-card)] border border-border/30 hover:shadow-[var(--shadow-lg)] transition-all duration-300 group">
+            <div className="relative overflow-hidden bg-card rounded-3xl p-6 shadow-[var(--shadow-sm)] border border-border/30 hover:shadow-[var(--shadow-lg)] transition-all duration-300 group">
               <div className="absolute top-0 right-0 w-32 h-32 bg-secondary/20 rounded-full blur-3xl group-hover:opacity-100 opacity-80 transition-opacity"></div>
               <div className="flex items-start justify-between mb-4 relative z-10">
                 <div className="p-3 rounded-xl bg-secondary shadow-lg">
@@ -395,7 +395,7 @@ const ExpenseAnalytics = () => {
               <p className="text-3xl font-bold text-foreground relative z-10">{filteredExpenses.length}</p>
             </div>
 
-            <div className="relative overflow-hidden bg-gradient-card rounded-3xl p-6 shadow-[var(--shadow-card)] border border-border/30 hover:shadow-[var(--shadow-lg)] transition-all duration-300 group">
+            <div className="relative overflow-hidden bg-card rounded-3xl p-6 shadow-[var(--shadow-sm)] border border-border/30 hover:shadow-[var(--shadow-lg)] transition-all duration-300 group">
               <div className="absolute top-0 right-0 w-32 h-32 bg-accent/20 rounded-full blur-3xl group-hover:opacity-100 opacity-80 transition-opacity"></div>
               <div className="flex items-start justify-between mb-4 relative z-10">
                 <div className="p-3 rounded-xl bg-accent shadow-lg">
@@ -406,7 +406,7 @@ const ExpenseAnalytics = () => {
               <p className="text-3xl font-bold text-foreground relative z-10">₹{avgAmount.toFixed(2)}</p>
             </div>
 
-            <div className="relative overflow-hidden bg-gradient-card rounded-3xl p-6 shadow-[var(--shadow-card)] border border-border/30 hover:shadow-[var(--shadow-lg)] transition-all duration-300 group">
+            <div className="relative overflow-hidden bg-card rounded-3xl p-6 shadow-[var(--shadow-sm)] border border-border/30 hover:shadow-[var(--shadow-lg)] transition-all duration-300 group">
               <div className="absolute top-0 right-0 w-32 h-32 bg-trust/20 rounded-full blur-3xl group-hover:opacity-100 opacity-80 transition-opacity"></div>
               <div className="flex items-start justify-between mb-4 relative z-10">
                 <div className="p-3 rounded-xl bg-trust shadow-lg">
@@ -431,7 +431,7 @@ const ExpenseAnalytics = () => {
 
           {/* Status Breakdown - Smaller Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 animate-fade-in" style={{ animationDelay: '0.2s' }}>
-            <div className="relative overflow-hidden bg-gradient-card rounded-2xl p-5 shadow-[var(--shadow-card)] border border-border/30 hover:shadow-[var(--shadow-lg)] transition-all duration-300 group">
+            <div className="relative overflow-hidden bg-card rounded-2xl p-5 shadow-[var(--shadow-sm)] border border-border/30 hover:shadow-[var(--shadow-lg)] transition-all duration-300 group">
               <div className="absolute top-0 right-0 w-24 h-24 bg-warning/20 rounded-full blur-2xl group-hover:blur-3xl transition-all"></div>
               <div className="flex items-center gap-3 relative z-10">
                 <div className="p-3 rounded-xl bg-warning shadow-lg">
@@ -444,7 +444,7 @@ const ExpenseAnalytics = () => {
               </div>
             </div>
 
-            <div className="relative overflow-hidden bg-gradient-card rounded-2xl p-5 shadow-[var(--shadow-card)] border border-border/30 hover:shadow-[var(--shadow-lg)] transition-all duration-300 group">
+            <div className="relative overflow-hidden bg-card rounded-2xl p-5 shadow-[var(--shadow-sm)] border border-border/30 hover:shadow-[var(--shadow-lg)] transition-all duration-300 group">
               <div className="absolute top-0 right-0 w-24 h-24 bg-success/20 rounded-full blur-2xl group-hover:blur-3xl transition-all"></div>
               <div className="flex items-center gap-3 relative z-10">
                 <div className="p-3 rounded-xl bg-success shadow-lg">
@@ -457,7 +457,7 @@ const ExpenseAnalytics = () => {
               </div>
             </div>
 
-            <div className="relative overflow-hidden bg-gradient-card rounded-2xl p-5 shadow-[var(--shadow-card)] border border-border/30 hover:shadow-[var(--shadow-lg)] transition-all duration-300 group">
+            <div className="relative overflow-hidden bg-card rounded-2xl p-5 shadow-[var(--shadow-sm)] border border-border/30 hover:shadow-[var(--shadow-lg)] transition-all duration-300 group">
               <div className="absolute top-0 right-0 w-24 h-24 bg-primary/20 rounded-full blur-2xl group-hover:blur-3xl transition-all"></div>
               <div className="flex items-center gap-3 relative z-10">
                 <div className="p-3 rounded-xl bg-primary shadow-lg">
@@ -470,7 +470,7 @@ const ExpenseAnalytics = () => {
               </div>
             </div>
 
-            <div className="relative overflow-hidden bg-gradient-card rounded-2xl p-5 shadow-[var(--shadow-card)] border border-border/30 hover:shadow-[var(--shadow-lg)] transition-all duration-300 group">
+            <div className="relative overflow-hidden bg-card rounded-2xl p-5 shadow-[var(--shadow-sm)] border border-border/30 hover:shadow-[var(--shadow-lg)] transition-all duration-300 group">
               <div className="absolute top-0 right-0 w-24 h-24 bg-destructive/20 rounded-full blur-2xl group-hover:blur-3xl transition-all"></div>
               <div className="flex items-center gap-3 relative z-10">
                 <div className="p-3 rounded-xl bg-destructive shadow-lg">

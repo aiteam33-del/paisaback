@@ -60,16 +60,16 @@ const getCategoryIcon = (category: string) => {
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
     return (
-      <div className="bg-card/95 backdrop-blur-xl border border-border/50 rounded-xl p-4 shadow-xl">
-        <p className="text-sm font-semibold text-foreground mb-2">{label || payload[0].name}</p>
+      <div className="bg-card border rounded-lg p-3 shadow-md">
+        <p className="text-sm font-medium mb-1.5">{label || payload[0].name}</p>
         {payload.map((entry: any, index: number) => (
           <div key={index} className="flex items-center gap-2">
-            <div 
-              className="w-3 h-3 rounded-full" 
+            <div
+              className="w-2.5 h-2.5 rounded-full"
               style={{ backgroundColor: entry.color }}
             />
             <span className="text-sm text-muted-foreground">
-              Amount: <span className="font-semibold text-foreground">₹{Number(entry.value).toFixed(2)}</span>
+              ₹{Number(entry.value).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
             </span>
           </div>
         ))}
@@ -82,10 +82,9 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 export const ExpenseChart = ({ data, type = "pie", title, height = 250 }: ExpenseChartProps) => {
   if (!data || data.length === 0) {
     return (
-      <div className="relative overflow-hidden bg-gradient-chart rounded-3xl border border-border/30 p-8 backdrop-blur-sm shadow-[var(--shadow-card)] hover:shadow-[var(--shadow-lg)] transition-all duration-300">
-        <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-primary opacity-5 rounded-full blur-3xl"></div>
-        <h3 className="text-lg font-bold text-foreground mb-2 relative z-10">{title}</h3>
-        <div className="flex items-center justify-center h-[250px] text-muted-foreground text-sm relative z-10">
+      <div className="bg-card rounded-lg border p-6">
+        <h3 className="text-base font-semibold mb-2">{title}</h3>
+        <div className="flex items-center justify-center h-[250px] text-muted-foreground text-sm">
           No data available
         </div>
       </div>
@@ -93,15 +92,11 @@ export const ExpenseChart = ({ data, type = "pie", title, height = 250 }: Expens
   }
 
   return (
-    <div className="relative overflow-hidden bg-gradient-chart rounded-3xl border border-border/30 p-8 backdrop-blur-sm shadow-[var(--shadow-card)] hover:shadow-[var(--shadow-lg)] transition-all duration-300 group">
-      <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-primary opacity-5 rounded-full blur-3xl group-hover:opacity-10 transition-opacity"></div>
-      <h3 className="text-lg font-bold mb-6 text-foreground relative z-10 flex items-center gap-2">
-        {title}
-        <div className="flex-1 h-px bg-gradient-to-r from-border/50 to-transparent"></div>
-      </h3>
+    <div className="bg-card rounded-lg border p-6">
+      <h3 className="text-base font-semibold mb-4">{title}</h3>
       
       {type === "pie" ? (
-        <div className="relative z-10">
+        <div>
           {/* Donut chart with category breakdown */}
           <div className="flex flex-col items-center">
             <div style={{ width: '100%', height: '280px' }}>
@@ -163,29 +158,29 @@ export const ExpenseChart = ({ data, type = "pie", title, height = 250 }: Expens
             </div>
             
             {/* Category breakdown with icons */}
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mt-6 w-full">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mt-4 w-full">
               {data.slice(0, 6).map((entry, index) => {
                 const Icon = getCategoryIcon(entry.category);
                 return (
-                  <div 
-                    key={index} 
-                    className="flex items-center gap-3 p-3 rounded-xl bg-card/50 backdrop-blur-sm border border-border/30 hover:bg-card/80 transition-all"
+                  <div
+                    key={index}
+                    className="flex items-center gap-2 p-2 rounded-lg bg-muted/50"
                   >
-                    <div 
-                      className="p-2 rounded-lg shadow-sm" 
-                      style={{ backgroundColor: `${getColorForCategory(entry.category, index)}20` }}
+                    <div
+                      className="p-1.5 rounded"
+                      style={{ backgroundColor: `${getColorForCategory(entry.category, index)}15` }}
                     >
-                      <Icon 
-                        className="w-4 h-4" 
+                      <Icon
+                        className="w-3.5 h-3.5"
                         style={{ color: getColorForCategory(entry.category, index) }}
                       />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs font-medium text-foreground truncate capitalize">
+                      <p className="text-xs font-medium truncate capitalize">
                         {entry.category}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        ₹{Number(entry.amount).toFixed(0)}
+                        ₹{Number(entry.amount).toLocaleString('en-IN')}
                       </p>
                     </div>
                   </div>

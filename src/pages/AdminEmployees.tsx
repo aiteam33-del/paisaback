@@ -129,7 +129,7 @@ const AdminEmployees = () => {
         </div>
 
         {/* Search */}
-        <Card className="mb-8 shadow-card">
+        <Card className="mb-8 shadow-sm">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Search className="w-5 h-5" />
@@ -150,7 +150,7 @@ const AdminEmployees = () => {
         </Card>
 
         {/* Employee List */}
-        <Card className="shadow-card">
+        <Card className="shadow-sm">
           <CardHeader>
             <CardTitle>{filteredEmployees.length} Employee{filteredEmployees.length !== 1 ? 's' : ''}</CardTitle>
             <CardDescription>Click on an employee to view their detailed expenses</CardDescription>

@@ -1,24 +1,24 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Navigation } from "@/components/ui/navigation";
-import { Building2, Users, LogIn, ArrowLeft, Loader2, Sparkles } from "lucide-react";
+import { Building2, Users, LogIn, ArrowLeft, Loader2, Sparkles, Eye, EyeOff, Moon, Sun, ArrowRight } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { AnimatedCard } from "@/components/AnimatedCard";
+import { useTheme } from "@/components/theme-provider";
 
 type AuthStep = 'entry' | 'general_login' | 'org_signup' | 'employee_signup';
 
 const Auth = () => {
   const [currentStep, setCurrentStep] = useState<AuthStep>('entry');
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const { signIn, user } = useAuth();
   const navigate = useNavigate();
+  const { theme, setTheme } = useTheme();
 
   // Login state
   const [loginEmail, setLoginEmail] = useState("");
@@ -37,6 +37,10 @@ const Auth = () => {
   const [empPassword, setEmpPassword] = useState("");
   const [organizations, setOrganizations] = useState<any[]>([]);
   const [loadingOrgs, setLoadingOrgs] = useState(false);
+
+  // Theme toggle
+  const isDark = theme === "dark" || (theme === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+  const toggleTheme = () => setTheme(isDark ? "light" : "dark");
 
   // Redirect if already logged in
   useEffect(() => {
@@ -64,15 +68,13 @@ const Auth = () => {
         }
       }
     };
-    
+
     checkUserStatus();
   }, [user, navigate]);
 
   const loadOrganizations = async () => {
     setLoadingOrgs(true);
     try {
-      // Use secure RPC function that only returns id and name
-      // This prevents exposure of admin_user_id and other sensitive fields
       const { data, error } = await supabase
         .rpc("get_organizations_for_joining");
 
@@ -87,7 +89,7 @@ const Auth = () => {
 
   const handleGeneralLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!loginEmail || !loginPassword) {
       toast.error("Please fill in all fields");
       return;
@@ -105,7 +107,7 @@ const Auth = () => {
 
   const handleOrgSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!orgEmail || !orgPassword || !orgFullName || !orgName.trim()) {
       toast.error("Please fill in all fields");
       return;
@@ -125,7 +127,6 @@ const Auth = () => {
       if (authError) throw authError;
 
       if (authData.user) {
-        // Ensure profile exists
         const { error: profileUpsertError } = await supabase
           .from("profiles")
           .upsert(
@@ -134,7 +135,6 @@ const Auth = () => {
           );
         if (profileUpsertError) throw profileUpsertError;
 
-        // Create organization
         const { data: org, error: orgError } = await supabase
           .from("organizations")
           .insert({
@@ -146,7 +146,6 @@ const Auth = () => {
 
         if (orgError) throw orgError;
 
-        // Update user's profile with organization
         const { error: profileError } = await supabase
           .from("profiles")
           .update({ organization_id: org.id })
@@ -175,7 +174,7 @@ const Auth = () => {
 
   const handleEmployeeSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!empEmail || !empPassword || !empFullName || !selectedOrgId) {
       toast.error("Please fill in all fields");
       return;
@@ -195,7 +194,6 @@ const Auth = () => {
       if (authError) throw authError;
 
       if (authData.user) {
-        // Ensure profile exists
         const { error: profileUpsertError } = await supabase
           .from("profiles")
           .upsert(
@@ -204,7 +202,6 @@ const Auth = () => {
           );
         if (profileUpsertError) throw profileUpsertError;
 
-        // Join existing organization via join request
         const { error: insertError } = await supabase
           .from("join_requests")
           .insert({ employee_id: authData.user.id, org_id: selectedOrgId });
@@ -226,7 +223,6 @@ const Auth = () => {
     }
   };
 
-  // Load organizations when entering employee signup
   useEffect(() => {
     if (currentStep === 'employee_signup') {
       loadOrganizations();
@@ -234,102 +230,140 @@ const Auth = () => {
   }, [currentStep]);
 
   const renderEntryScreen = () => (
-    <div className="max-w-2xl mx-auto space-y-6">
-      <div className="text-center mb-8">
-        <h1 className="text-4xl font-bold text-foreground mb-2">Welcome to PAISABACK</h1>
-        <p className="text-lg text-muted-foreground">Choose how you'd like to get started</p>
+    <div className="w-full max-w-md mx-auto">
+      {/* Logo */}
+      <div className="flex items-center justify-center gap-3 mb-8">
+        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center shadow-lg">
+          <Sparkles className="w-6 h-6 text-white" />
+        </div>
+        <span className="text-2xl font-bold">PAISABACK</span>
       </div>
 
-      <div className="grid md:grid-cols-3 gap-6">
-        <Card 
-          className="cursor-pointer hover:shadow-xl transition-all hover:-translate-y-1 border-2 hover:border-primary"
+      <div className="text-center mb-8">
+        <h1 className="text-2xl font-bold mb-2">Welcome</h1>
+        <p className="text-muted-foreground text-sm">Choose how you'd like to get started</p>
+      </div>
+
+      <div className="space-y-3">
+        {/* Organization option */}
+        <button
           onClick={() => setCurrentStep('org_signup')}
+          className="w-full group p-4 rounded-xl border border-border bg-card hover:border-primary/50 hover:bg-muted/50 transition-all duration-200 text-left"
         >
-          <CardHeader className="text-center space-y-4">
-            <div className="w-16 h-16 rounded-full bg-gradient-primary mx-auto flex items-center justify-center">
-              <Building2 className="w-8 h-8 text-primary-foreground" />
+          <div className="flex items-center gap-4">
+            <div className="p-2.5 rounded-lg bg-gradient-to-br from-primary to-cyan-500">
+              <Building2 className="w-5 h-5 text-white" />
             </div>
-            <CardTitle className="text-xl">I am an Organization</CardTitle>
-            <CardDescription>
-              Create a new organization and become the admin
-            </CardDescription>
-          </CardHeader>
-        </Card>
+            <div className="flex-1">
+              <h3 className="font-semibold mb-0.5">Create Organization</h3>
+              <p className="text-xs text-muted-foreground">Set up your company and become an admin</p>
+            </div>
+            <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
+          </div>
+        </button>
 
-        <Card 
-          className="cursor-pointer hover:shadow-xl transition-all hover:-translate-y-1 border-2 hover:border-primary"
+        {/* Employee option */}
+        <button
           onClick={() => setCurrentStep('employee_signup')}
+          className="w-full group p-4 rounded-xl border border-border bg-card hover:border-violet-500/50 hover:bg-muted/50 transition-all duration-200 text-left"
         >
-          <CardHeader className="text-center space-y-4">
-            <div className="w-16 h-16 rounded-full bg-gradient-primary mx-auto flex items-center justify-center">
-              <Users className="w-8 h-8 text-primary-foreground" />
+          <div className="flex items-center gap-4">
+            <div className="p-2.5 rounded-lg bg-gradient-to-br from-violet-500 to-purple-500">
+              <Users className="w-5 h-5 text-white" />
             </div>
-            <CardTitle className="text-xl">I am an Employee</CardTitle>
-            <CardDescription>
-              Join an existing organization as an employee
-            </CardDescription>
-          </CardHeader>
-        </Card>
+            <div className="flex-1">
+              <h3 className="font-semibold mb-0.5">Join as Employee</h3>
+              <p className="text-xs text-muted-foreground">Request to join an existing organization</p>
+            </div>
+            <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-violet-500 transition-colors" />
+          </div>
+        </button>
 
-        <Card 
-          className="cursor-pointer hover:shadow-xl transition-all hover:-translate-y-1 border-2 hover:border-primary"
+        {/* Login option */}
+        <button
           onClick={() => setCurrentStep('general_login')}
+          className="w-full group p-4 rounded-xl border border-border bg-card hover:border-emerald-500/50 hover:bg-muted/50 transition-all duration-200 text-left"
         >
-          <CardHeader className="text-center space-y-4">
-            <div className="w-16 h-16 rounded-full bg-gradient-primary mx-auto flex items-center justify-center">
-              <LogIn className="w-8 h-8 text-primary-foreground" />
+          <div className="flex items-center gap-4">
+            <div className="p-2.5 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-500">
+              <LogIn className="w-5 h-5 text-white" />
             </div>
-            <CardTitle className="text-xl">Already a user</CardTitle>
-            <CardDescription>
-              Log in to your account
-            </CardDescription>
-          </CardHeader>
-        </Card>
+            <div className="flex-1">
+              <h3 className="font-semibold mb-0.5">Sign In</h3>
+              <p className="text-xs text-muted-foreground">Already have an account? Log in here</p>
+            </div>
+            <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-emerald-500 transition-colors" />
+          </div>
+        </button>
+      </div>
+
+      {/* Back to home */}
+      <div className="mt-8 text-center">
+        <Link to="/" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
+          <ArrowLeft className="w-4 h-4" />
+          Back to Home
+        </Link>
       </div>
     </div>
   );
 
   const renderGeneralLogin = () => (
-    <Card className="max-w-md mx-auto shadow-xl">
-      <CardHeader>
-        <Button
-          variant="ghost"
-          onClick={() => setCurrentStep('entry')}
-          className="w-fit mb-4"
-        >
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Back
-        </Button>
-        <CardTitle className="text-2xl">Welcome Back! Log In</CardTitle>
-        <CardDescription>Enter your credentials to access your account</CardDescription>
-      </CardHeader>
-      <CardContent>
+    <div className="w-full max-w-md mx-auto">
+      <button
+        onClick={() => setCurrentStep('entry')}
+        className="flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6 transition-colors text-sm"
+      >
+        <ArrowLeft className="w-4 h-4" />
+        Back
+      </button>
+
+      <div className="p-6 rounded-xl border border-border bg-card">
+        <div className="text-center mb-6">
+          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center mx-auto mb-3">
+            <LogIn className="w-6 h-6 text-white" />
+          </div>
+          <h2 className="text-xl font-bold mb-1">Welcome Back</h2>
+          <p className="text-sm text-muted-foreground">Sign in to your account</p>
+        </div>
+
         <form onSubmit={handleGeneralLogin} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="login-email">Email</Label>
+            <Label htmlFor="login-email" className="text-sm">Email</Label>
             <Input
               id="login-email"
               type="email"
-              placeholder="your@email.com"
+              placeholder="you@company.com"
               value={loginEmail}
               onChange={(e) => setLoginEmail(e.target.value)}
               disabled={isLoading}
+              className="h-11"
             />
           </div>
+
           <div className="space-y-2">
-            <Label htmlFor="login-password">Password</Label>
-            <Input 
-              id="login-password" 
-              type="password"
-              value={loginPassword}
-              onChange={(e) => setLoginPassword(e.target.value)}
-              disabled={isLoading}
-            />
+            <Label htmlFor="login-password" className="text-sm">Password</Label>
+            <div className="relative">
+              <Input
+                id="login-password"
+                type={showPassword ? "text" : "password"}
+                value={loginPassword}
+                onChange={(e) => setLoginPassword(e.target.value)}
+                disabled={isLoading}
+                className="h-11 pr-10"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              >
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
           </div>
-          
-          <Button 
+
+          <Button
             type="submit"
-            className="w-full bg-gradient-primary hover:opacity-90"
+            className="w-full h-11 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-medium"
             disabled={isLoading}
           >
             {isLoading ? (
@@ -342,76 +376,91 @@ const Auth = () => {
             )}
           </Button>
         </form>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 
   const renderOrgSignUp = () => (
-    <Card className="max-w-md mx-auto shadow-xl">
-      <CardHeader>
-        <Button
-          variant="ghost"
-          onClick={() => setCurrentStep('entry')}
-          className="w-fit mb-4"
-        >
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Back
-        </Button>
-        <CardTitle className="text-2xl">Organization Registration</CardTitle>
-        <CardDescription>
-          Create a new organization and become the admin
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
+    <div className="w-full max-w-md mx-auto">
+      <button
+        onClick={() => setCurrentStep('entry')}
+        className="flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6 transition-colors text-sm"
+      >
+        <ArrowLeft className="w-4 h-4" />
+        Back
+      </button>
+
+      <div className="p-6 rounded-xl border border-border bg-card">
+        <div className="text-center mb-6">
+          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-cyan-500 flex items-center justify-center mx-auto mb-3">
+            <Building2 className="w-6 h-6 text-white" />
+          </div>
+          <h2 className="text-xl font-bold mb-1">Create Organization</h2>
+          <p className="text-sm text-muted-foreground">Set up your company account</p>
+        </div>
+
         <form onSubmit={handleOrgSignUp} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="org-name">Organization Name</Label>
+            <Label htmlFor="org-name" className="text-sm">Organization Name</Label>
             <Input
               id="org-name"
               placeholder="Acme Inc."
               value={orgName}
               onChange={(e) => setOrgName(e.target.value)}
               disabled={isLoading}
+              className="h-11"
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="org-fullname">Your Full Name</Label>
-            <Input 
-              id="org-fullname" 
+            <Label htmlFor="org-fullname" className="text-sm">Your Full Name</Label>
+            <Input
+              id="org-fullname"
               placeholder="John Doe"
               value={orgFullName}
               onChange={(e) => setOrgFullName(e.target.value)}
               disabled={isLoading}
+              className="h-11"
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="org-email">Email</Label>
+            <Label htmlFor="org-email" className="text-sm">Email</Label>
             <Input
               id="org-email"
               type="email"
-              placeholder="your@email.com"
+              placeholder="you@company.com"
               value={orgEmail}
               onChange={(e) => setOrgEmail(e.target.value)}
               disabled={isLoading}
+              className="h-11"
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="org-password">Password</Label>
-            <Input 
-              id="org-password" 
-              type="password"
-              value={orgPassword}
-              onChange={(e) => setOrgPassword(e.target.value)}
-              disabled={isLoading}
-            />
+            <Label htmlFor="org-password" className="text-sm">Password</Label>
+            <div className="relative">
+              <Input
+                id="org-password"
+                type={showPassword ? "text" : "password"}
+                value={orgPassword}
+                onChange={(e) => setOrgPassword(e.target.value)}
+                disabled={isLoading}
+                className="h-11 pr-10"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              >
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
           </div>
 
-          <Button 
+          <Button
             type="submit"
-            className="w-full bg-gradient-primary hover:opacity-90"
+            className="w-full h-11 bg-gradient-to-r from-primary to-cyan-500 hover:from-primary/90 hover:to-cyan-600 text-white font-medium"
             disabled={isLoading}
           >
             {isLoading ? (
@@ -420,46 +469,48 @@ const Auth = () => {
                 Creating...
               </>
             ) : (
-              "Create Organization & Sign Up"
+              "Create Organization"
             )}
           </Button>
         </form>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 
   const renderEmployeeSignUp = () => (
-    <Card className="max-w-md mx-auto shadow-xl">
-      <CardHeader>
-        <Button
-          variant="ghost"
-          onClick={() => setCurrentStep('entry')}
-          className="w-fit mb-4"
-        >
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Back
-        </Button>
-        <CardTitle className="text-2xl">Join Your Team</CardTitle>
-        <CardDescription>
-          Request to join an existing organization
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
+    <div className="w-full max-w-md mx-auto">
+      <button
+        onClick={() => setCurrentStep('entry')}
+        className="flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6 transition-colors text-sm"
+      >
+        <ArrowLeft className="w-4 h-4" />
+        Back
+      </button>
+
+      <div className="p-6 rounded-xl border border-border bg-card">
+        <div className="text-center mb-6">
+          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-500 to-purple-500 flex items-center justify-center mx-auto mb-3">
+            <Users className="w-6 h-6 text-white" />
+          </div>
+          <h2 className="text-xl font-bold mb-1">Join Your Team</h2>
+          <p className="text-sm text-muted-foreground">Request to join an organization</p>
+        </div>
+
         <form onSubmit={handleEmployeeSignUp} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="emp-org-select">Select Organization</Label>
+            <Label htmlFor="emp-org-select" className="text-sm">Organization</Label>
             {loadingOrgs ? (
-              <div className="flex items-center justify-center p-4">
-                <Loader2 className="w-6 h-6 animate-spin text-primary" />
+              <div className="flex items-center justify-center h-11 rounded-lg border border-border bg-muted/30">
+                <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
               </div>
             ) : organizations.length === 0 ? (
-              <p className="text-sm text-muted-foreground p-4 text-center border border-dashed rounded-md">
+              <div className="flex items-center justify-center h-11 rounded-lg border border-dashed border-border text-sm text-muted-foreground">
                 No organizations found
-              </p>
+              </div>
             ) : (
               <Select value={selectedOrgId} onValueChange={setSelectedOrgId} disabled={isLoading}>
-                <SelectTrigger id="emp-org-select">
-                  <SelectValue placeholder="Choose your organization" />
+                <SelectTrigger id="emp-org-select" className="h-11">
+                  <SelectValue placeholder="Choose organization" />
                 </SelectTrigger>
                 <SelectContent>
                   {organizations.map((org) => (
@@ -473,68 +524,93 @@ const Auth = () => {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="emp-fullname">Full Name</Label>
-            <Input 
-              id="emp-fullname" 
+            <Label htmlFor="emp-fullname" className="text-sm">Full Name</Label>
+            <Input
+              id="emp-fullname"
               placeholder="John Doe"
               value={empFullName}
               onChange={(e) => setEmpFullName(e.target.value)}
               disabled={isLoading}
+              className="h-11"
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="emp-email">Email</Label>
+            <Label htmlFor="emp-email" className="text-sm">Email</Label>
             <Input
               id="emp-email"
               type="email"
-              placeholder="your@email.com"
+              placeholder="you@email.com"
               value={empEmail}
               onChange={(e) => setEmpEmail(e.target.value)}
               disabled={isLoading}
+              className="h-11"
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="emp-password">Password</Label>
-            <Input 
-              id="emp-password" 
-              type="password"
-              value={empPassword}
-              onChange={(e) => setEmpPassword(e.target.value)}
-              disabled={isLoading}
-            />
+            <Label htmlFor="emp-password" className="text-sm">Password</Label>
+            <div className="relative">
+              <Input
+                id="emp-password"
+                type={showPassword ? "text" : "password"}
+                value={empPassword}
+                onChange={(e) => setEmpPassword(e.target.value)}
+                disabled={isLoading}
+                className="h-11 pr-10"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              >
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
           </div>
 
-          <Button 
+          <Button
             type="submit"
-            className="w-full bg-gradient-primary hover:opacity-90"
+            className="w-full h-11 bg-gradient-to-r from-violet-500 to-purple-500 hover:from-violet-600 hover:to-purple-600 text-white font-medium"
             disabled={isLoading || organizations.length === 0}
           >
             {isLoading ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Sending Request...
+                Sending...
               </>
             ) : (
               "Request to Join"
             )}
           </Button>
         </form>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 
   return (
-    <div className="min-h-screen bg-gradient-subtle">
-      <Navigation />
-      
-      <main className="container mx-auto px-4 pt-32 pb-16">
-        {currentStep === 'entry' && renderEntryScreen()}
-        {currentStep === 'general_login' && renderGeneralLogin()}
-        {currentStep === 'org_signup' && renderOrgSignUp()}
-        {currentStep === 'employee_signup' && renderEmployeeSignUp()}
-      </main>
+    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+      {/* Theme toggle */}
+      <div className="fixed top-4 right-4 z-50">
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={toggleTheme}
+          className="rounded-lg"
+        >
+          {isDark ? (
+            <Sun className="h-4 w-4" />
+          ) : (
+            <Moon className="h-4 w-4" />
+          )}
+        </Button>
+      </div>
+
+      {/* Content */}
+      {currentStep === 'entry' && renderEntryScreen()}
+      {currentStep === 'general_login' && renderGeneralLogin()}
+      {currentStep === 'org_signup' && renderOrgSignUp()}
+      {currentStep === 'employee_signup' && renderEmployeeSignUp()}
     </div>
   );
 };

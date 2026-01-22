@@ -160,7 +160,7 @@ const AdminJoinRequests = () => {
               <Card
                 key={request.id}
                 id={`jr-${request.id}`}
-                className="shadow-card transition-all"
+                className="shadow-sm transition-all"
               >
                 <CardContent className="p-6">
                   <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -204,7 +204,7 @@ const AdminJoinRequests = () => {
             ))}
           </div>
         ) : (
-          <Card className="shadow-card">
+          <Card className="shadow-sm">
             <CardContent className="p-12 text-center">
               <User className="w-16 h-16 mx-auto mb-4 text-muted-foreground/50" />
               <h3 className="text-lg font-semibold mb-2">No Pending Join Requests</h3>

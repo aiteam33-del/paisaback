@@ -1,8 +1,6 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Activity, ChevronRight, Loader2, Clock, CheckCircle, XCircle, UserPlus } from "lucide-react";
+import { Activity, Loader2, Clock, CheckCircle, XCircle, UserPlus, Zap } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDistanceToNow } from "date-fns";
 
@@ -14,6 +12,7 @@ interface ActivityItem {
   timestamp: string;
   icon: any;
   color: string;
+  gradient: string;
 }
 
 export const RecentActivityCard = () => {
@@ -47,29 +46,33 @@ export const RecentActivityCard = () => {
 
       const transformed = (notificationsData || [])
         .filter((notif) => {
-          // Filter for valid activity types
           return ["expense_submitted", "expense_approved", "expense_rejected", "join_request"].includes(notif.type);
         })
         .map((notif) => {
           let icon = Activity;
           let color = "text-muted-foreground";
+          let gradient = "from-gray-500 to-gray-400";
 
           switch (notif.type) {
             case "expense_submitted":
               icon = Clock;
-              color = "text-warning";
+              color = "text-amber-600 dark:text-amber-400";
+              gradient = "from-amber-500 to-orange-500";
               break;
             case "expense_approved":
               icon = CheckCircle;
-              color = "text-success";
+              color = "text-emerald-600 dark:text-emerald-400";
+              gradient = "from-emerald-500 to-green-500";
               break;
             case "expense_rejected":
               icon = XCircle;
-              color = "text-destructive";
+              color = "text-red-600 dark:text-red-400";
+              gradient = "from-red-500 to-rose-500";
               break;
             case "join_request":
               icon = UserPlus;
-              color = "text-primary";
+              color = "text-violet-600 dark:text-violet-400";
+              gradient = "from-violet-500 to-purple-500";
               break;
           }
 
@@ -81,6 +84,7 @@ export const RecentActivityCard = () => {
             timestamp: notif.created_at,
             icon,
             color,
+            gradient,
           };
         });
 
@@ -93,55 +97,70 @@ export const RecentActivityCard = () => {
   };
 
   return (
-    <Card className="shadow-lg hover:shadow-xl transition-all duration-300 border-border/50 bg-gradient-card backdrop-blur-sm h-full flex flex-col">
+    <Card className="h-full flex flex-col relative overflow-hidden group hover:shadow-lg transition-all duration-300">
+      {/* Gradient accent line */}
+      <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-cyan-500 via-blue-500 to-violet-500" />
+
       <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="p-2 rounded-lg bg-primary/20">
-              <Activity className="w-4 h-4 text-primary" />
+        <div className="flex items-center gap-3">
+          <div className="relative">
+            <div className="absolute inset-0 bg-cyan-500/20 rounded-xl blur-md" />
+            <div className="relative p-2.5 rounded-xl bg-gradient-to-br from-cyan-500/20 to-blue-500/10 border border-cyan-500/20">
+              <Activity className="w-5 h-5 text-cyan-600 dark:text-cyan-400" />
             </div>
-            <CardTitle className="text-lg">Recent Activity</CardTitle>
+          </div>
+          <div>
+            <CardTitle className="text-base font-semibold">Recent Activity</CardTitle>
+            <p className="text-xs text-muted-foreground">Latest updates</p>
           </div>
         </div>
       </CardHeader>
-      
+
       <CardContent className="flex-1 flex flex-col overflow-hidden">
         {isLoading ? (
           <div className="flex items-center justify-center py-8">
-            <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+            <div className="relative">
+              <div className="w-10 h-10 rounded-full border-2 border-cyan-500/20 border-t-cyan-500 animate-spin" />
+            </div>
           </div>
         ) : activities.length === 0 ? (
-          <div className="flex-1 flex items-center justify-center text-center text-muted-foreground text-sm py-8">
-            No recent activity
+          <div className="flex-1 flex flex-col items-center justify-center text-center py-8">
+            <div className="w-12 h-12 rounded-2xl bg-cyan-500/10 flex items-center justify-center mb-3">
+              <Zap className="w-6 h-6 text-cyan-500" />
+            </div>
+            <p className="text-sm font-medium text-muted-foreground">No recent activity</p>
+            <p className="text-xs text-muted-foreground/60">Actions will appear here</p>
           </div>
         ) : (
-          <div className="space-y-3 flex-1 overflow-y-auto pr-2 custom-scrollbar">
+          <div className="space-y-1 flex-1 overflow-y-auto pr-2 custom-scrollbar">
             {activities.map((activity, index) => {
               const Icon = activity.icon;
               return (
                 <div
                   key={activity.id}
-                  className="relative pl-8 pb-3 last:pb-0"
+                  className="group/item relative pl-10 py-3 hover:bg-muted/30 rounded-xl transition-colors"
                 >
                   {/* Timeline line */}
                   {index !== activities.length - 1 && (
-                    <div className="absolute left-3 top-8 bottom-0 w-px bg-border/50" />
+                    <div className="absolute left-[18px] top-12 bottom-0 w-px bg-gradient-to-b from-border to-transparent" />
                   )}
-                  
-                  {/* Icon */}
-                  <div className={`absolute left-0 top-1 w-6 h-6 rounded-full bg-background border-2 border-border/50 flex items-center justify-center ${activity.color}`}>
-                    <Icon className="w-3 h-3" />
+
+                  {/* Icon with gradient background */}
+                  <div className={`absolute left-0 top-3 w-9 h-9 rounded-xl bg-gradient-to-br ${activity.gradient} flex items-center justify-center shadow-sm`}>
+                    <Icon className="w-4 h-4 text-white" />
                   </div>
 
                   {/* Content */}
                   <div className="space-y-1">
                     <div className="flex items-start justify-between gap-2">
-                      <p className="text-sm font-medium leading-tight">{activity.title}</p>
-                      <span className="text-xs text-muted-foreground whitespace-nowrap">
+                      <p className="text-sm font-medium leading-tight group-hover/item:text-foreground transition-colors">
+                        {activity.title}
+                      </p>
+                      <span className="text-[10px] text-muted-foreground whitespace-nowrap bg-muted/50 px-2 py-0.5 rounded-full">
                         {formatDistanceToNow(new Date(activity.timestamp), { addSuffix: true })}
                       </span>
                     </div>
-                    <p className="text-xs text-muted-foreground leading-relaxed">
+                    <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">
                       {activity.description}
                     </p>
                   </div>

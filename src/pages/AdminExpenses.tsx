@@ -184,7 +184,7 @@ const AdminExpenses = () => {
         </div>
 
         {/* Filters */}
-        <Card className="mb-8 shadow-card">
+        <Card className="mb-8 shadow-sm">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Filter className="w-5 h-5" />
@@ -271,7 +271,7 @@ const AdminExpenses = () => {
             />
           ))}
           {filteredExpenses.length === 0 && (
-            <Card className="shadow-card">
+            <Card className="shadow-sm">
               <CardContent className="p-8 text-center text-muted-foreground">
                 No expenses found matching your filters.
               </CardContent>

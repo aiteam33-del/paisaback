@@ -21,7 +21,7 @@ export const ProductDemoVideo = () => {
           </p>
         </div>
 
-        <div className="relative rounded-xl sm:rounded-2xl overflow-hidden shadow-2xl bg-gradient-card border border-border/50 aspect-video">
+        <div className="relative rounded-xl sm:rounded-2xl overflow-hidden shadow-2xl bg-card border border-border/50 aspect-video">
           {/* Placeholder for demo video - replace with actual video when available */}
           <div className="absolute inset-0 flex items-center justify-center bg-muted">
             <div className="text-center space-y-3 sm:space-y-4 px-4">
