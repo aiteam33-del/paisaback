@@ -434,11 +434,11 @@ export const AnalyticsChatbot = () => {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="fixed bottom-24 right-6 w-[480px] max-w-[calc(100vw-3rem)] h-[650px] max-h-[calc(100vh-8rem)] z-[100] shadow-2xl rounded-2xl overflow-hidden border border-border/50 backdrop-blur-xl"
+            className="fixed bottom-24 right-6 w-[420px] max-w-[calc(100vw-3rem)] h-[600px] max-h-[calc(100vh-8rem)] z-[100] shadow-xl rounded-2xl overflow-hidden border border-border/30"
           >
-            <Card className="h-full flex flex-col bg-gradient-to-br from-background via-background to-muted/20">
+            <Card className="h-full flex flex-col bg-white dark:bg-card">
               {/* Header */}
-              <div className="flex items-center justify-between p-4 border-b border-border/50 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent">
+              <div className="flex items-center justify-between p-4 border-b border-border/30">
                 <div className="flex items-center gap-2">
                   {showHistory ? (
                     <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setShowHistory(false)}>
@@ -665,9 +665,9 @@ export const AnalyticsChatbot = () => {
         <Button
           onClick={() => setIsOpen(!isOpen)}
           size="lg"
-          className="w-14 h-14 rounded-full shadow-2xl bg-gradient-to-br from-primary to-primary/80 hover:scale-110 transition-transform"
+          className="w-12 h-12 rounded-full shadow-lg bg-primary hover:bg-primary/90 hover:scale-105 transition-all duration-150"
         >
-          {isOpen ? <X className="w-6 h-6" /> : <MessageCircle className="w-6 h-6" />}
+          {isOpen ? <X className="w-5 h-5" /> : <MessageCircle className="w-5 h-5" />}
         </Button>
       </motion.div>
     </>
