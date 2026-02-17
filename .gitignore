@@ -22,3 +22,11 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Secrets - NEVER commit these
+.env
+.env.*
+!.env.example
+SUPABASE_SECRETS.md
+set-secrets.sh
+set-supabase-secrets.sh

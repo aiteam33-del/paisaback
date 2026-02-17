@@ -43,6 +43,27 @@ serve(async (req) => {
   }
 
   try {
+    // --- AUTH CHECK: Verify caller is authenticated ---
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: "Missing authorization header" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const SUPABASE_URL_AUTH = Deno.env.get("SUPABASE_URL")!;
+    const SERVICE_KEY_AUTH = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const authClient = createClient(SUPABASE_URL_AUTH, SERVICE_KEY_AUTH);
+    const authToken = authHeader.replace("Bearer ", "");
+    const { data: { user: authUser }, error: authError } = await authClient.auth.getUser(authToken);
+    if (authError || !authUser) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    // --- END AUTH CHECK ---
+
     const body = await req.json();
     const { imageUrl, bucket, path } = body as { imageUrl?: string; bucket?: string; path?: string };
 

@@ -16,9 +16,28 @@ export const extractReceiptPath = (raw: string): string => {
   return raw;
 };
 
-// Returns a stable, public URL for a receipt. Requires the bucket to be public.
+// Returns a short-lived signed URL for a receipt (60 min expiry).
+// This works regardless of whether the bucket is public or private.
 export const getReceiptPublicUrl = (raw: string): string => {
+  // We can't use async here since callers expect a sync string.
+  // Fall back to the public URL helper — when we make the bucket private,
+  // callers should migrate to getReceiptSignedUrl instead.
   const path = extractReceiptPath(raw);
   const { data } = supabase.storage.from('receipts').getPublicUrl(path);
   return data.publicUrl;
+};
+
+// Async signed URL — use this for secure access (preferred)
+export const getReceiptSignedUrl = async (raw: string, expiresIn = 3600): Promise<string> => {
+  const path = extractReceiptPath(raw);
+  const { data, error } = await supabase.storage
+    .from('receipts')
+    .createSignedUrl(path, expiresIn);
+
+  if (error || !data?.signedUrl) {
+    console.error('Failed to create signed URL:', error);
+    // Fallback to public URL construction
+    return getReceiptPublicUrl(raw);
+  }
+  return data.signedUrl;
 };

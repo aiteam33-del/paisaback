@@ -13,26 +13,69 @@ serve(async (req) => {
   }
 
   try {
+    // --- AUTH CHECK FIRST (before parsing body) ---
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: 'Missing authorization header' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     const { query, conversationHistory } = await req.json();
-    
+
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const openAiKey = Deno.env.get('OPENAI_API_KEY')!;
-    
+
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     // Get auth user
-    const authHeader = req.headers.get('Authorization')!;
     const token = authHeader.replace('Bearer ', '');
-    const { data: { user } } = await supabase.auth.getUser(token);
-    
-    if (!user) {
-      throw new Error('Unauthorized');
+    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+
+    if (userError || !user) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
-    console.log('Fetching comprehensive database data...');
+    // --- RESOLVE ORGANIZATION SCOPE ---
+    // Only fetch data belonging to the user's organization (same pattern as analyze-expenses)
+    const { data: orgByAdmin } = await supabase
+      .from('organizations')
+      .select('id')
+      .eq('admin_user_id', user.id)
+      .maybeSingle();
 
-    // Fetch ALL relevant data from database
+    let orgId: string | null = orgByAdmin?.id ?? null;
+
+    if (!orgId) {
+      const { data: profileOrg } = await supabase
+        .from('profiles')
+        .select('organization_id')
+        .eq('id', user.id)
+        .maybeSingle();
+      orgId = profileOrg?.organization_id ?? null;
+    }
+
+    // Get employee IDs for this org only
+    let orgEmployeeIds: string[] = [user.id];
+    if (orgId) {
+      const { data: employees } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('organization_id', orgId);
+      orgEmployeeIds = (employees || []).map(e => e.id);
+      if (!orgEmployeeIds.includes(user.id)) {
+        orgEmployeeIds.push(user.id);
+      }
+    }
+
+    console.log(`Fetching org-scoped data for org ${orgId}, ${orgEmployeeIds.length} employees...`);
+
+    // Fetch ONLY this organization's expenses
     const now = new Date();
     const last1h = new Date(now.getTime() - 60 * 60 * 1000);
     const last3h = new Date(now.getTime() - 3 * 60 * 60 * 1000);
@@ -42,33 +85,32 @@ serve(async (req) => {
     const last30d = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
     const last90d = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
 
-    // Fetch ALL expenses (no limit)
+    // Fetch expenses scoped to organization employees ONLY
     const { data: allExpenses } = await supabase
       .from('expenses')
       .select('*, profiles!expenses_user_id_fkey(id, full_name, email)')
+      .in('user_id', orgEmployeeIds)
       .order('date', { ascending: false });
 
     const expenses = allExpenses || [];
 
-    console.log(`Total expenses fetched: ${expenses.length}`);
-    if (expenses.length > 0) {
-      console.log('Sample expense categories:', expenses.slice(0, 10).map(e => ({ category: e.category, status: e.status, vendor: e.vendor, amount: e.amount })));
-    }
+    console.log(`Total org-scoped expenses fetched: ${expenses.length}`);
 
-    // Fetch all profiles
-    const { data: profiles } = await supabase
-      .from('profiles')
-      .select('*');
+    // Fetch only this org's profiles
+    const { data: profiles } = orgId
+      ? await supabase.from('profiles').select('*').eq('organization_id', orgId)
+      : await supabase.from('profiles').select('*').eq('id', user.id);
 
-    // Fetch organization data
-    const { data: organizations } = await supabase
-      .from('organizations')
-      .select('*');
+    // Fetch only user's organization
+    const { data: organizations } = orgId
+      ? await supabase.from('organizations').select('*').eq('id', orgId)
+      : await supabase.from('organizations').select('*').eq('admin_user_id', user.id);
 
-    // Fetch notifications
+    // Fetch only user's notifications
     const { data: notifications } = await supabase
       .from('notifications')
       .select('*')
+      .eq('user_id', user.id)
       .order('created_at', { ascending: false })
       .limit(50);
 
@@ -197,11 +239,14 @@ serve(async (req) => {
         email: data.email
       }));
 
-    // Fetch join requests
-    const { data: joinRequests } = await supabase
-      .from('join_requests')
-      .select('*, profiles!join_requests_employee_id_fkey(full_name, email)')
-      .order('created_at', { ascending: false });
+    // Fetch join requests scoped to this org only
+    const { data: joinRequests } = orgId
+      ? await supabase
+          .from('join_requests')
+          .select('*, profiles!join_requests_employee_id_fkey(full_name, email)')
+          .eq('org_id', orgId)
+          .order('created_at', { ascending: false })
+      : { data: [] };
 
     const pendingJoinRequests = (joinRequests || []).filter(jr => jr.status === 'pending');
 
@@ -411,10 +456,6 @@ Query: "show anomalies"
 
 Always be helpful, accurate, and actionable. Provide strategic insights beyond just data reporting. Remember: you can answer ANY question about the expense database.`;
 
-    console.log('Calling OpenAI API...');
-    console.log('Food category data:', expenseSummary.categories.find(c => c.name.toLowerCase().includes('food')));
-    console.log('Pending food expenses:', expenses.filter(e => e.category?.toLowerCase() === 'food' && e.status === 'pending').length);
-    
     // Call OpenAI API
     const aiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',

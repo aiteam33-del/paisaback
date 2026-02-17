@@ -12,6 +12,21 @@ interface WaitlistNotificationRequest {
   email: string;
 }
 
+// Simple HTML escape to prevent injection
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+// Basic email format validation
+function isValidEmail(email: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) && email.length <= 254;
+}
+
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -20,19 +35,31 @@ const handler = async (req: Request): Promise<Response> => {
   try {
     const { email }: WaitlistNotificationRequest = await req.json();
 
-    console.log("Sending waitlist notification for:", email);
+    // Validate email input
+    if (!email || typeof email !== "string" || !isValidEmail(email.trim())) {
+      return new Response(
+        JSON.stringify({ error: "Invalid email address" }),
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    const sanitizedEmail = escapeHtml(email.trim().toLowerCase());
+
+    console.log("Sending waitlist notification for:", sanitizedEmail);
+
+    const adminEmail = Deno.env.get("ADMIN_NOTIFICATION_EMAIL") || "ai_team33@mesaschool.co";
 
     // Send notification to admin
     const emailResponse = await resend.emails.send({
       from: "PAISABACK Waitlist <onboarding@resend.dev>",
-      to: ["ai_team33@mesaschool.co"],
-      subject: "New PAISABACK Waitlist Signup! 🎉",
+      to: [adminEmail],
+      subject: "New PAISABACK Waitlist Signup!",
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h2 style="color: #10b981;">New Waitlist Signup</h2>
           <p>Someone just joined your PAISABACK waitlist!</p>
           <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
-            <strong>Email:</strong> ${email}
+            <strong>Email:</strong> ${sanitizedEmail}
           </div>
           <p style="color: #6b7280; font-size: 14px;">
             You can access all waitlist emails in your backend database under the <code>waitlist_emails</code> table.
